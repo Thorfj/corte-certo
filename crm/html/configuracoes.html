@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configurações — Corte Certo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/configuracoes.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase-config.js"></script>
+</head>
+
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="logo-icon"><i data-lucide="scissors" style="width:18px;height:18px"></i></div>
+        <span class="logo-name"></span>
+      </div>
+      <nav class="nav">
+        <a class="nav-item" href="atendimentos.html"><i data-lucide="clipboard-list"></i> Atendimentos</a>
+        <a class="nav-item" href="agenda.html"><i data-lucide="calendar"></i> Agenda</a>
+        <a class="nav-item" href="contatos.html"><i data-lucide="users"></i> Contatos</a>
+        <a class="nav-item" href="servicos.html"><i data-lucide="scissors"></i> Serviços</a>
+        <a class="nav-item" href="mensagens.html"><i data-lucide="message-square"></i> Mensagens</a>
+        <a class="nav-item" href="relatorios.html"><i data-lucide="pie-chart"></i> Relatórios</a>
+        <a class="nav-item active" href="configuracoes.html"><i data-lucide="settings"></i> Configurações</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="help-button"><i data-lucide="help-circle" style="width:16px;height:16px"></i></button>
+        <a class="nav-item" href="#" id="logout-link"><i data-lucide="log-out"></i> Sair</a>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1 class="page-title" style="margin:0">Configurações</h1>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="geral">Geral</button>
+        <button class="tab-btn" data-tab="usuarios">Usuários</button>
+        <button class="tab-btn" data-tab="faturas">Faturas</button>
+      </div>
+
+      <!-- ABA GERAL -->
+      <div class="tab-panel active" id="tab-geral">
+        <div class="card form-card">
+          <form id="form-geral">
+            <div class="field">
+              <label for="g-empresa">Nome da barbearia</label>
+              <input type="text" id="g-empresa" required>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="g-email">E-mail</label>
+                <input type="email" id="g-email">
+              </div>
+              <div class="field">
+                <label for="g-whatsapp">WhatsApp da barbearia</label>
+                <input type="text" id="g-whatsapp">
+              </div>
+            </div>
+            <p class="modal-error" id="g-erro"></p>
+            <p class="success-msg" id="g-sucesso">Alterações salvas com sucesso.</p>
+            <button type="submit" class="btn btn-primary" id="g-salvar-btn">Salvar alterações</button>
+          </form>
+        </div>
+
+        <div class="card form-card" style="margin-top:20px">
+          <p class="card-section-title">Aparência</p>
+          <p class="text-secondary card-section-desc">Escolha como o CRM aparece pra você. Essa preferência é individual, cada usuário pode ter a sua.</p>
+          <div class="tema-toggle" id="tema-toggle">
+            <button type="button" class="tema-btn" data-tema="light">
+              <i data-lucide="sun" style="width:16px;height:16px"></i> Claro
+            </button>
+            <button type="button" class="tema-btn" data-tema="dark">
+              <i data-lucide="moon" style="width:16px;height:16px"></i> Escuro
+            </button>
+          </div>
+        </div>
+
+        <div class="card form-card hidden" id="card-google" style="margin-top:20px">
+          <p class="card-section-title">Google Calendar</p>
+          <p class="text-secondary card-section-desc">Conecte a Agenda do Google da barbearia pra sincronizar os horários automaticamente.</p>
+          <div class="google-status-row">
+            <span class="badge" id="google-status-badge">Desconectado</span>
+            <a class="btn btn-primary" id="google-conectar-btn" href="#" target="_blank" rel="noopener">
+              <i data-lucide="link" style="width:16px;height:16px"></i> Conectar com Google
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA USUÁRIOS -->
+      <div class="tab-panel" id="tab-usuarios">
+        <div class="page-header">
+          <div></div>
+          <button class="btn btn-primary" id="novo-usuario-btn">
+            <i data-lucide="plus" style="width:16px;height:16px"></i> Novo Usuário
+          </button>
+        </div>
+        <div class="card" style="padding:0">
+          <table class="table" id="tabela-usuarios">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Papel</th>
+                <th>Agenda</th>
+                <th class="col-acoes"></th>
+              </tr>
+            </thead>
+            <tbody id="tabela-usuarios-body">
+              <tr>
+                <td colspan="5" class="loading">Carregando usuários...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ABA FATURAS -->
+      <div class="tab-panel" id="tab-faturas">
+        <div class="card" style="padding:0; margin-bottom:20px">
+          <table class="table" id="tabela-faturas">
+            <thead>
+              <tr>
+                <th>Fatura</th>
+                <th>Data</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-faturas-body">
+              <tr>
+                <td colspan="3" class="loading">Carregando faturas...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="plano-status">
+          <div>
+            <p style="margin:0;font-weight:500" id="plano-status-texto">Verificando assinatura...</p>
+          </div>
+          <button class="btn" id="cancelar-plano-btn" style="display:none">Cancelar assinatura</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal: Novo/Editar Usuário -->
+  <div class="modal-overlay hidden" id="modal-usuario">
+    <div class="modal">
+      <div class="modal-header">
+        <p class="modal-title" id="modal-usuario-titulo">Novo Usuário</p>
+        <button class="modal-close" data-close="modal-usuario">&times;</button>
+      </div>
+      <form id="form-usuario">
+        <input type="hidden" id="us-id">
+        <div class="field">
+          <label for="us-nome">Nome</label>
+          <input type="text" id="us-nome" required>
+        </div>
+        <div class="field">
+          <label for="us-email">E-mail</label>
+          <input type="email" id="us-email" required>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="us-acesso">Papel</label>
+            <select id="us-acesso" required>
+              <option value="admin">Admin</option>
+              <option value="cabeleireiro">Cabeleireiro</option>
+              <option value="teste">Teste</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="us-agenda">Agenda (Google Calendar)</label>
+            <input type="text" id="us-agenda" placeholder="agenda-nome">
+          </div>
+        </div>
+        <div class="field" id="us-auth-id-field">
+          <label for="us-auth-id">User UID (Supabase Auth)</label>
+          <input type="text" id="us-auth-id">
+          <p class="field-hint">Crie o usuário primeiro em Authentication &gt; Users no painel do Supabase, e cole aqui o UID gerado.</p>
+        </div>
+        <p class="modal-error" id="us-erro"></p>
+        <div class="modal-footer">
+          <button type="button" class="btn" data-close="modal-usuario">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="us-salvar-btn">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script src="../js/configuracoes.js"></script>
+</body>
+
+</html>

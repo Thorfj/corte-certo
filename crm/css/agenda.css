@@ -1,0 +1,308 @@
+.page-header {
+  margin-bottom: 20px;
+}
+
+.agenda-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.semana-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.semana-label {
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 180px;
+  text-align: center;
+}
+
+.view-switcher {
+  display: inline-flex;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.view-btn {
+  padding: 8px 16px;
+  border: none;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+}
+.view-btn + .view-btn {
+  border-left: 1px solid var(--border-strong);
+}
+.view-btn.active {
+  background: var(--brand-light);
+  color: var(--brand-dark);
+  font-weight: 500;
+}
+
+.prof-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.prof-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-family: var(--font-sans);
+}
+.prof-chip.active {
+  background: var(--brand-light);
+  border-color: var(--brand);
+  color: var(--brand-dark);
+  font-weight: 500;
+}
+
+.prof-subcolumns {
+  display: flex;
+  gap: 8px;
+}
+.prof-subcolumn {
+  flex: 1;
+  min-width: 100px;
+}
+.prof-subcolumn-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.prof-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.agenda-item {
+  border-left: 3px solid var(--prof-cor, var(--border-strong));
+  background: rgba(28, 28, 26, 0.02);
+  border-radius: 0 6px 6px 0;
+  padding: 6px 8px;
+  margin-bottom: 6px;
+}
+.agenda-item-horario {
+  font-weight: 600;
+  font-size: 12px;
+}
+.agenda-item-detalhe {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.empty,
+.loading {
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 8px 0;
+}
+
+/* ------------------------------------------------------------
+   Bloqueios de agenda
+   ------------------------------------------------------------ */
+.bloqueios-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+.field {
+  margin-bottom: 16px;
+  text-align: left;
+}
+.field label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.field input,
+.field select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+.field-row {
+  display: flex;
+  gap: 12px;
+}
+.field-row .field {
+  flex: 1;
+}
+.checkbox-label {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.checkbox-label input {
+  width: auto !important;
+}
+.bloqueio-origem {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.icon-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.icon-btn:hover {
+  background: rgba(28, 28, 26, 0.05);
+  color: var(--text-primary);
+}
+.col-acoes {
+  width: 40px;
+  text-align: right;
+}
+
+/* ------------------------------------------------------------
+   Visão diária
+   ------------------------------------------------------------ */
+.dia-view {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+}
+.dia-view .prof-subcolumns {
+  gap: 0;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  overflow-x: auto;
+}
+.dia-view .prof-subcolumn {
+  flex: 1 1 0;
+  min-width: 200px;
+  padding: 0 var(--space-md);
+}
+.dia-view .prof-subcolumn:first-child {
+  padding-left: 0;
+}
+.dia-view .prof-subcolumn:last-child {
+  padding-right: 0;
+}
+.dia-view .prof-subcolumn + .prof-subcolumn {
+  border-left: 1px solid var(--border);
+}
+.dia-view .prof-subcolumn-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  white-space: normal;
+  padding: 10px 12px;
+  margin: 0 0 14px;
+  border-radius: var(--radius-sm);
+  background: color-mix(
+    in srgb,
+    var(--prof-cor, var(--border-strong)) 14%,
+    transparent
+  );
+}
+.dia-view .prof-subcolumn-title .prof-dot {
+  width: 9px;
+  height: 9px;
+}
+.dia-view .agenda-item {
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.dia-view .agenda-item-horario {
+  font-size: 14px;
+}
+.dia-view .agenda-item-detalhe {
+  font-size: 12px;
+}
+
+/* ------------------------------------------------------------
+   Visão mensal
+   ------------------------------------------------------------ */
+.mes-dias-nomes {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.mes-dia-nome {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+}
+.mes-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+.mes-cell {
+  min-height: 96px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+}
+.mes-cell:hover {
+  border-color: var(--border-strong);
+}
+.mes-cell.fora-mes {
+  opacity: 0.4;
+}
+.mes-cell.hoje {
+  border-color: var(--brand);
+}
+.mes-cell-numero {
+  font-size: 12px;
+  font-weight: 600;
+}
+.mes-cell-itens {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+.mes-item-chip {
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  border-left: 2px solid var(--prof-cor, var(--border-strong));
+  background: rgba(28, 28, 26, 0.04);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mes-cell-mais {
+  font-size: 10px;
+  color: var(--text-muted);
+}

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contatos — Corte Certo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/contatos.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase-config.js"></script>
+</head>
+
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="logo-icon"><i data-lucide="scissors" style="width:18px;height:18px"></i></div>
+        <span class="logo-name"></span>
+      </div>
+      <nav class="nav">
+        <a class="nav-item" href="atendimentos.html"><i data-lucide="clipboard-list"></i> Atendimentos</a>
+        <a class="nav-item" href="agenda.html"><i data-lucide="calendar"></i> Agenda</a>
+        <a class="nav-item active" href="contatos.html"><i data-lucide="users"></i> Contatos</a>
+        <a class="nav-item" href="servicos.html"><i data-lucide="scissors"></i> Serviços</a>
+        <a class="nav-item" href="mensagens.html"><i data-lucide="message-square"></i> Mensagens</a>
+        <a class="nav-item" href="relatorios.html"><i data-lucide="pie-chart"></i> Relatórios</a>
+        <a class="nav-item" href="configuracoes.html"><i data-lucide="settings"></i> Configurações</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="help-button"><i data-lucide="help-circle" style="width:16px;height:16px"></i></button>
+        <a class="nav-item" href="#" id="logout-link"><i data-lucide="log-out"></i> Sair</a>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1 class="page-title" style="margin:0">Contatos</h1>
+        <button class="btn btn-primary" id="novo-contato-btn">
+          <i data-lucide="plus" style="width:16px;height:16px"></i> Novo Contato
+        </button>
+      </div>
+
+      <div class="toolbar">
+        <input type="text" id="busca-input" placeholder="Buscar por nome ou telefone...">
+      </div>
+
+      <div class="card" style="padding:0">
+        <table class="table" id="tabela-clientes">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Telefone</th>
+              <th>Status</th>
+              <th>Atendimentos</th>
+              <th>NPS médio</th>
+              <th>Último atendimento</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-clientes-body">
+            <tr>
+              <td colspan="6" class="loading">Carregando contatos...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal: Novo Contato -->
+  <div class="modal-overlay hidden" id="modal-novo-contato">
+    <div class="modal">
+      <div class="modal-header">
+        <p class="modal-title">Novo Contato</p>
+        <button class="modal-close" data-close="modal-novo-contato">&times;</button>
+      </div>
+      <form id="form-novo-contato">
+        <div class="field">
+          <label for="nc-nome">Nome</label>
+          <input type="text" id="nc-nome" required>
+        </div>
+        <div class="field">
+          <label for="nc-telefone">Telefone (com DDD)</label>
+          <input type="text" id="nc-telefone" required placeholder="5541999990000">
+        </div>
+        <div class="field">
+          <label for="nc-email">E-mail (opcional)</label>
+          <input type="email" id="nc-email">
+        </div>
+        <p class="modal-error" id="nc-erro"></p>
+        <div class="modal-footer">
+          <button type="button" class="btn" data-close="modal-novo-contato">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="nc-salvar-btn">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Histórico do Cliente -->
+  <div class="modal-overlay hidden" id="modal-historico">
+    <div class="modal">
+      <div class="modal-header">
+        <p class="modal-title" id="hist-nome">Histórico</p>
+        <button class="modal-close" data-close="modal-historico">&times;</button>
+      </div>
+      <div id="hist-lista">
+        <div class="loading">Carregando histórico...</div>
+      </div>
+    </div>
+  </div>
+  <script src="../js/contatos.js"></script>
+</body>
+
+</html>

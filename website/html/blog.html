@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog — Corte Certo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/blog.css">
+</head>
+
+<body>
+
+  <header>
+    <div id="site-header"></div>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="blog-hero wrap">
+      <span class="eyebrow">Blog</span>
+      <h1>Ideias pra tirar o WhatsApp da sua mão e colocar de volta na tesoura.</h1>
+      <p class="lead">Textos curtos sobre agendamento, atendimento e gestão pra quem toca uma barbearia no dia a dia.</p>
+    </section>
+
+    <!-- FILTROS -->
+    <section class="blog-filters wrap">
+      <button class="blog-chip active" data-filter="todos">Todos</button>
+      <button class="blog-chip" data-filter="agendamento">Agendamento</button>
+      <button class="blog-chip" data-filter="atendimento">Atendimento</button>
+      <button class="blog-chip" data-filter="gestao">Gestão</button>
+      <button class="blog-chip" data-filter="novidades">Novidades</button>
+    </section>
+
+    <!-- POST EM DESTAQUE (gerado pelo blog.js a partir de posts-data.js) -->
+    <section class="blog-featured wrap">
+      <div id="featuredMount"></div>
+    </section>
+
+    <!-- GRID DE POSTS (gerado pelo blog.js a partir de posts-data.js) -->
+    <section class="blog-grid-section wrap">
+      <div class="blog-grid" id="gridMount"></div>
+    </section>
+  </main>
+
+  <footer id="contato">
+    <div id="site-footer"></div>
+  </footer>
+
+  <script src="../js/global.js"></script>
+  <script src="../js/posts-data.js"></script>
+  <script src="../js/blog.js"></script>
+</body>
+
+</html>

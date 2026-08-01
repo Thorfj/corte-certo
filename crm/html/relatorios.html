@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relatórios — Corte Certo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/relatorios.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase-config.js"></script>
+</head>
+
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="logo-icon"><i data-lucide="scissors" style="width:18px;height:18px"></i></div>
+        <span class="logo-name"></span>
+      </div>
+      <nav class="nav">
+        <a class="nav-item" href="atendimentos.html"><i data-lucide="clipboard-list"></i> Atendimentos</a>
+        <a class="nav-item" href="agenda.html"><i data-lucide="calendar"></i> Agenda</a>
+        <a class="nav-item" href="contatos.html"><i data-lucide="users"></i> Contatos</a>
+        <a class="nav-item" href="servicos.html"><i data-lucide="scissors"></i> Serviços</a>
+        <a class="nav-item" href="mensagens.html"><i data-lucide="message-square"></i> Mensagens</a>
+        <a class="nav-item active" href="relatorios.html"><i data-lucide="pie-chart"></i> Relatórios</a>
+        <a class="nav-item" href="configuracoes.html"><i data-lucide="settings"></i> Configurações</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="help-button"><i data-lucide="help-circle" style="width:16px;height:16px"></i></button>
+        <a class="nav-item" href="#" id="logout-link"><i data-lucide="log-out"></i> Sair</a>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1 class="page-title" style="margin:0">Relatórios</h1>
+      </div>
+
+      <div class="toolbar">
+        <div class="field-inline">
+          <label for="filtro-inicio">De</label>
+          <input type="date" id="filtro-inicio">
+        </div>
+        <div class="field-inline">
+          <label for="filtro-fim">Até</label>
+          <input type="date" id="filtro-fim">
+        </div>
+        <button class="btn" id="filtrar-btn">Filtrar</button>
+        <button class="btn" id="limpar-filtro-btn">Limpar</button>
+      </div>
+
+      <div class="metrics-grid" id="metrics-grid"></div>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="nps">NPS por Profissional</button>
+        <button class="tab-btn" data-tab="atendimentos-dia">Atendimentos por Dia</button>
+        <button class="tab-btn" data-tab="contatos-dia">Novos Contatos por Dia</button>
+        <button class="tab-btn" data-tab="funil">Funil de Clientes</button>
+        <button class="tab-btn" data-tab="conversao">Conversão do Follow-up</button>
+        <button class="tab-btn" data-tab="atraso">Clientes em Atraso</button>
+        <button class="tab-btn" data-tab="faturamento-servico">Faturamento por Serviço</button>
+        <button class="tab-btn" data-tab="ocupacao">Ocupação por Profissional</button>
+        <button class="tab-btn" data-tab="pico">Horário de Pico</button>
+      </div>
+
+      <!-- NPS -->
+      <div class="tab-panel active" id="tab-nps">
+        <div class="card" style="padding:0">
+          <table class="table" id="tabela-nps">
+            <thead>
+              <tr>
+                <th>Profissional</th>
+                <th>Atendimentos avaliados</th>
+                <th>NPS médio</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tabela-nps-body">
+              <tr>
+                <td colspan="4" class="loading">Carregando...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ATENDIMENTOS POR DIA -->
+      <div class="tab-panel" id="tab-atendimentos-dia">
+        <div class="card">
+          <div class="chart-wrap" id="chart-atendimentos-dia"></div>
+        </div>
+      </div>
+
+      <!-- NOVOS CONTATOS POR DIA -->
+      <div class="tab-panel" id="tab-contatos-dia">
+        <div class="card">
+          <div class="chart-wrap" id="chart-contatos-dia"></div>
+        </div>
+      </div>
+
+      <!-- FUNIL DE CLIENTES -->
+      <div class="tab-panel" id="tab-funil">
+        <div class="card" id="funil-container">
+          <p class="loading">Carregando...</p>
+        </div>
+      </div>
+
+      <!-- CONVERSÃO DO FOLLOW-UP -->
+      <div class="tab-panel" id="tab-conversao">
+        <div class="card" id="conversao-container">
+          <p class="loading">Carregando...</p>
+        </div>
+      </div>
+
+      <!-- CLIENTES EM ATRASO -->
+      <div class="tab-panel" id="tab-atraso">
+        <div class="card" style="padding:0">
+          <table class="table" id="tabela-atraso">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Telefone</th>
+                <th>Último atendimento</th>
+                <th>Dias em atraso</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-atraso-body">
+              <tr>
+                <td colspan="4" class="loading">Carregando...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- FATURAMENTO POR SERVIÇO -->
+      <div class="tab-panel" id="tab-faturamento-servico">
+        <div class="card" id="faturamento-servico-container">
+          <p class="loading">Carregando...</p>
+        </div>
+      </div>
+
+      <!-- OCUPAÇÃO POR PROFISSIONAL -->
+      <div class="tab-panel" id="tab-ocupacao">
+        <div class="card" style="padding:0">
+          <table class="table" id="tabela-ocupacao">
+            <thead>
+              <tr>
+                <th>Profissional</th>
+                <th>Atendimentos</th>
+                <th>Horas ocupadas</th>
+                <th>Faturamento gerado</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-ocupacao-body">
+              <tr>
+                <td colspan="4" class="loading">Carregando...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- HORÁRIO DE PICO -->
+      <div class="tab-panel" id="tab-pico">
+        <div class="card">
+          <p class="chart-section-title">Por hora do dia</p>
+          <div class="chart-wrap" id="chart-pico-hora"></div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <p class="chart-section-title">Por dia da semana</p>
+          <div class="chart-wrap" id="chart-pico-semana"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="../js/relatorios.js"></script>
+</body>
+
+</html>

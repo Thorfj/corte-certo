@@ -1,0 +1,150 @@
+.page-header {
+  margin-bottom: 20px;
+}
+.tabs {
+  display: flex;
+  gap: 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 10px 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  font-family: var(--font-sans);
+}
+.tab-btn.active {
+  color: var(--brand-dark);
+  border-bottom-color: var(--brand-dark);
+  font-weight: 500;
+}
+.tab-panel {
+  display: none;
+}
+.tab-panel.active {
+  display: block;
+}
+.form-card {
+  max-width: 560px;
+}
+.field {
+  margin-bottom: 16px;
+  text-align: left;
+}
+.field label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.field input,
+.field select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+.field-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 4px 0 0;
+}
+.field-row {
+  display: flex;
+  gap: 12px;
+}
+.field-row .field {
+  flex: 1;
+}
+.icon-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.icon-btn:hover {
+  background: rgba(28, 28, 26, 0.05);
+  color: var(--text-primary);
+}
+.col-acoes {
+  width: 40px;
+  text-align: right;
+}
+.empty,
+.loading {
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 8px 0;
+}
+.plano-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.modal-error {
+  color: #b3261e;
+  font-size: 13px;
+  margin: 8px 0 0;
+  display: none;
+}
+.success-msg {
+  color: var(--brand-dark);
+  font-size: 13px;
+  margin: 8px 0 0;
+  display: none;
+}
+.card-section-title {
+  font-weight: 600;
+  font-size: 15px;
+  margin: 0 0 4px;
+}
+.card-section-desc {
+  font-size: 13px;
+  margin: 0 0 16px;
+}
+.tema-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.tema-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+.tema-btn + .tema-btn {
+  border-left: 1px solid var(--border-strong);
+}
+.tema-btn.active {
+  background: var(--brand-light);
+  color: var(--brand-dark);
+  font-weight: 500;
+}
+.google-status-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.badge.conectado {
+  background: var(--brand-light);
+  color: var(--brand-dark);
+}

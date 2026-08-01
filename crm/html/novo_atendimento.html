@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Novo atendimento — Corte Certo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/novo_atendimento.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase-config.js"></script>
+</head>
+
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="logo-icon"><i data-lucide="scissors" style="width:18px;height:18px"></i></div>
+        <span class="logo-name"></span>
+      </div>
+      <nav class="nav">
+        <a class="nav-item active" href="atendimentos.html"><i data-lucide="clipboard-list"></i> Atendimentos</a>
+        <a class="nav-item" href="agenda.html"><i data-lucide="calendar"></i> Agenda</a>
+        <a class="nav-item" href="contatos.html"><i data-lucide="users"></i> Contatos</a>
+        <a class="nav-item" href="servicos.html"><i data-lucide="scissors"></i> Serviços</a>
+        <a class="nav-item" href="mensagens.html"><i data-lucide="message-square"></i> Mensagens</a>
+        <a class="nav-item" href="relatorios.html"><i data-lucide="pie-chart"></i> Relatórios</a>
+        <a class="nav-item" href="configuracoes.html"><i data-lucide="settings"></i> Configurações</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="help-button"><i data-lucide="help-circle" style="width:16px;height:16px"></i></button>
+        <a class="nav-item" href="#" id="logout-link"><i data-lucide="log-out"></i> Sair</a>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1 class="page-title" style="margin:0" id="page-title">Novo atendimento</h1>
+        <a class="btn" href="atendimentos.html">Voltar</a>
+      </div>
+
+      <div class="card form-card">
+        <div id="bloco-cliente">
+          <div class="field" id="busca-cliente-field">
+            <label for="telefone-input">Telefone do cliente</label>
+            <div class="busca-cliente">
+              <input type="text" id="telefone-input" placeholder="5541999990000">
+              <button type="button" class="btn" id="buscar-cliente-btn">Buscar</button>
+            </div>
+            <p class="cliente-status" id="cliente-status"></p>
+          </div>
+          <div class="field" id="nome-novo-cliente-field" style="display:none">
+            <label for="nome-novo-cliente">Nome do cliente (novo cadastro)</label>
+            <input type="text" id="nome-novo-cliente">
+          </div>
+        </div>
+
+        <form id="form-atendimento">
+          <div class="field-row">
+            <div class="field">
+              <label for="prof-select">Profissional</label>
+              <select id="prof-select" required>
+                <option value="">Carregando...</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="nps-input">NPS (se já atendido)</label>
+              <input type="number" id="nps-input" min="1" max="5">
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="data-input">Data</label>
+              <input type="date" id="data-input" required>
+            </div>
+            <div class="field">
+              <label for="horario-input">Horário</label>
+              <input type="time" id="horario-input" required>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Serviços</label>
+            <div class="servicos-lista" id="servicos-lista">
+              <p class="loading">Carregando serviços...</p>
+            </div>
+            <p class="resumo-total" id="resumo-total"></p>
+          </div>
+
+          <p class="form-error" id="form-erro"></p>
+
+          <div class="form-actions">
+            <div style="display:flex;gap:8px">
+              <button type="button" class="btn btn-danger" id="excluir-btn" style="display:none">Excluir atendimento</button>
+              <button type="button" class="btn" id="nao-compareceu-btn" style="display:none">Cliente não compareceu</button>
+            </div>
+            <button type="submit" class="btn btn-primary" id="salvar-btn">Salvar atendimento</button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+  <script src="../js/novo_atendimento.js"></script>
+</body>
+
+</html>

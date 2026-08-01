@@ -1,0 +1,162 @@
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.field-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-inline label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.field-inline input {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  font-family: var(--font-sans);
+  font-size: 13px;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.metric-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+.metric-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0 0 4px;
+}
+
+.metric-value {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.kanban {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.kanban-column {
+  flex: 1;
+  min-width: 250px;
+  background: rgba(28, 28, 26, 0.02);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  border-top: 3px solid var(--col-accent, var(--border-strong));
+}
+
+.kanban-column[data-status="falar_com_humano"] {
+  --col-accent: #b3261e;
+}
+
+.kanban-column[data-status="em_atendimento"] {
+  --col-accent: #6b7280;
+}
+
+.kanban-column[data-status="agendado"] {
+  --col-accent: var(--brand);
+}
+
+.kanban-column[data-status="follow-up"] {
+  --col-accent: #d97706;
+}
+
+.kanban-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.kanban-column-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sort-toggle {
+  background: none;
+  border: none;
+  padding: 2px 6px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  border-radius: var(--radius-sm);
+}
+
+.sort-toggle:hover {
+  background: rgba(28, 28, 26, 0.05);
+  color: var(--text-primary);
+}
+
+.atendimento-card {
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+  background: var(--bg-card);
+}
+
+.atendimento-card:hover {
+  border-color: var(--border-strong);
+}
+
+.atendimento-card p {
+  margin: 0 0 2px;
+}
+
+.atendimento-nome {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.atendimento-detalhe {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.atendimento-telefone {
+  color: var(--brand-dark);
+  text-decoration: none;
+}
+
+.atendimento-telefone:hover {
+  text-decoration: underline;
+}
+
+.empty,
+.loading {
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 8px 0;
+}

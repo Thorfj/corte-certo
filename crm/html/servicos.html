@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Serviços — Corte Certo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/servicos.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase-config.js"></script>
+</head>
+
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="logo-icon"><i data-lucide="scissors" style="width:18px;height:18px"></i></div>
+        <span class="logo-name"></span>
+      </div>
+      <nav class="nav">
+        <a class="nav-item" href="atendimentos.html"><i data-lucide="clipboard-list"></i> Atendimentos</a>
+        <a class="nav-item" href="agenda.html"><i data-lucide="calendar"></i> Agenda</a>
+        <a class="nav-item" href="contatos.html"><i data-lucide="users"></i> Contatos</a>
+        <a class="nav-item active" href="servicos.html"><i data-lucide="scissors"></i> Serviços</a>
+        <a class="nav-item" href="mensagens.html"><i data-lucide="message-square"></i> Mensagens</a>
+        <a class="nav-item" href="relatorios.html"><i data-lucide="pie-chart"></i> Relatórios</a>
+        <a class="nav-item" href="configuracoes.html"><i data-lucide="settings"></i> Configurações</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="help-button"><i data-lucide="help-circle" style="width:16px;height:16px"></i></button>
+        <a class="nav-item" href="#" id="logout-link"><i data-lucide="log-out"></i> Sair</a>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1 class="page-title" style="margin:0">Serviços</h1>
+        <button class="btn btn-primary" id="novo-servico-btn">
+          <i data-lucide="plus" style="width:16px;height:16px"></i> Novo Serviço
+        </button>
+      </div>
+
+      <div class="card" style="padding:0">
+        <table class="table" id="tabela-servicos">
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Nome</th>
+              <th>Preço</th>
+              <th>Duração</th>
+              <th>Recorrência</th>
+              <th class="col-acoes"></th>
+            </tr>
+          </thead>
+          <tbody id="tabela-servicos-body">
+            <tr>
+              <td colspan="6" class="loading">Carregando serviços...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal: Novo/Editar Serviço -->
+  <div class="modal-overlay hidden" id="modal-servico">
+    <div class="modal">
+      <div class="modal-header">
+        <p class="modal-title" id="modal-servico-titulo">Novo Serviço</p>
+        <button class="modal-close" data-close="modal-servico">&times;</button>
+      </div>
+      <form id="form-servico">
+        <input type="hidden" id="sv-id">
+        <p class="sku-display" id="sv-sku-display" style="display:none"></p>
+        <div class="field">
+          <label for="sv-nome">Nome do serviço</label>
+          <input type="text" id="sv-nome" required>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="sv-preco">Preço (R$)</label>
+            <input type="number" id="sv-preco" min="0" step="0.01" required>
+          </div>
+          <div class="field">
+            <label for="sv-duracao">Duração (min)</label>
+            <input type="number" id="sv-duracao" min="1" required>
+          </div>
+          <div class="field">
+            <label for="sv-recorrencia">Recorrência (dias)</label>
+            <input type="number" id="sv-recorrencia" min="1" required>
+          </div>
+        </div>
+        <p class="modal-error" id="sv-erro"></p>
+        <div class="modal-footer">
+          <button type="button" class="btn" data-close="modal-servico">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="sv-salvar-btn">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script src="../js/servicos.js"></script>
+</body>
+
+</html>

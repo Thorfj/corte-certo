@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mensagens — Corte Certo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/mensagens.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase-config.js"></script>
+</head>
+
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="logo-icon"><i data-lucide="scissors" style="width:18px;height:18px"></i></div>
+        <span class="logo-name"></span>
+      </div>
+      <nav class="nav">
+        <a class="nav-item" href="atendimentos.html"><i data-lucide="clipboard-list"></i> Atendimentos</a>
+        <a class="nav-item" href="agenda.html"><i data-lucide="calendar"></i> Agenda</a>
+        <a class="nav-item" href="contatos.html"><i data-lucide="users"></i> Contatos</a>
+        <a class="nav-item" href="servicos.html"><i data-lucide="scissors"></i> Serviços</a>
+        <a class="nav-item active" href="mensagens.html"><i data-lucide="message-square"></i> Mensagens</a>
+        <a class="nav-item" href="relatorios.html"><i data-lucide="pie-chart"></i> Relatórios</a>
+        <a class="nav-item" href="configuracoes.html"><i data-lucide="settings"></i> Configurações</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="help-button"><i data-lucide="help-circle" style="width:16px;height:16px"></i></button>
+        <a class="nav-item" href="#" id="logout-link"><i data-lucide="log-out"></i> Sair</a>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1 class="page-title" style="margin:0">Mensagens</h1>
+        <div class="fluxo-switch-wrap">
+          <span class="text-secondary" id="status-fluxo-label" style="font-size:13px">Carregando...</span>
+          <button class="switch-track" id="toggle-fluxo-btn" role="switch" aria-checked="false">
+            <span class="switch-thumb"></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="fluxo">Fluxo de Atendimento</button>
+        <button class="tab-btn" data-tab="followup">Follow-up</button>
+        <button class="tab-btn" data-tab="fixas">Mensagens Automáticas</button>
+      </div>
+
+      <!-- ABA FLUXO -->
+      <div class="tab-panel active" id="tab-fluxo">
+        <div class="flow-visual" id="flow-visual-fluxo"></div>
+        <div class="card" style="padding:0">
+          <table class="table" id="tabela-fluxo">
+            <thead>
+              <tr>
+                <th>Etapa</th>
+                <th>Mensagem</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-fluxo-body">
+              <tr>
+                <td colspan="2" class="loading">Carregando fluxo de mensagens...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ABA FOLLOW-UP -->
+      <div class="tab-panel" id="tab-followup">
+        <div class="flow-visual" id="flow-visual-followup"></div>
+        <div class="page-header">
+          <p class="text-secondary" id="ciclos-contador" style="margin:0">Carregando...</p>
+          <div style="display:flex;gap:8px">
+            <button class="btn" id="remover-ciclo-btn">− Remover ciclo</button>
+            <button class="btn btn-primary" id="add-ciclo-btn">+ Adicionar ciclo</button>
+          </div>
+        </div>
+        <div class="card" style="padding:0">
+          <table class="table" id="tabela-followup">
+            <thead>
+              <tr>
+                <th>Prazo</th>
+                <th>Etapa</th>
+                <th>Mensagem</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-followup-body">
+              <tr>
+                <td colspan="3" class="loading">Carregando ciclos de follow-up...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ABA MENSAGENS AUTOMÁTICAS -->
+      <div class="tab-panel" id="tab-fixas">
+        <p class="text-secondary" style="margin:0 0 16px;font-size:13px">
+          Essas mensagens não seguem uma ordem fixa — são enviadas automaticamente a qualquer momento da conversa, assim que o sistema identifica que o cliente precisa de uma delas.
+        </p>
+
+        <div class="card">
+          <p class="card-title" style="margin:0 0 4px">Atendimento humano</p>
+          <p class="text-secondary" style="margin:0 0 12px;font-size:13px">
+            Disparada quando o cliente pede para falar com uma pessoa (transferência para atendimento manual).
+          </p>
+          <div class="msg-preview" id="atendimento-humano-preview" style="margin-bottom:16px">Carregando...</div>
+          <button class="btn" id="editar-atendimento-humano-btn">Editar mensagem</button>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <p class="card-title" style="margin:0 0 4px">Encerramento do follow-up</p>
+          <p class="text-secondary" style="margin:0 0 12px;font-size:13px">
+            Disparada quando o cliente indica que não quer mais receber follow-up. Sem prazo.
+          </p>
+          <div class="msg-preview" id="finalizacao-preview" style="margin-bottom:16px">Carregando...</div>
+          <button class="btn" id="editar-finalizacao-btn">Editar mensagem</button>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <p class="card-title" style="margin:0 0 4px">Remarcar após falta</p>
+          <p class="text-secondary" style="margin:0 0 12px;font-size:13px">
+            Disparada quando o cliente não compareceu ao atendimento, pedindo para remarcar.
+          </p>
+          <div class="msg-preview" id="remarcar-falta-preview" style="margin-bottom:16px">Carregando...</div>
+          <button class="btn" id="editar-remarcar-falta-btn">Editar mensagem</button>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <p class="card-title" style="margin:0 0 4px">Não entendi a resposta</p>
+          <p class="text-secondary" style="margin:0 0 12px;font-size:13px">
+            Disparada quando o sistema não consegue interpretar a resposta do cliente, pedindo para ele tentar novamente.
+          </p>
+          <div class="msg-preview" id="nao-entendi-preview" style="margin-bottom:16px">Carregando...</div>
+          <button class="btn" id="editar-nao-entendi-btn">Editar mensagem</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal: Editar Mensagem do Fluxo -->
+  <div class="modal-overlay hidden" id="modal-fluxo">
+    <div class="modal">
+      <div class="modal-header">
+        <p class="modal-title">Editar mensagem</p>
+        <button class="modal-close" data-close="modal-fluxo">&times;</button>
+      </div>
+      <form id="form-fluxo">
+        <input type="hidden" id="fx-id">
+        <div class="field-row">
+          <div class="field">
+            <label>ID</label>
+            <input type="text" id="fx-id-msg" readonly>
+          </div>
+          <div class="field">
+            <label>Etapa</label>
+            <input type="text" id="fx-etapa" readonly>
+          </div>
+        </div>
+        <div class="field">
+          <label>Variáveis capturadas</label>
+          <input type="text" id="fx-variaveis" readonly>
+        </div>
+        <div class="field">
+          <label for="fx-mensagem">Mensagem enviada ao cliente</label>
+          <textarea id="fx-mensagem"></textarea>
+        </div>
+        <p class="modal-error" id="fx-erro"></p>
+        <div class="modal-footer">
+          <button type="button" class="btn" data-close="modal-fluxo">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="fx-salvar-btn">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Editar Ciclo de Follow-up -->
+  <div class="modal-overlay hidden" id="modal-followup">
+    <div class="modal">
+      <div class="modal-header">
+        <p class="modal-title">Editar ciclo de follow-up</p>
+        <button class="modal-close" data-close="modal-followup">&times;</button>
+      </div>
+      <form id="form-followup">
+        <input type="hidden" id="fu-prazo-id">
+        <input type="hidden" id="fu-fluxo-id">
+        <div class="field-row">
+          <div class="field">
+            <label>ID</label>
+            <input type="text" id="fu-id-msg" readonly>
+          </div>
+          <div class="field">
+            <label for="fu-prazo">Multiplicador da recorrência</label>
+            <input type="number" id="fu-prazo" min="0" step="0.1" required>
+          </div>
+        </div>
+        <div class="field">
+          <label for="fu-etapa">Etapa</label>
+          <input type="text" id="fu-etapa" required>
+        </div>
+        <div class="field">
+          <label for="fu-mensagem">Mensagem enviada ao cliente</label>
+          <textarea id="fu-mensagem"></textarea>
+        </div>
+        <p class="modal-error" id="fu-erro"></p>
+        <div class="modal-footer">
+          <button type="button" class="btn" data-close="modal-followup">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="fu-salvar-btn">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Confirmação customizada -->
+  <div class="modal-overlay hidden" id="modal-confirm">
+    <div class="modal confirm-modal">
+      <p class="modal-title" id="confirm-titulo">Tem certeza?</p>
+      <p class="confirm-mensagem" id="confirm-mensagem"></p>
+      <div class="modal-footer">
+        <button class="btn" id="confirm-cancelar-btn">Cancelar</button>
+        <button class="btn btn-danger" id="confirm-ok-btn">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Editar Mensagem de Encerramento -->
+  <div class="modal-overlay hidden" id="modal-finalizacao">
+    <div class="modal">
+      <div class="modal-header">
+        <p class="modal-title">Mensagem de encerramento</p>
+        <button class="modal-close" data-close="modal-finalizacao">&times;</button>
+      </div>
+      <form id="form-finalizacao">
+        <div class="field">
+          <label for="fin-mensagem">Mensagem enviada ao cliente *</label>
+          <textarea id="fin-mensagem"></textarea>
+        </div>
+        <p class="modal-error" id="fin-erro"></p>
+        <div class="modal-footer">
+          <button type="button" class="btn" data-close="modal-finalizacao">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="fin-salvar-btn">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Editar Mensagem de Atendimento Humano -->
+  <div class="modal-overlay hidden" id="modal-atendimento-humano">
+    <div class="modal">
+      <div class="modal-header">
+        <p class="modal-title">Atendimento humano</p>
+        <button class="modal-close" data-close="modal-atendimento-humano">&times;</button>
+      </div>
+      <form id="form-atendimento-humano">
+        <div class="field">
+          <label for="ah-mensagem">Mensagem enviada ao cliente *</label>
+          <textarea id="ah-mensagem"></textarea>
+        </div>
+        <p class="modal-error" id="ah-erro"></p>
+        <div class="modal-footer">
+          <button type="button" class="btn" data-close="modal-atendimento-humano">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="ah-salvar-btn">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Editar Mensagem de Remarcar após Falta -->
+  <div class="modal-overlay hidden" id="modal-remarcar-falta">
+    <div class="modal">
+      <div class="modal-header">
+        <p class="modal-title">Remarcar após falta</p>
+        <button class="modal-close" data-close="modal-remarcar-falta">&times;</button>
+      </div>
+      <form id="form-remarcar-falta">
+        <div class="field">
+          <label for="rf-mensagem">Mensagem enviada ao cliente *</label>
+          <textarea id="rf-mensagem"></textarea>
+        </div>
+        <p class="modal-error" id="rf-erro"></p>
+        <div class="modal-footer">
+          <button type="button" class="btn" data-close="modal-remarcar-falta">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="rf-salvar-btn">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Editar Mensagem de Não entendi a resposta -->
+  <div class="modal-overlay hidden" id="modal-nao-entendi">
+    <div class="modal">
+      <div class="modal-header">
+        <p class="modal-title">Não entendi a resposta</p>
+        <button class="modal-close" data-close="modal-nao-entendi">&times;</button>
+      </div>
+      <form id="form-nao-entendi">
+        <div class="field">
+          <label for="ne-mensagem">Mensagem enviada ao cliente *</label>
+          <textarea id="ne-mensagem"></textarea>
+        </div>
+        <p class="modal-error" id="ne-erro"></p>
+        <div class="modal-footer">
+          <button type="button" class="btn" data-close="modal-nao-entendi">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="ne-salvar-btn">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script src="../js/mensagens.js"></script>
+</body>
+
+</html>

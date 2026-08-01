@@ -1,0 +1,125 @@
+/* ============================================================
+   CORTE CERTO — LEGAL.CSS
+   Estilos compartilhados por páginas de texto longo
+   (Termos de Uso, Políticas e Privacidade).
+   Depende de global.css (tokens + header/footer/botões).
+   ============================================================ */
+
+.legal-hero {
+  padding-top: 56px;
+  padding-bottom: 8px;
+}
+.legal-hero h1 {
+  font-size: 38px;
+  margin: 14px 0 10px;
+}
+.legal-updated {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.legal-body {
+  padding-top: 40px;
+  padding-bottom: 88px;
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 56px;
+  align-items: start;
+}
+
+/* sumário */
+.legal-toc {
+  position: sticky;
+  top: 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.legal-toc a {
+  font-size: 13.5px;
+  color: var(--muted);
+  padding: 9px 12px;
+  border-radius: 8px;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.legal-toc a:hover {
+  color: var(--ink);
+  background: var(--green-panel);
+}
+.legal-toc a.active {
+  color: var(--green);
+  background: var(--green-panel);
+  font-weight: 600;
+}
+
+/* conteúdo */
+.legal-content section {
+  margin-bottom: 40px;
+}
+.legal-content section:last-child {
+  margin-bottom: 0;
+}
+.legal-content h2 {
+  font-size: 21px;
+  margin-bottom: 14px;
+  scroll-margin-top: 100px;
+}
+.legal-content p {
+  font-size: 15px;
+  color: var(--ink);
+  line-height: 1.7;
+  margin-bottom: 14px;
+}
+.legal-content p:last-child {
+  margin-bottom: 0;
+}
+.legal-content ul {
+  margin: 0 0 14px 20px;
+}
+.legal-content li {
+  font-size: 15px;
+  color: var(--ink);
+  line-height: 1.7;
+  margin-bottom: 8px;
+}
+.legal-content strong {
+  color: var(--ink);
+}
+.legal-content a {
+  color: var(--green);
+  text-decoration: underline;
+}
+
+/* ---------- responsivo ---------- */
+@media (max-width: 960px) {
+  .legal-hero {
+    padding-top: 48px;
+  }
+  .legal-body {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding-top: 28px;
+    padding-bottom: 56px;
+  }
+  .legal-toc {
+    display: none;
+  }
+}
+@media (max-width: 520px) {
+  .legal-hero {
+    padding-top: 36px;
+  }
+  .legal-hero h1 {
+    font-size: 27px;
+  }
+  .legal-body {
+    padding-top: 20px;
+    padding-bottom: 40px;
+  }
+  .legal-content h2 {
+    font-size: 19px;
+  }
+}

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teste grátis — Corte Certo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/teste-gratis.css">
+</head>
+
+<body>
+
+  <header>
+    <div id="site-header"></div>
+  </header>
+
+  <main>
+    <section class="tg-hero wrap">
+
+      <!-- COLUNA DE TEXTO -->
+      <div class="tg-copy">
+        <span class="eyebrow">Teste grátis</span>
+        <h1>Comece a agendar <em>sozinho</em>, hoje mesmo.</h1>
+        <p class="lead">Preencha os dados da sua barbearia e liberamos seu acesso em poucas horas — sem cartão de crédito, sem burocracia.</p>
+
+        <ul class="tg-benefits">
+          <li>Configuração assistida em 5 minutos</li>
+          <li>Agendamento automático pelo WhatsApp desde o 1º dia</li>
+          <li>Suporte direto com nosso time, sem robô</li>
+        </ul>
+
+        <div class="tg-plan-note">
+          <span class="tg-plan-label">Depois do teste</span>
+          <span class="tg-plan-price"><span class="currency">R$</span>127<span class="period">/mês</span></span>
+          <span class="tg-plan-desc">plano único, sem pegadinha</span>
+        </div>
+      </div>
+
+      <!-- CARD DO FORMULÁRIO -->
+      <div class="tg-form-card">
+
+        <!-- indicador de step -->
+        <div class="tg-steps">
+          <span class="tg-step-dot active" id="dotStep1">1</span>
+          <span class="tg-step-line"></span>
+          <span class="tg-step-dot" id="dotStep2">2</span>
+        </div>
+
+        <!-- STEP 1: dados da barbearia e do responsável -->
+        <form id="tgFormStep1" novalidate>
+          <div class="field">
+            <label for="barbearia">Nome da barbearia</label>
+            <input type="text" id="barbearia" name="barbearia" placeholder="Barbearia do Zé" required>
+          </div>
+
+          <div class="field">
+            <label for="responsavel">Seu nome</label>
+            <input type="text" id="responsavel" name="responsavel" placeholder="Zé Carlos" required>
+          </div>
+
+          <div class="field">
+            <label for="whatsapp">Seu WhatsApp (com DDD)</label>
+            <input type="tel" id="whatsapp" name="whatsapp" placeholder="5541999990000" inputmode="numeric" required>
+          </div>
+
+          <div class="field">
+            <label for="email">E-mail</label>
+            <input type="email" id="email" name="email" placeholder="contato@suabarbearia.com.br" required>
+          </div>
+
+          <label class="tg-checkbox">
+            <input type="checkbox" id="termos" name="termos" required>
+            <span>Concordo com os <a href="termos-de-uso.html">Termos de Uso</a> e a <a href="politicas.html">Política de Privacidade</a>.</span>
+          </label>
+
+          <button type="submit" class="btn-primary tg-submit">Continuar</button>
+          <p class="tg-form-note">Sem cartão de crédito · Cancele quando quiser</p>
+        </form>
+
+        <!-- STEP 2: whatsapp da barbearia (número único que roda o bot) -->
+        <form id="tgFormStep2" class="tg-step2" hidden novalidate>
+          <button type="button" class="tg-back" id="tgBack">← Voltar</button>
+
+          <div class="field">
+            <label for="whatsappBarbearia">WhatsApp da barbearia</label>
+            <input type="tel" id="whatsappBarbearia" name="whatsappBarbearia" placeholder="5541999990000" inputmode="numeric" required>
+            <span class="field-hint">É o número que vai receber e responder as mensagens dos seus clientes. Precisa ser diferente do seu WhatsApp pessoal.</span>
+          </div>
+
+          <div class="tg-error" id="tgError" hidden></div>
+
+          <button type="submit" class="btn-primary tg-submit" id="tgStep2Submit">Confirmar e liberar acesso</button>
+        </form>
+
+        <!-- SUCESSO / REDIRECIONANDO -->
+        <div class="tg-success" id="tgSuccess" hidden>
+          <div class="tg-success-icon">✓</div>
+          <h3>Tudo certo!</h3>
+          <p>Redirecionando você pro painel de atendimentos...</p>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <footer id="contato">
+    <div id="site-footer"></div>
+  </footer>
+
+  <script src="../js/global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/teste-gratis.js"></script>
+</body>
+
+</html>

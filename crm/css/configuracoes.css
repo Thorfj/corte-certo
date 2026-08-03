@@ -115,29 +115,30 @@
   margin: 0 0 16px;
 }
 .tema-toggle {
-  display: inline-flex;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
-  overflow: hidden;
+  display: flex;
+  gap: 12px;
 }
 .tema-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: none;
+  justify-content: center;
+  gap: 8px;
+  min-width: 140px;
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
   background: var(--bg-card);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-family: var(--font-sans);
   font-size: 14px;
+  font-weight: 600;
 }
-.tema-btn + .tema-btn {
-  border-left: 1px solid var(--border-strong);
+.tema-btn:hover {
+  border-color: var(--text-muted);
 }
 .tema-btn.active {
-  background: var(--brand-light);
-  color: var(--brand-dark);
-  font-weight: 500;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 1px var(--brand);
 }
 .google-status-row {
   display: flex;
@@ -147,4 +148,13 @@
 .badge.conectado {
   background: var(--brand-light);
   color: var(--brand-dark);
+}
+
+.confirm-modal {
+  width: 380px;
+}
+.confirm-mensagem {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 8px 0 20px;
 }

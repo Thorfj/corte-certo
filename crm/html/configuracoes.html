@@ -12,6 +12,7 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../js/supabase-config.js"></script>
+  <script src="../js/onboarding-data.js"></script>
   <script src="../js/crm-global.js"></script>
 </head>
 
@@ -179,6 +180,18 @@
           <button type="submit" class="btn btn-primary" id="us-salvar-btn">Salvar</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal: Confirmação customizada -->
+  <div class="modal-overlay hidden" id="modal-confirm">
+    <div class="modal confirm-modal">
+      <p class="modal-title" id="confirm-titulo">Tem certeza?</p>
+      <p class="confirm-mensagem" id="confirm-mensagem"></p>
+      <div class="modal-footer">
+        <button class="btn" id="confirm-cancelar-btn">Cancelar</button>
+        <button class="btn btn-primary" id="confirm-ok-btn">Confirmar</button>
+      </div>
     </div>
   </div>
   <script src="../js/configuracoes.js"></script>

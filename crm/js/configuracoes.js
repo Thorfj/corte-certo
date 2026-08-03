@@ -378,15 +378,42 @@ function atualizarStatusPlano(barbearia) {
   }
 }
 
+function confirmarAcao(mensagem, textoBotao = "Confirmar", estilo = "primary") {
+  return new Promise((resolve) => {
+    document.getElementById("confirm-mensagem").textContent = mensagem;
+    const okBtn = document.getElementById("confirm-ok-btn");
+    okBtn.textContent = textoBotao;
+    okBtn.className = `btn ${estilo === "danger" ? "btn-danger" : "btn-primary"}`;
+    document.getElementById("modal-confirm").classList.remove("hidden");
+
+    const cancelarBtn = document.getElementById("confirm-cancelar-btn");
+    const limpar = () => {
+      okBtn.removeEventListener("click", onOk);
+      cancelarBtn.removeEventListener("click", onCancelar);
+      document.getElementById("modal-confirm").classList.add("hidden");
+    };
+    const onOk = () => {
+      limpar();
+      resolve(true);
+    };
+    const onCancelar = () => {
+      limpar();
+      resolve(false);
+    };
+    okBtn.addEventListener("click", onOk);
+    cancelarBtn.addEventListener("click", onCancelar);
+  });
+}
+
 document
   .getElementById("cancelar-plano-btn")
   .addEventListener("click", async () => {
-    if (
-      !confirm(
-        "Tem certeza que deseja cancelar a assinatura? O fluxo de mensagens será desativado.",
-      )
-    )
-      return;
+    const confirmado = await confirmarAcao(
+      "Tem certeza que deseja cancelar a assinatura? O fluxo de mensagens será desativado.",
+      "Cancelar assinatura",
+      "danger",
+    );
+    if (!confirmado) return;
 
     try {
       const barbeariaId = await obterBarbeariaId();
@@ -453,12 +480,12 @@ async function carregarStatusTeste() {
 }
 
 async function concluirConfiguracaoTeste() {
-  if (
-    !confirm(
-      "A partir de agora você tem 5 dias de teste grátis. Deseja continuar?",
-    )
-  )
-    return;
+  const confirmado = await confirmarAcao(
+    "A partir de agora você tem 5 dias de teste grátis. Essa ação não pode ser desfeita. Deseja continuar?",
+    "Iniciar teste grátis",
+    "primary",
+  );
+  if (!confirmado) return;
 
   try {
     const { error } = await supabaseClient.rpc("concluir_configuracao_teste");

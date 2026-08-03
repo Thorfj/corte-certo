@@ -7,7 +7,7 @@
    e importar este script (antes de qualquer script específico da página).
    ============================================================ */
 
-const BASE = location.hostname === "thorfj.github.io" ? "/corte-certo" : "";
+window.BASE = location.hostname === "thorfj.github.io" ? "/corte-certo" : "";
 
 (function () {
   const HEADER_HTML = `

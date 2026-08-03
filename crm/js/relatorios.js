@@ -4,27 +4,6 @@ if (typeof lucide !== "undefined") {
   console.error("Lucide não carregou — verifique a conexão com unpkg.com");
 }
 
-async function checarSessao() {
-  const {
-    data: { session },
-  } = await supabaseClient.auth.getSession();
-  if (!session) {
-    window.location.href = "login.html";
-    return null;
-  }
-  return session;
-}
-
-async function carregarNomeBarbearia() {
-  const { data } = await supabaseClient
-    .from("barbearias")
-    .select("empresa")
-    .single();
-  if (data?.empresa) {
-    document.querySelector(".logo-name").textContent = data.empresa;
-  }
-}
-
 document.querySelectorAll(".tab-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     document
@@ -66,6 +45,8 @@ const DIAS_SEMANA = [
 
 // ---------------- CARREGAR DADOS ----------------
 async function carregarRelatorios(dataInicio, dataFim) {
+  const barbeariaId = await obterBarbeariaId();
+
   let queryAtend = supabaseClient
     .from("atendimentos")
     .select(
@@ -75,6 +56,7 @@ async function carregarRelatorios(dataInicio, dataFim) {
       atendimento_servicos ( preco_cobrado, servicos ( nome ) )
     `,
     )
+    .eq("barbearia_id", barbeariaId)
     .order("data_agend", { ascending: true });
   if (dataInicio) queryAtend = queryAtend.gte("data_agend", dataInicio);
   if (dataFim) queryAtend = queryAtend.lte("data_agend", dataFim);
@@ -82,6 +64,7 @@ async function carregarRelatorios(dataInicio, dataFim) {
   let queryClientes = supabaseClient
     .from("clientes")
     .select("id, nome, telefone, data_primeiro_contato, data_ult_agend, status")
+    .eq("barbearia_id", barbeariaId)
     .not("data_primeiro_contato", "is", null)
     .order("data_primeiro_contato", { ascending: true });
   if (dataInicio)
@@ -262,17 +245,20 @@ function renderizarConversaoFollowup(clientes) {
 
 // ---------------- CLIENTES EM ATRASO ----------------
 async function carregarClientesEmAtraso() {
+  const barbeariaId = await obterBarbeariaId();
   const [respClientes, respAtend] = await Promise.all([
     supabaseClient
       .from("clientes")
       .select("id, nome, telefone, data_ult_agend, status")
+      .eq("barbearia_id", barbeariaId)
       .neq("status", "perdido")
       .not("data_ult_agend", "is", null),
     supabaseClient
       .from("atendimentos")
       .select(
         "id_cliente, data_agend, atendimento_servicos ( servicos ( recorrencia ) )",
-      ),
+      )
+      .eq("barbearia_id", barbeariaId),
   ]);
 
   const body = document.getElementById("tabela-atraso-body");
@@ -473,12 +459,6 @@ document.getElementById("limpar-filtro-btn").addEventListener("click", () => {
   document.getElementById("filtro-inicio").value = "";
   document.getElementById("filtro-fim").value = "";
   carregarRelatorios(null, null);
-});
-
-document.getElementById("logout-link").addEventListener("click", async (e) => {
-  e.preventDefault();
-  await supabaseClient.auth.signOut();
-  window.location.href = "login.html";
 });
 
 (async () => {

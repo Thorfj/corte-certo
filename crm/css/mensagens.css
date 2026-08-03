@@ -21,6 +21,13 @@
   cursor: pointer;
   border-bottom: 2px solid transparent;
   font-family: var(--font-sans);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tab-lock {
+  color: var(--text-muted);
 }
 
 .tab-btn.active {

@@ -8,41 +8,16 @@ const params = new URLSearchParams(window.location.search);
 const idAtend = params.get("id");
 const modoEdicao = !!idAtend;
 
-let barbeariaIdCache = null;
 let servicosCache = [];
 let clienteEncontradoId = null;
 let idClienteAtual = null;
 
-async function checarSessao() {
-  const {
-    data: { session },
-  } = await supabaseClient.auth.getSession();
-  if (!session) {
-    window.location.href = "login.html";
-    return null;
-  }
-  return session;
-}
-
-async function obterBarbeariaId() {
-  if (barbeariaIdCache) return barbeariaIdCache;
-  const {
-    data: { user },
-  } = await supabaseClient.auth.getUser();
-  const { data, error } = await supabaseClient
-    .from("profissionais")
-    .select("barbearia_id")
-    .eq("auth_user_id", user.id)
-    .single();
-  if (error) throw error;
-  barbeariaIdCache = data.barbearia_id;
-  return barbeariaIdCache;
-}
-
 async function carregarProfissionais() {
+  const barbeariaId = await obterBarbeariaId();
   const { data, error } = await supabaseClient
     .from("profissionais")
     .select("id, nome")
+    .eq("barbearia_id", barbeariaId)
     .order("nome", { ascending: true });
 
   const select = document.getElementById("prof-select");
@@ -56,9 +31,11 @@ async function carregarProfissionais() {
 }
 
 async function carregarServicos(selecionados = []) {
+  const barbeariaId = await obterBarbeariaId();
   const { data, error } = await supabaseClient
     .from("servicos")
     .select("id, nome, preco, duracao_min")
+    .eq("barbearia_id", barbeariaId)
     .order("nome", { ascending: true });
 
   const lista = document.getElementById("servicos-lista");
@@ -111,9 +88,11 @@ document
 
     if (!telefone) return;
 
+    const barbeariaId = await obterBarbeariaId();
     const { data, error } = await supabaseClient
       .from("clientes")
       .select("id, nome")
+      .eq("barbearia_id", barbeariaId)
       .eq("telefone", telefone)
       .maybeSingle();
 
@@ -303,18 +282,13 @@ document.getElementById("excluir-btn").addEventListener("click", async () => {
   window.location.href = "atendimentos.html";
 });
 
-document.getElementById("logout-link").addEventListener("click", async (e) => {
-  e.preventDefault();
-  await supabaseClient.auth.signOut();
-  window.location.href = "login.html";
-});
-
 async function carregarModoEdicao() {
   document.getElementById("page-title").textContent = "Editar atendimento";
   document.getElementById("busca-cliente-field").style.display = "none";
   document.getElementById("excluir-btn").style.display = "inline-flex";
   document.getElementById("nao-compareceu-btn").style.display = "inline-flex";
 
+  const barbeariaId = await obterBarbeariaId();
   const { data, error } = await supabaseClient
     .from("atendimentos")
     .select(
@@ -324,6 +298,7 @@ async function carregarModoEdicao() {
       atendimento_servicos ( servico_id )
     `,
     )
+    .eq("barbearia_id", barbeariaId)
     .eq("id", idAtend)
     .single();
 

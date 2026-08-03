@@ -411,3 +411,166 @@ button {
 :root[data-theme="dark"] .badge {
   color: var(--brand);
 }
+
+/* ------------------------------------------------------------
+   Teste grátis — bloqueio de acesso e banners
+   ------------------------------------------------------------ */
+.trial-block-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 28, 26, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.trial-block-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-xl);
+  max-width: 380px;
+  text-align: center;
+}
+.trial-block-title {
+  font-weight: 600;
+  font-size: var(--font-size-lg);
+  margin: 0 0 var(--space-sm);
+}
+.trial-block-desc {
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-lg);
+}
+
+.trial-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: 10px var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-lg);
+}
+.trial-banner a {
+  font-weight: 600;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+.trial-banner-info {
+  background: var(--brand-light);
+  color: var(--brand-dark);
+}
+.trial-banner-aviso {
+  background: #fde3e0;
+  color: #b3261e;
+}
+
+/* ------------------------------------------------------------
+   Sidebar recolhível
+   ------------------------------------------------------------ */
+.sidebar {
+  transition: width 0.15s ease;
+}
+.sidebar.collapsed {
+  width: 72px;
+  padding-left: var(--space-sm);
+  padding-right: var(--space-sm);
+}
+.sidebar.collapsed .logo {
+  justify-content: center;
+  padding: 0;
+}
+.sidebar.collapsed .logo-name,
+.sidebar.collapsed .nav-label {
+  display: none;
+}
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+}
+
+.sidebar-collapse-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: 10px var(--space-sm);
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-xs);
+}
+.sidebar-collapse-btn:hover {
+  background: rgba(28, 28, 26, 0.04);
+  color: var(--text-primary);
+}
+.sidebar-collapse-btn .icon-collapse {
+  display: none;
+}
+.sidebar.collapsed .sidebar-collapse-btn {
+  justify-content: center;
+}
+.sidebar.collapsed .sidebar-collapse-btn .icon-expand {
+  display: none;
+}
+.sidebar.collapsed .sidebar-collapse-btn .icon-collapse {
+  display: inline-block;
+}
+
+/* ------------------------------------------------------------
+   Onboarding (tour guiado)
+   ------------------------------------------------------------ */
+.onboarding-highlight {
+  position: relative;
+  z-index: 301;
+  border-radius: var(--radius-sm);
+  box-shadow:
+    0 0 0 4px var(--brand),
+    0 0 0 9999px rgba(20, 20, 18, 0.55);
+}
+
+.onboarding-tooltip {
+  position: fixed;
+  z-index: 302;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-md);
+  width: 280px;
+}
+.onboarding-contador {
+  font-family: var(--font-mono, var(--font-sans));
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0 0 6px;
+}
+.onboarding-titulo {
+  font-weight: 600;
+  font-size: var(--font-size-base);
+  margin: 0 0 6px;
+}
+.onboarding-texto {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0 0 var(--space-md);
+}
+.onboarding-acoes {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+.onboarding-pular {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 0;
+}
+.onboarding-pular:hover {
+  color: var(--text-secondary);
+  text-decoration: underline;
+}

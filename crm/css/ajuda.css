@@ -1,0 +1,93 @@
+.page-header {
+  margin-bottom: 20px;
+}
+
+.ajuda-busca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin-bottom: 28px;
+  color: var(--text-muted);
+}
+.ajuda-busca input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: none;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.ajuda-categoria {
+  margin-bottom: 28px;
+}
+.ajuda-categoria-titulo {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 10px;
+  color: var(--text-primary);
+}
+
+.ajuda-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.ajuda-item summary {
+  padding: 14px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ajuda-item summary::-webkit-details-marker {
+  display: none;
+}
+.ajuda-item summary::after {
+  content: "+";
+  color: var(--text-muted);
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+.ajuda-item[open] summary::after {
+  content: "−";
+}
+.ajuda-item summary:hover {
+  background: rgba(28, 28, 26, 0.02);
+}
+
+.ajuda-resposta {
+  padding: 0 16px 16px;
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+.ajuda-resposta p + p {
+  margin-top: 10px;
+}
+.ajuda-resposta strong {
+  color: var(--text-primary);
+}
+
+.ajuda-suporte {
+  text-align: center;
+  padding: 32px 0 8px;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+.ajuda-suporte p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 0 0 14px;
+}

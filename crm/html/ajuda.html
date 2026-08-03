@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ajuda — Corte Certo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/ajuda.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/crm-global.js"></script>
+</head>
+
+<body>
+  <div class="app">
+    <div id="crm-sidebar"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1 class="page-title" style="margin:0">Central de Ajuda</h1>
+      </div>
+
+      <div class="ajuda-busca">
+        <i data-lucide="search" style="width:16px;height:16px"></i>
+        <input type="text" id="ajuda-busca-input" placeholder="Busque por uma dúvida, ex: &quot;follow-up&quot;, &quot;bloqueio&quot;, &quot;tema escuro&quot;...">
+      </div>
+
+      <p class="empty hidden" id="ajuda-vazio">Nenhum resultado encontrado. Tente outra palavra, ou fale com o suporte no WhatsApp abaixo.</p>
+
+      <!-- PRIMEIROS PASSOS -->
+      <section class="ajuda-categoria" data-categoria="primeiros-passos">
+        <h2 class="ajuda-categoria-titulo">Primeiros passos</h2>
+
+        <details class="ajuda-item">
+          <summary>Como funciona o teste grátis?</summary>
+          <div class="ajuda-resposta">
+            <p>Durante o teste você pode configurar tudo à vontade: cadastrar funcionários, serviços, mensagens do fluxo de atendimento e até os ciclos de follow-up — sem prazo pra isso.</p>
+            <p>Os <strong>5 dias grátis</strong> só começam a contar quando você clica em <strong>"Concluir configuração e iniciar teste"</strong>, na aba Geral de Configurações. O <strong>follow-up não fica ativo</strong> durante o teste, mesmo configurado — ele só passa a rodar depois que você assina o plano.</p>
+          </div>
+        </details>
+
+        <details class="ajuda-item">
+          <summary>Como inicio a contagem dos 5 dias grátis?</summary>
+          <div class="ajuda-resposta">
+            <p>Vá em <strong>Configurações → Geral</strong>. No topo da página aparece um aviso com o botão <strong>"Concluir configuração e iniciar teste"</strong>. Clique nele quando terminar de cadastrar profissionais, serviços e mensagens.</p>
+            <p>Essa ação não pode ser desfeita — depois de clicar, o relógio dos 5 dias começa a correr.</p>
+          </div>
+        </details>
+
+        <details class="ajuda-item">
+          <summary>O que acontece depois que o teste grátis acaba?</summary>
+          <div class="ajuda-resposta">
+            <p>Se você ainda não assinou o plano, o CRM continua liberado por mais <strong>30 dias de carência</strong>, mas o <strong>fluxo de atendimento é desativado automaticamente</strong> nesse período.</p>
+            <p>Depois dos 30 dias, o acesso ao CRM é bloqueado até você assinar — só aparece uma tela convidando pra assinatura.</p>
+          </div>
+        </details>
+
+        <details class="ajuda-item">
+          <summary>Posso fazer o teste grátis mais de uma vez?</summary>
+          <div class="ajuda-resposta">
+            <p>Não — o teste vale uma única vez por WhatsApp de barbearia. Se o número já foi usado num cadastro anterior, o sistema avisa na hora do cadastro.</p>
+          </div>
+        </details>
+      </section>
+
+      <!-- ATENDIMENTOS -->
+      <section class="ajuda-categoria" data-categoria="atendimentos">
+        <h2 class="ajuda-categoria-titulo">Atendimentos</h2>
+
+        <details class="ajuda-item">
+          <summary>Como funciona o quadro de Atendimentos?</summary>
+          <div class="ajuda-resposta">
+            <p>É um quadro estilo kanban, com 4 colunas: <strong>Falar com humano</strong>, <strong>Em atendimento</strong>, <strong>Agendado</strong> e <strong>Follow-up</strong>. Cada cliente aparece na coluna correspondente ao status dele.</p>
+            <p>Clique em qualquer cartão pra abrir e editar aquele atendimento. Use os filtros de data no topo pra ver só um período específico.</p>
+          </div>
+        </details>
+
+        <details class="ajuda-item">
+          <summary>Como criar um atendimento manualmente?</summary>
+          <div class="ajuda-resposta">
+            <p>Clique em <strong>"Novo atendimento"</strong> no topo da página. Busque o cliente pelo telefone — se ele ainda não existir, você pode cadastrar o nome na hora. Depois escolha o profissional, data, horário e os serviços.</p>
+          </div>
+        </details>
+
+        <details class="ajuda-item">
+          <summary>O que faz o botão "Cliente não compareceu"?</summary>
+          <div class="ajuda-resposta">
+            <p>Marca o atendimento como falta. O cliente volta pro status "Em atendimento" automaticamente, pra ele poder ser remarcado depois.</p>
+          </div>
+        </details>
+
+        <details class="ajuda-item">
+          <summary>Como excluir um atendimento?</summary>
+          <div class="ajuda-resposta">
+            <p>Abra o atendimento (clicando no cartão) e use o botão <strong>"Excluir atendimento"</strong>, disponível só na tela de edição. Essa ação não pode ser desfeita.</p>
+          </div>
+        </details>
+      </section>
+
+      <!-- AGENDA -->
+      <section class="ajuda-categoria" data-categoria="agenda">
+        <h2 class="ajuda-categoria-titulo">Agenda</h2>
+
+        <details class="ajuda-item">
+          <summary>Qual a diferença entre a visão Diária e Mensal?</summary>
+          <div class="ajuda-resposta">
+            <p>A visão <strong>Diária</strong> mostra uma coluna por profissional, com todos os horários daquele dia. A <strong>Mensal</strong> mostra um calendário do mês inteiro, com um resumo dos atendimentos de cada dia — clicar num dia leva direto pra visão Diária daquela data.</p>
+          </div>
+        </details>
+
+        <details class="ajuda-item">
+          <summary>Como bloquear um dia ou horário (folga, feriado)?</summary>
+          <div class="ajuda-resposta">
+            <p>Na Agenda, clique na aba <strong>"Bloqueios"</strong> e depois em <strong>"+ Novo bloqueio"</strong>. Você pode bloquear:</p>
+            <p>• Um <strong>dia único</strong> (ex: um feriado)<br>
+              • Um <strong>período</strong> de vários dias (ex: férias)<br>
+              • Um <strong>dia da semana recorrente</strong> (ex: toda segunda-feira)</p>
+            <p>Também dá pra escolher se o bloqueio é pra um profissional específico ou pra barbearia inteira, e se bloqueia o dia todo ou só um intervalo de horário.</p>
+          </div>
+        </details>
+
+        <details class="ajuda-item">
+          <summary>Por que cada profissional tem uma cor?</summary>
+          <div class="ajuda-resposta">
+            <p>É só pra facilitar a identificação visual — a mesma cor de cada profissional aparece nos cartões de atendimento, nos bloqueios e na visão mensal.</p>
+          </div>
+        </details>
+      </section>
+
+      <!-- CONTATOS -->
+      <section class="ajuda-categoria" data-categoria="contatos">
+        <h2 class="ajuda-categoria-titulo">Contatos</h2>
+
+        <details class="ajuda-item">
+          <summary>Como cadastrar um contato manualmente?</summary>
+          <div class="ajuda-resposta">
+            <p>Clique em <strong>"Novo Contato"</strong>, preencha nome, telefone (com DDD) e e-mail (opcional). O telefone precisa ser único — se já existir um contato com esse número, o sistema avisa.</p>
+          </div>
+        </details>
+
+        <details class="ajuda-item">
+          <summary>Como vejo o histórico de um cliente?</summary>
+          <div class="ajuda-resposta">
+            <p>Clique em qualquer linha da tabela de Contatos. Abre um histórico com todos os atendimentos anteriores daquele cliente, incluindo serviço, profissional e valor cobrado.</p>
+          </div>
+        </details>
+
+        <details class="ajuda-item">
+          <summary>O que significam os status dos contatos?</summary>
+          <div class="ajuda-resposta">
+            <p><strong>Em atendimento</strong> — está conversando com o bot ou aguardando remarcação.<br>
+              <strong>Agendado</strong> — já tem um horário marcado.<br>
+              <strong>Follow-up</strong> — passou por um atendimento e está no ciclo de retorno.<br>
+              <strong>Perdido</strong> — não respondeu aos follow-ups e saiu do fluxo.
+            </p>
+          </div>
+        </details>
+      </section>
+
+      <!-- SERVIÇOS -->
+      <section class="ajuda-categoria" data-categoria="servicos">
+        <h2 class="ajuda-categoria-titulo">Serviços</h2>
+
+        <details class="ajuda-item">
+          <summary>Como cadastrar um serviço novo?</summary>
+          <div class="ajuda-resposta">
+            <p>Em Serviços, clique em <strong>"Novo Serviço"</strong> e preencha nome, preço, duração (em minutos) e recorrência (em dias). O SKU é gerado automaticamente.</p>
+          </div>
+        </details>
+
+        <details class="ajuda-item">
+          <summary>O que é a "Recorrência (dias)"?</summary>
+          <div class="ajuda-resposta">
+            <p>É de quanto em quanto tempo esse serviço costuma precisar ser refeito (ex: um corte a cada 30 dias). Esse número é usado nos relatórios de "Clientes em atraso" e nos ciclos de follow-up.</p>
+          </div>
+        </details>
+
+        <details class="ajuda-item">
+          <summary>Por que não consigo excluir um serviço?</summary>
+          <div class="ajuda-resposta">
+            <p>Serviços que já foram usados em algum atendimento não podem ser excluídos, pra não perder o histórico. Nesse caso, considere só ajustar o preço ou renomear.</p>
+          </div>
+        </details>
+      </section>
+
+      <!-- MENSAGENS -->
+      <section class="ajuda-categoria" data-categoria="mensagens">
+        <h2 class="ajuda-categoria-titulo">Mensagens</h2>
+
+        <details class="ajuda-item">
+          <summary>O que é o "Fluxo de Atendimento"?</summary>
+          <div class="ajuda-resposta">
+            <p>É a sequência de mensagens que o bot manda no WhatsApp durante um agendamento: primeiro contato, escolha de serviço, escolha do profissional, dia, horário, etc. Cada etapa é editável clicando nela na tabela.</p>
+          </div>
+        </details>
+
+        <details class="ajuda-item">
+          <summary>O que é o Follow-up e por que não funciona no teste grátis?</summary>
+          <div class="ajuda-resposta">
+            <p>Follow-up são as mensagens automáticas de retorno, enviadas depois que o cliente já foi atendido, incentivando ele a voltar. É um recurso exclusivo de assinantes — durante o teste grátis você pode configurar os ciclos à vontade, mas eles não disparam de verdade até você assinar.</p>
+          </div>
+        </details>
+
+        <details class="ajuda-item">
+          <summary>O que são as "Mensagens Automáticas"?</summary>
+          <div class="ajuda-resposta">
+            <p>São mensagens que não seguem uma etapa fixa — disparam a qualquer momento da conversa quando o sistema identifica a situação:</p>
+            <p>• <strong>Atendimento humano</strong> — cliente pediu pra falar com uma pessoa<br>
+              • <strong>Encerramento do follow-up</strong> — cliente pediu pra parar de receber follow-up<br>
+              • <strong>Remarcar após falta</strong> — cliente faltou e precisa remarcar<br>
+              • <strong>Não entendi a resposta</strong> — o bot não conseguiu interpretar o que o cliente respondeu</p>
+          </div>
+        </details>
+
+        <details class="ajuda-item">
+          <summary>Como ligo ou desligo o fluxo do bot?</summary>
+          <div class="ajuda-resposta">
+            <p>Use o interruptor no canto superior direito da página Mensagens. Se você ainda não é assinante e ativar o fluxo, um aviso explica que o follow-up não vai disparar mesmo assim.</p>
+          </div>
+        </details>
+      </section>
+
+      <!-- CONFIGURAÇÕES -->
+      <section class="ajuda-categoria" data-categoria="configuracoes">
+        <h2 class="ajuda-categoria-titulo">Configurações</h2>
+
+        <details class="ajuda-item">
+          <summary>Como mudo entre tema claro e escuro?</summary>
+          <div class="ajuda-resposta">
+            <p>Em <strong>Configurações → Geral</strong>, seção "Aparência", clique em Claro ou Escuro. É uma preferência pessoal — cada usuário do CRM pode escolher a sua, independente dos outros.</p>
+          </div>
+        </details>
+
+        <details class="ajuda-item">
+          <summary>Como convido um novo funcionário pro CRM?</summary>
+          <div class="ajuda-resposta">
+            <p>Vá em <strong>Configurações → Usuários</strong> e clique em <strong>"Novo Usuário"</strong>. Preencha nome, e-mail e o papel dele (Admin, Cabeleireiro ou Teste). A conta de acesso é criada automaticamente.</p>
+          </div>
+        </details>
+
+        <details class="ajuda-item">
+          <summary>Como conecto a Agenda do Google?</summary>
+          <div class="ajuda-resposta">
+            <p>Essa opção aparece em <strong>Configurações → Geral</strong> só pra usuários com papel de Admin. Clique em "Conectar com Google", faça login com a conta Google da própria barbearia e autorize o acesso.</p>
+          </div>
+        </details>
+
+        <details class="ajuda-item">
+          <summary>Como vejo minhas faturas?</summary>
+          <div class="ajuda-resposta">
+            <p>Em <strong>Configurações → Faturas</strong> fica a lista de cobranças, com data e status de pagamento de cada uma.</p>
+          </div>
+        </details>
+      </section>
+
+      <div class="ajuda-suporte">
+        <p>Não achou o que precisava?</p>
+        <a class="btn btn-primary" href="https://wa.me/5541999990000" target="_blank" rel="noopener">
+          <i data-lucide="message-circle" style="width:16px;height:16px"></i> Falar com o suporte no WhatsApp
+        </a>
+      </div>
+    </main>
+  </div>
+  <script src="../js/ajuda.js"></script>
+</body>
+
+</html>

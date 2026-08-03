@@ -12,29 +12,12 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../js/supabase-config.js"></script>
+  <script src="../js/crm-global.js"></script>
 </head>
 
 <body>
   <div class="app">
-    <aside class="sidebar">
-      <div class="logo">
-        <div class="logo-icon"><i data-lucide="scissors" style="width:18px;height:18px"></i></div>
-        <span class="logo-name"></span>
-      </div>
-      <nav class="nav">
-        <a class="nav-item" href="atendimentos.html"><i data-lucide="clipboard-list"></i> Atendimentos</a>
-        <a class="nav-item" href="agenda.html"><i data-lucide="calendar"></i> Agenda</a>
-        <a class="nav-item" href="contatos.html"><i data-lucide="users"></i> Contatos</a>
-        <a class="nav-item" href="servicos.html"><i data-lucide="scissors"></i> Serviços</a>
-        <a class="nav-item active" href="mensagens.html"><i data-lucide="message-square"></i> Mensagens</a>
-        <a class="nav-item" href="relatorios.html"><i data-lucide="pie-chart"></i> Relatórios</a>
-        <a class="nav-item" href="configuracoes.html"><i data-lucide="settings"></i> Configurações</a>
-      </nav>
-      <div class="sidebar-footer">
-        <button class="help-button"><i data-lucide="help-circle" style="width:16px;height:16px"></i></button>
-        <a class="nav-item" href="#" id="logout-link"><i data-lucide="log-out"></i> Sair</a>
-      </div>
-    </aside>
+    <div id="crm-sidebar"></div>
 
     <main class="main-content">
       <div class="page-header">
@@ -49,7 +32,10 @@
 
       <div class="tabs">
         <button class="tab-btn active" data-tab="fluxo">Fluxo de Atendimento</button>
-        <button class="tab-btn" data-tab="followup">Follow-up</button>
+        <button class="tab-btn" data-tab="followup">
+          Follow-up
+          <i data-lucide="lock" class="tab-lock hidden" id="followup-lock" style="width:13px;height:13px"></i>
+        </button>
         <button class="tab-btn" data-tab="fixas">Mensagens Automáticas</button>
       </div>
 
@@ -75,6 +61,9 @@
 
       <!-- ABA FOLLOW-UP -->
       <div class="tab-panel" id="tab-followup">
+        <div class="trial-banner trial-banner-aviso hidden" id="followup-trial-banner">
+          <span>Você pode configurar o follow-up à vontade, mas ele só vai ficar ativo depois que você assinar o plano — durante o teste grátis, esse fluxo não roda.</span>
+        </div>
         <div class="flow-visual" id="flow-visual-followup"></div>
         <div class="page-header">
           <p class="text-secondary" id="ciclos-contador" style="margin:0">Carregando...</p>
@@ -227,6 +216,17 @@
       <div class="modal-footer">
         <button class="btn" id="confirm-cancelar-btn">Cancelar</button>
         <button class="btn btn-danger" id="confirm-ok-btn">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Aviso informativo (só OK, sem cancelar) -->
+  <div class="modal-overlay hidden" id="modal-aviso">
+    <div class="modal confirm-modal">
+      <p class="modal-title" id="aviso-titulo">Aviso</p>
+      <p class="confirm-mensagem" id="aviso-mensagem"></p>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="aviso-ok-btn">Entendi</button>
       </div>
     </div>
   </div>

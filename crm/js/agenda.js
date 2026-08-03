@@ -14,7 +14,7 @@ const DIAS_SEMANA_NOMES = [
   "Sábado",
 ];
 
-const DIAS_SEMANA_CURTO = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+const DIAS_SEMANA_CURTO = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
 const MESES_NOMES = [
   "Janeiro",
@@ -35,7 +35,8 @@ let profissionaisCache = [];
 let profSelecionados = new Set();
 let corPorProfissional = new Map();
 let atendimentosPeriodoCache = [];
-let viewMode = "dia"; // "dia" | "mes"
+let bloqueiosTodosCache = [];
+let viewMode = "dia"; // "dia" | "mes" | "bloqueios"
 let dataFoco = new Date();
 dataFoco.setHours(0, 0, 0, 0);
 
@@ -49,43 +50,6 @@ const PALETA_CORES = [
   "#dc2626",
   "#4b5563",
 ];
-
-async function checarSessao() {
-  const {
-    data: { session },
-  } = await supabaseClient.auth.getSession();
-  if (!session) {
-    window.location.href = "login.html";
-    return null;
-  }
-  return session;
-}
-
-let barbeariaIdCache = null;
-async function obterBarbeariaId() {
-  if (barbeariaIdCache) return barbeariaIdCache;
-  const {
-    data: { user },
-  } = await supabaseClient.auth.getUser();
-  const { data, error } = await supabaseClient
-    .from("profissionais")
-    .select("barbearia_id")
-    .eq("auth_user_id", user.id)
-    .single();
-  if (error) throw error;
-  barbeariaIdCache = data.barbearia_id;
-  return barbeariaIdCache;
-}
-
-async function carregarNomeBarbearia() {
-  const { data } = await supabaseClient
-    .from("barbearias")
-    .select("empresa")
-    .single();
-  if (data?.empresa) {
-    document.querySelector(".logo-name").textContent = data.empresa;
-  }
-}
 
 // ---------------- DATAS ----------------
 function getSegunda(data) {
@@ -112,6 +76,35 @@ function formatarDataCurta(data) {
 
 function getPrimeiroDiaMes(data) {
   return new Date(data.getFullYear(), data.getMonth(), 1);
+}
+
+function bloqueioAplicaEm(bloqueio, dataISO, idProf) {
+  if (bloqueio.id_prof && bloqueio.id_prof !== idProf) return false;
+
+  if (bloqueio.tipo === "unico") {
+    return bloqueio.data_inicio === dataISO;
+  }
+  if (bloqueio.tipo === "periodo") {
+    return dataISO >= bloqueio.data_inicio && dataISO <= bloqueio.data_fim;
+  }
+  if (bloqueio.tipo === "recorrente") {
+    const diaSemana = new Date(dataISO + "T00:00:00").getDay();
+    return diaSemana === bloqueio.dia_semana;
+  }
+  return false;
+}
+
+function bloqueiosParaData(dataISO, idProf) {
+  return bloqueiosTodosCache.filter((b) =>
+    bloqueioAplicaEm(b, dataISO, idProf),
+  );
+}
+
+function descreverHorarioBloqueio(bloqueio) {
+  if (bloqueio.horario_inicio && bloqueio.horario_fim) {
+    return `${bloqueio.horario_inicio.slice(0, 5)}–${bloqueio.horario_fim.slice(0, 5)}`;
+  }
+  return "Dia inteiro";
 }
 
 function getUltimoDiaMes(data) {
@@ -141,9 +134,11 @@ function atualizarLabel() {
 
 // ---------------- PROFISSIONAIS (seletor) ----------------
 async function carregarProfissionais() {
+  const barbeariaId = await obterBarbeariaId();
   const { data, error } = await supabaseClient
     .from("profissionais")
     .select("id, nome")
+    .eq("barbearia_id", barbeariaId)
     .order("nome", { ascending: true });
 
   const container = document.getElementById("prof-selector");
@@ -193,32 +188,43 @@ async function carregarPeriodo() {
   const { inicio, fim } = obterIntervalo();
   const inicioISO = paraISO(inicio);
   const fimISO = paraISO(fim);
+  const barbeariaId = await obterBarbeariaId();
 
   // TODO: quando o n8n tiver os webhooks do Google Calendar prontos,
   // trocar esta consulta pela chamada ao webhook que lê os eventos reais
   // do Google. Por enquanto, a fonte de verdade é a tabela `atendimentos`.
-  const { data, error } = await supabaseClient
-    .from("atendimentos")
-    .select(
-      `
-      id, data_agend, horario, id_prof,
-      clientes ( nome ),
-      atendimento_servicos ( servicos ( nome ) )
-    `,
-    )
-    .gte("data_agend", inicioISO)
-    .lte("data_agend", fimISO)
-    .order("horario", { ascending: true });
+  const [respAtend, respBloqueios] = await Promise.all([
+    supabaseClient
+      .from("atendimentos")
+      .select(
+        `
+        id, data_agend, horario, id_prof,
+        clientes ( nome ),
+        atendimento_servicos ( servicos ( nome ) )
+      `,
+      )
+      .eq("barbearia_id", barbeariaId)
+      .gte("data_agend", inicioISO)
+      .lte("data_agend", fimISO)
+      .order("horario", { ascending: true }),
+    supabaseClient
+      .from("bloqueios_agenda")
+      .select(
+        "id, id_prof, tipo, data_inicio, data_fim, dia_semana, horario_inicio, horario_fim, motivo",
+      )
+      .eq("barbearia_id", barbeariaId),
+  ]);
 
   const container = document.getElementById("agenda-semana");
 
-  if (error) {
-    console.error(error);
+  if (respAtend.error) {
+    console.error(respAtend.error);
     container.innerHTML = '<p class="empty">Erro ao carregar a agenda.</p>';
     return;
   }
 
-  atendimentosPeriodoCache = data || [];
+  atendimentosPeriodoCache = respAtend.data || [];
+  bloqueiosTodosCache = respBloqueios.data || [];
   renderizarPeriodo(atendimentosPeriodoCache);
 }
 
@@ -253,6 +259,17 @@ function renderizarDia(atendimentos) {
         .filter((a) => a.id_prof === prof.id)
         .sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
 
+      const bloqueiosDoDia = bloqueiosParaData(iso, prof.id);
+      const bloqueioHtml = bloqueiosDoDia
+        .map(
+          (b) => `
+          <div class="bloqueio-banner">
+            🚫 Bloqueado — ${descreverHorarioBloqueio(b)}${b.motivo ? ` · ${b.motivo}` : ""}
+          </div>
+        `,
+        )
+        .join("");
+
       const itensHtml = itensProf.length
         ? itensProf
             .map((a) => {
@@ -275,6 +292,7 @@ function renderizarDia(atendimentos) {
       return `
         <div class="prof-subcolumn" style="--prof-cor:${cor}">
           <p class="prof-subcolumn-title"><span class="prof-dot" style="background:${cor}"></span>${prof.nome}</p>
+          ${bloqueioHtml}
           ${itensHtml}
         </div>
       `;
@@ -318,6 +336,11 @@ function renderizarMes(atendimentos) {
       .filter((a) => profSelecionados.has(a.id_prof))
       .sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
 
+    const temBloqueio =
+      Array.from(profSelecionados).some(
+        (idProf) => bloqueiosParaData(iso, idProf).length > 0,
+      ) || bloqueiosParaData(iso, null).length > 0;
+
     const limiteVisivel = 3;
     const chipsHtml = itensDoDia
       .slice(0, limiteVisivel)
@@ -333,7 +356,7 @@ function renderizarMes(atendimentos) {
         : "";
 
     celulasHtml.push(`
-      <div class="mes-cell${foraMes ? " fora-mes" : ""}${isHoje ? " hoje" : ""}" data-iso="${iso}">
+      <div class="mes-cell${foraMes ? " fora-mes" : ""}${isHoje ? " hoje" : ""}${temBloqueio ? " bloqueado" : ""}" data-iso="${iso}">
         <p class="mes-cell-numero">${dataDia.getDate()}</p>
         <div class="mes-cell-itens">${chipsHtml}${maisHtml}</div>
       </div>
@@ -412,12 +435,6 @@ document.getElementById("hoje-btn").addEventListener("click", () => {
   carregarPeriodo();
 });
 
-document.getElementById("logout-link").addEventListener("click", async (e) => {
-  e.preventDefault();
-  await supabaseClient.auth.signOut();
-  window.location.href = "login.html";
-});
-
 // ---------------- BLOQUEIOS DE AGENDA ----------------
 let bloqueiosCache = [];
 
@@ -430,11 +447,13 @@ function popularSelectProfBloqueio() {
 }
 
 async function carregarBloqueios() {
+  const barbeariaId = await obterBarbeariaId();
   const { data, error } = await supabaseClient
     .from("bloqueios_agenda")
     .select(
       "id, id_prof, tipo, data_inicio, data_fim, dia_semana, horario_inicio, horario_fim, motivo, origem",
     )
+    .eq("barbearia_id", barbeariaId)
     .order("criado_em", { ascending: false });
 
   const body = document.getElementById("tabela-bloqueios-body");
@@ -544,12 +563,6 @@ document.getElementById("novo-bloqueio-btn").addEventListener("click", () => {
   document.getElementById("bl-campo-horario").classList.add("hidden");
   document.getElementById("bl-erro").style.display = "none";
   document.getElementById("modal-bloqueio").classList.remove("hidden");
-});
-
-document.querySelectorAll("[data-close]").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    document.getElementById(btn.dataset.close).classList.add("hidden");
-  });
 });
 
 document

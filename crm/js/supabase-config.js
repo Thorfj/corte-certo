@@ -6,6 +6,55 @@ const supabaseClient = window.supabase.createClient(
   SUPABASE_ANON_KEY,
 );
 
+// ---------------- Sessão / barbearia do usuário logado ----------------
+// Centralizado aqui porque essas três funções eram idênticas, copiadas e
+// coladas em todos os .js de página (atendimentos, agenda, contatos,
+// servicos, mensagens, relatorios, configuracoes, novo_atendimento).
+
+async function checarSessao() {
+  const {
+    data: { session },
+  } = await supabaseClient.auth.getSession();
+  if (!session) {
+    window.location.href = "login.html";
+    return null;
+  }
+  return session;
+}
+
+let barbeariaIdCache = null;
+async function obterBarbeariaId() {
+  if (barbeariaIdCache) return barbeariaIdCache;
+  const {
+    data: { user },
+  } = await supabaseClient.auth.getUser();
+  const { data, error } = await supabaseClient
+    .from("profissionais")
+    .select("barbearia_id")
+    .eq("auth_user_id", user.id)
+    .single();
+  if (error) throw error;
+  barbeariaIdCache = data.barbearia_id;
+  return barbeariaIdCache;
+}
+
+async function carregarNomeBarbearia() {
+  try {
+    const barbeariaId = await obterBarbeariaId();
+    const { data } = await supabaseClient
+      .from("barbearias")
+      .select("empresa")
+      .eq("id", barbeariaId)
+      .single();
+    const logoNameEl = document.querySelector(".logo-name");
+    if (data?.empresa && logoNameEl) {
+      logoNameEl.textContent = data.empresa;
+    }
+  } catch (err) {
+    console.error("Erro ao carregar nome da barbearia:", err);
+  }
+}
+
 // ---------------- Tema (light/dark) ----------------
 // Aplica na hora, a partir do cache local, pra tela não "piscar" clara
 // antes de trocar pra escura enquanto a sessão ainda está carregando.

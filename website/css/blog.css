@@ -1,7 +1,8 @@
 /* ============================================================
    CORTE CERTO — BLOG.CSS
    Estilos da página principal do Blog (listagem de posts).
-   Depende de global.css (tokens + header/footer/botões).
+   Depende de global.css (tokens + header/footer/botões + capas
+   .post-cover/.cat-*, que vivem lá — não duplicar aqui).
    ============================================================ */
 
 /* ---------- HERO ---------- */
@@ -45,55 +46,6 @@
   background: var(--green);
   border-color: var(--green);
   color: #fff;
-}
-
-/* ---------- CAPA (padrão listrado, sem fotos) ---------- */
-.post-cover {
-  border-radius: var(--radius) var(--radius) 0 0;
-  height: 150px;
-  position: relative;
-  overflow: hidden;
-}
-.post-cover span {
-  position: absolute;
-  bottom: 12px;
-  left: 16px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  background: rgba(255, 255, 255, 0.85);
-  color: var(--ink);
-  padding: 5px 10px;
-  border-radius: 999px;
-}
-.cat-agendamento {
-  background: repeating-linear-gradient(
-    -45deg,
-    var(--green) 0 10px,
-    var(--green-panel) 10px 20px
-  );
-}
-.cat-atendimento {
-  background: repeating-linear-gradient(
-    -45deg,
-    var(--brick) 0 10px,
-    #f3e4e1 10px 20px
-  );
-}
-.cat-gestao {
-  background: repeating-linear-gradient(
-    -45deg,
-    #c99a3d 0 10px,
-    #f3e9d3 10px 20px
-  );
-}
-.cat-novidades {
-  background: repeating-linear-gradient(
-    -45deg,
-    #3e6e8e 0 10px,
-    #dce7ec 10px 20px
-  );
 }
 
 /* ---------- POST EM DESTAQUE ---------- */

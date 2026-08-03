@@ -1,20 +1,18 @@
 /* ============================================================
    CORTE CERTO — TESTE-GRATIS.JS
-   Formulário de cadastro em 2 steps:
+   Formulário de cadastro em 3 steps:
      Step 1 — dados da barbearia e do responsável
-     Step 2 — WhatsApp da barbearia (whatsapp_barbearia),
-              que precisa ser ÚNICO na tabela `barbearias`.
-              Se já existir -> bloqueia.
-              Se for novo    -> insere e libera acesso ao CRM.
+     Step 2 — WhatsApp da barbearia (checagem antecipada de duplicado)
+     Step 3 — senha -> cria a conta no Supabase Auth e já entra
+              logado no CRM, sem passar pelo login.html.
 
    Credenciais do Supabase já preenchidas (mesmo projeto do CRM).
-   A checagem de duplicidade + o insert acontecem dentro da function
-   `cadastrar_barbearia` (ver /sql/cadastrar_barbearia.sql) — o front
-   nunca lê/escreve na tabela `barbearias` diretamente.
-   Falta só confirmar/ajustar CRM_ATENDIMENTOS_URL abaixo.
+   O cadastro de verdade (insert em barbearias + profissionais)
+   acontece dentro da function `finalizar_cadastro_barbearia`,
+   chamada só DEPOIS que a conta de autenticação já existe — ver
+   /sql/teste_gratis_com_senha.sql
    ============================================================ */
 
-// Credenciais do projeto Supabase (mesmas usadas no CRM)
 const SUPABASE_URL = "https://jzqiqrymqbzullysukja.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_lqY19MJcqfYcVAABzRgiNg_6h4DIWUO";
 
@@ -22,22 +20,34 @@ const SUPABASE_ANON_KEY = "sb_publishable_lqY19MJcqfYcVAABzRgiNg_6h4DIWUO";
 const CRM_ATENDIMENTOS_URL = "/crm/html/atendimentos.html";
 
 // TODO: ajustar se quiser outro contato de suporte
-const SUPORTE_WHATSAPP_URL = "https://wa.me/5541999990000";
+const SUPORTE_WHATSAPP_URL = "https://wa.me/5541999428022";
 
 document.addEventListener("DOMContentLoaded", () => {
   const step1Form = document.getElementById("tgFormStep1");
   const step2Form = document.getElementById("tgFormStep2");
+  const step3Form = document.getElementById("tgFormStep3");
   const success = document.getElementById("tgSuccess");
+  const confirmarEmail = document.getElementById("tgConfirmarEmail");
+
   const dotStep1 = document.getElementById("dotStep1");
   const dotStep2 = document.getElementById("dotStep2");
-  const backBtn = document.getElementById("tgBack");
-  const errorBox = document.getElementById("tgError");
+  const dotStep3 = document.getElementById("dotStep3");
+
+  const backBtn2 = document.getElementById("tgBack");
+  const backBtn3 = document.getElementById("tgBack3");
+  const errorBox1 = document.getElementById("tgError1");
+  const errorBox2 = document.getElementById("tgError");
+  const errorBox3 = document.getElementById("tgError3");
+  const step1Submit = document.getElementById("tgStep1Submit");
   const step2Submit = document.getElementById("tgStep2Submit");
+  const step3Submit = document.getElementById("tgStep3Submit");
 
   const whatsappInput = document.getElementById("whatsapp");
   const whatsappBarbeariaInput = document.getElementById("whatsappBarbearia");
+  const senhaInput = document.getElementById("senha");
+  const senhaConfirmaInput = document.getElementById("senhaConfirma");
 
-  if (!step1Form || !step2Form) return;
+  if (!step1Form || !step2Form || !step3Form) return;
 
   // aceita só números nos campos de WhatsApp
   [whatsappInput, whatsappBarbeariaInput].forEach((input) => {
@@ -46,37 +56,45 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // dados coletados no Step 1, guardados em memória até o Step 2 confirmar
+  // dados coletados nos steps anteriores, guardados em memória
   let step1Data = null;
+  let whatsappBarbearia = null;
 
-  let supabaseClient = null;
+  let supabase = null;
   function getSupabaseClient() {
-    if (supabaseClient) return supabaseClient;
+    if (supabase) return supabase;
     if (typeof window.supabase === "undefined") {
       console.error(
         "supabase-js não carregou. Confira o <script> do CDN em teste-gratis.html.",
       );
       return null;
     }
-    supabaseClient = window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_ANON_KEY,
-    );
-    return supabaseClient;
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    return supabase;
   }
 
-  function showError(message) {
-    errorBox.innerHTML = message;
-    errorBox.hidden = false;
+  function showError(box, message) {
+    box.innerHTML = message;
+    box.hidden = false;
   }
-  function hideError() {
-    errorBox.hidden = true;
-    errorBox.innerHTML = "";
+  function hideError(box) {
+    box.hidden = true;
+    box.innerHTML = "";
+  }
+
+  function irParaStep(numero) {
+    step1Form.hidden = numero !== 1;
+    step2Form.hidden = numero !== 2;
+    step3Form.hidden = numero !== 3;
+    dotStep1.classList.toggle("active", numero >= 1);
+    dotStep2.classList.toggle("active", numero >= 2);
+    dotStep3.classList.toggle("active", numero >= 3);
   }
 
   // ---------- STEP 1 -> STEP 2 ----------
-  step1Form.addEventListener("submit", (event) => {
+  step1Form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    hideError(errorBox1);
 
     if (!step1Form.checkValidity()) {
       step1Form.reportValidity();
@@ -92,34 +110,68 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    step1Data = {
-      empresa: document.getElementById("barbearia").value.trim(),
-      nome: document.getElementById("responsavel").value.trim(),
-      whatsapp: whatsappInput.value,
-      email: document.getElementById("email").value.trim(),
-      tipo: "Barbearia",
-    };
+    const emailValue = document.getElementById("email").value.trim();
 
-    step1Form.hidden = true;
-    step2Form.hidden = false;
-    dotStep1.classList.remove("active");
-    dotStep2.classList.add("active");
-    whatsappBarbeariaInput.focus();
+    const client = getSupabaseClient();
+    if (!client) {
+      showError(
+        errorBox1,
+        "Não foi possível conectar ao servidor agora. Tente novamente em instantes.",
+      );
+      return;
+    }
+
+    step1Submit.disabled = true;
+    step1Submit.textContent = "Verificando...";
+
+    try {
+      const { data: disponivel, error } = await client.rpc("email_disponivel", {
+        p_email: emailValue,
+      });
+
+      if (error) throw error;
+
+      if (!disponivel) {
+        showError(
+          errorBox1,
+          `Já existe uma conta com esse e-mail. ` +
+            `Tente fazer login, ou se acha que isso é um engano, ` +
+            `<a href="${SUPORTE_WHATSAPP_URL}" target="_blank">fale com o nosso suporte</a>.`,
+        );
+        return;
+      }
+
+      step1Data = {
+        empresa: document.getElementById("barbearia").value.trim(),
+        nome: document.getElementById("responsavel").value.trim(),
+        whatsapp: whatsappInput.value,
+        email: emailValue,
+      };
+
+      irParaStep(2);
+      whatsappBarbeariaInput.focus();
+    } catch (err) {
+      console.error(err);
+      showError(
+        errorBox1,
+        "Não conseguimos verificar agora. Tente novamente em instantes.",
+      );
+    } finally {
+      step1Submit.disabled = false;
+      step1Submit.textContent = "Continuar";
+    }
   });
 
   // ---------- VOLTAR pro Step 1 ----------
-  backBtn.addEventListener("click", () => {
-    hideError();
-    step2Form.hidden = true;
-    step1Form.hidden = false;
-    dotStep2.classList.remove("active");
-    dotStep1.classList.add("active");
+  backBtn2.addEventListener("click", () => {
+    hideError(errorBox2);
+    irParaStep(1);
   });
 
-  // ---------- STEP 2: valida unicidade + insere + libera acesso ----------
+  // ---------- STEP 2 -> STEP 3 (só checa disponibilidade, não insere nada) ----------
   step2Form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    hideError();
+    hideError(errorBox2);
 
     if (!step2Form.checkValidity()) {
       step2Form.reportValidity();
@@ -135,10 +187,10 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const whatsappBarbearia = whatsappBarbeariaInput.value;
-    const supabase = getSupabaseClient();
-    if (!supabase) {
+    const client = getSupabaseClient();
+    if (!client) {
       showError(
+        errorBox2,
         "Não foi possível conectar ao servidor agora. Tente novamente em instantes.",
       );
       return;
@@ -148,9 +200,101 @@ document.addEventListener("DOMContentLoaded", () => {
     step2Submit.textContent = "Verificando...";
 
     try {
-      // checa duplicidade + insere, tudo dentro da function no banco —
-      // o front nunca lê a tabela `barbearias` diretamente.
-      const { data, error } = await supabase.rpc("cadastrar_barbearia", {
+      const { data: disponivel, error } = await client.rpc(
+        "whatsapp_barbearia_disponivel",
+        { p_whatsapp_barbearia: whatsappBarbeariaInput.value },
+      );
+
+      if (error) throw error;
+
+      if (!disponivel) {
+        showError(
+          errorBox2,
+          `Esse WhatsApp já está cadastrado em outra conta. ` +
+            `Se você acredita que isso é um engano, ` +
+            `<a href="${SUPORTE_WHATSAPP_URL}" target="_blank">fale com o nosso suporte</a>.`,
+        );
+        return;
+      }
+
+      whatsappBarbearia = whatsappBarbeariaInput.value;
+      irParaStep(3);
+      senhaInput.focus();
+    } catch (err) {
+      console.error(err);
+      showError(
+        errorBox2,
+        "Não conseguimos verificar agora. Tente novamente em instantes.",
+      );
+    } finally {
+      step2Submit.disabled = false;
+      step2Submit.textContent = "Continuar";
+    }
+  });
+
+  // ---------- VOLTAR pro Step 2 ----------
+  backBtn3.addEventListener("click", () => {
+    hideError(errorBox3);
+    irParaStep(2);
+  });
+
+  // ---------- STEP 3: cria a conta e finaliza o cadastro ----------
+  step3Form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    hideError(errorBox3);
+
+    if (!step3Form.checkValidity()) {
+      step3Form.reportValidity();
+      return;
+    }
+    if (senhaInput.value !== senhaConfirmaInput.value) {
+      senhaConfirmaInput.setCustomValidity("As senhas não são iguais.");
+      step3Form.reportValidity();
+      senhaConfirmaInput.setCustomValidity("");
+      return;
+    }
+
+    const client = getSupabaseClient();
+    if (!client) {
+      showError(
+        errorBox3,
+        "Não foi possível conectar ao servidor agora. Tente novamente em instantes.",
+      );
+      return;
+    }
+
+    step3Submit.disabled = true;
+    step3Submit.textContent = "Criando conta...";
+
+    try {
+      // 1) cria a conta no Supabase Auth
+      const { data: signUpData, error: signUpError } = await client.auth.signUp(
+        {
+          email: step1Data.email,
+          password: senhaInput.value,
+        },
+      );
+
+      if (signUpError) {
+        showError(
+          errorBox3,
+          signUpError.message.includes("already registered")
+            ? "Já existe uma conta com esse e-mail. Tente fazer login."
+            : "Não foi possível criar sua conta agora. Tente novamente.",
+        );
+        return;
+      }
+
+      // 2) se o projeto exige confirmação de e-mail, ainda não há sessão —
+      //    não dá pra finalizar o cadastro (a function precisa de auth.uid()).
+      if (!signUpData.session) {
+        step3Form.hidden = true;
+        confirmarEmail.hidden = false;
+        return;
+      }
+
+      // 3) com sessão ativa, finaliza o cadastro (insere barbearia + profissional)
+      const { data, error } = await client.rpc("finalizar_cadastro_barbearia", {
         p_empresa: step1Data.empresa,
         p_nome: step1Data.nome,
         p_whatsapp: step1Data.whatsapp,
@@ -161,30 +305,31 @@ document.addEventListener("DOMContentLoaded", () => {
       if (error) throw error;
 
       if (!data.ok) {
-        // BLOQUEADO — já existe uma barbearia com esse número
         showError(
-          `Esse WhatsApp já está cadastrado em outra conta. ` +
-            `Se você acredita que isso é um engano, ` +
-            `<a href="${SUPORTE_WHATSAPP_URL}" target="_blank">fale com o nosso suporte</a>.`,
+          errorBox3,
+          data.reason === "duplicado"
+            ? `Esse WhatsApp acabou de ser cadastrado por outra conta. ` +
+                `<a href="${SUPORTE_WHATSAPP_URL}" target="_blank">Fale com o suporte</a>.`
+            : "Não conseguimos concluir seu cadastro agora. Tente novamente.",
         );
-        step2Submit.disabled = false;
-        step2Submit.textContent = "Confirmar e liberar acesso";
         return;
       }
 
-      // sucesso — mostra confirmação e redireciona pro CRM
-      step2Form.hidden = true;
+      // 4) sucesso — já está logado (o signUp criou a sessão), redireciona pro CRM
+      step3Form.hidden = true;
       success.hidden = false;
       setTimeout(() => {
         window.location.href = CRM_ATENDIMENTOS_URL;
-      }, 1500);
+      }, 1200);
     } catch (err) {
       console.error(err);
       showError(
+        errorBox3,
         "Não conseguimos concluir seu cadastro agora. Tente novamente em instantes.",
       );
-      step2Submit.disabled = false;
-      step2Submit.textContent = "Confirmar e liberar acesso";
+    } finally {
+      step3Submit.disabled = false;
+      step3Submit.textContent = "Criar conta e acessar";
     }
   });
 });

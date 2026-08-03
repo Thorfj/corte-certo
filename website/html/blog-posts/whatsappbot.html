@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mockup WhatsApp — Bot Corte Certo</title>
+  <style>
+    :root {
+      --wa-header: #008069;
+      --wa-header-dark: #005c4b;
+      --wa-bg: #efeae2;
+      --wa-in: #ffffff;
+      --wa-out: #d9fdd3;
+      --wa-btn: #00a5f4;
+      --wa-divider: #e9e9e9;
+      --wa-gray: #667781;
+      --wa-pill: #ffffff;
+      --page-bg: #f0f2f5;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--page-bg);
+      font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 12px;
+    }
+
+    /* ---------- moldura do celular ---------- */
+    .device {
+      width: 380px;
+      background: #111;
+      border-radius: 42px;
+      padding: 14px;
+      box-shadow: 0 30px 70px -25px rgba(0, 0, 0, 0.45);
+    }
+
+    .screen {
+      background: #000;
+      border-radius: 28px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 720px;
+      position: relative;
+    }
+
+    .statusbar {
+      background: var(--wa-header);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 22px 4px;
+    }
+
+    .statusbar .icons {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      font-size: 12px;
+    }
+
+    /* ---------- header do contato ---------- */
+    .wa-header {
+      background: var(--wa-header);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px 12px;
+    }
+
+    .wa-back {
+      font-size: 20px;
+      opacity: 0.9;
+    }
+
+    .wa-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #0a5c4c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      flex: 0 0 auto;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    .wa-contact {
+      flex: 1;
+      line-height: 1.25;
+    }
+
+    .wa-contact .name {
+      font-size: 15.5px;
+      font-weight: 600;
+    }
+
+    .wa-contact .status {
+      font-size: 12.5px;
+      opacity: 0.85;
+    }
+
+    .wa-icons {
+      display: flex;
+      gap: 18px;
+      font-size: 16px;
+      opacity: 0.95;
+    }
+
+    /* ---------- área de chat ---------- */
+    .chat {
+      flex: 1;
+      background-color: var(--wa-bg);
+      background-image:
+        radial-gradient(circle at 20% 15%, rgba(0, 0, 0, 0.02) 0 2px, transparent 2px),
+        radial-gradient(circle at 70% 60%, rgba(0, 0, 0, 0.02) 0 2px, transparent 2px),
+        radial-gradient(circle at 40% 80%, rgba(0, 0, 0, 0.02) 0 2px, transparent 2px);
+      background-size: 60px 60px;
+      overflow-y: auto;
+      padding: 14px 10px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .chat::-webkit-scrollbar {
+      width: 0;
+    }
+
+    .day-pill {
+      align-self: center;
+      background: var(--wa-pill);
+      color: #54656f;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 8px;
+      margin: 10px 0 12px;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .row {
+      display: flex;
+      margin-bottom: 2px;
+    }
+
+    .row.in {
+      justify-content: flex-start;
+    }
+
+    .row.out {
+      justify-content: flex-end;
+    }
+
+    .card {
+      max-width: 82%;
+      border-radius: 8px;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+      position: relative;
+      animation: pop .22s ease both;
+      overflow: hidden;
+    }
+
+    .card.in {
+      background: var(--wa-in);
+      border-top-left-radius: 2px;
+    }
+
+    .card.out {
+      background: var(--wa-out);
+      border-top-right-radius: 2px;
+    }
+
+    .bubble-text {
+      padding: 7px 10px 9px;
+      font-size: 14.3px;
+      line-height: 1.4;
+      color: #111b21;
+      white-space: pre-line;
+    }
+
+    .bubble-time {
+      display: block;
+      text-align: right;
+      font-size: 10.5px;
+      color: #667781;
+      margin-top: 2px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .ticks {
+      color: #53bdeb;
+      font-size: 13px;
+    }
+
+    .card .options {
+      border-top: 1px solid var(--wa-divider);
+    }
+
+    .opt-btn {
+      display: block;
+      width: 100%;
+      background: none;
+      border: none;
+      border-top: 1px solid var(--wa-divider);
+      color: var(--wa-btn);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 11px 10px;
+      cursor: pointer;
+      text-align: center;
+      font-family: inherit;
+      transition: background .1s ease;
+    }
+
+    .card .options .opt-btn:first-child {
+      border-top: none;
+    }
+
+    .opt-btn:hover {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    .opt-btn:active {
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    .opt-btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    .summary {
+      padding: 10px 12px 4px;
+      font-size: 13.5px;
+      color: #111b21;
+    }
+
+    .summary .s-title {
+      font-weight: 700;
+      margin-bottom: 6px;
+      font-size: 14.3px;
+    }
+
+    .summary .s-line {
+      display: flex;
+      justify-content: space-between;
+      padding: 3px 0;
+      border-bottom: 1px dashed #dcd8ce;
+    }
+
+    .summary .s-line:last-of-type {
+      border-bottom: none;
+    }
+
+    .summary .s-label {
+      color: #667781;
+    }
+
+    .summary .s-value {
+      font-weight: 600;
+    }
+
+    .summary .s-total {
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px solid var(--wa-divider);
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+    }
+
+    @keyframes pop {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* typing indicator */
+    .typing {
+      background: var(--wa-in);
+      border-radius: 8px;
+      border-top-left-radius: 2px;
+      padding: 10px 14px;
+      display: inline-flex;
+      gap: 4px;
+      align-self: flex-start;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+      animation: pop .2s ease both;
+    }
+
+    .typing span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #a9b3ab;
+      animation: bounce 1.1s infinite ease-in-out;
+    }
+
+    .typing span:nth-child(2) {
+      animation-delay: .15s;
+    }
+
+    .typing span:nth-child(3) {
+      animation-delay: .3s;
+    }
+
+    @keyframes bounce {
+
+      0%,
+      60%,
+      100% {
+        transform: translateY(0);
+        opacity: .5;
+      }
+
+      30% {
+        transform: translateY(-4px);
+        opacity: 1;
+      }
+    }
+
+    /* ---------- barra de input (decorativa) ---------- */
+    .wa-inputbar {
+      background: #f0f2f5;
+      padding: 8px 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .wa-inputbar .field {
+      flex: 1;
+      background: #fff;
+      border-radius: 22px;
+      padding: 9px 14px;
+      font-size: 13.5px;
+      color: #8696a0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .wa-mic {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--wa-header);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 16px;
+      flex: 0 0 auto;
+    }
+
+    .restart-wrap {
+      text-align: center;
+      padding: 16px 0 6px;
+      font-family: Inter, sans-serif;
+    }
+
+    .restart-wrap p {
+      font-size: 13px;
+      color: #54656f;
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="device">
+    <div class="screen">
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="icons">●●●● 5G 🔋</span>
+      </div>
+
+      <div class="wa-header">
+        <span class="wa-back">←</span>
+        <div class="wa-avatar">✂️</div>
+        <div class="wa-contact">
+          <div class="name">Barbearia Corte Certo</div>
+          <div class="status" id="waStatus">online</div>
+        </div>
+        <div class="wa-icons">
+          <span>📹</span><span>📞</span><span>⋮</span>
+        </div>
+      </div>
+
+      <div class="chat" id="chat"></div>
+
+      <div class="wa-inputbar">
+        <div class="field">😊 Toque em uma opção acima ↑</div>
+        <div class="wa-mic">🎤</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const chat = document.getElementById('chat');
+      const status = document.getElementById('waStatus');
+      const state = { name: "Carlos", service: "", price: 0, pro: "", when: "" };
+
+      function fmt(str) {
+        return str
+          .replace(/{name}/g, state.name)
+          .replace(/{service}/g, state.service)
+          .replace(/{price}/g, state.price)
+          .replace(/{pro}/g, state.pro)
+          .replace(/{when}/g, state.when);
+      }
+
+      function scrollBottom() { chat.scrollTop = chat.scrollHeight; }
+
+      function addDivider(text) {
+        const el = document.createElement('div');
+        el.className = 'day-pill';
+        el.textContent = text;
+        chat.appendChild(el);
+        scrollBottom();
+      }
+
+      function nowTime() {
+        const d = new Date();
+        return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+      }
+
+      function addBubble(side, text, withTicks) {
+        const row = document.createElement('div');
+        row.className = 'row ' + side;
+        const card = document.createElement('div');
+        card.className = 'card ' + side;
+        const txt = document.createElement('div');
+        txt.className = 'bubble-text';
+        txt.textContent = fmt(text);
+        const time = document.createElement('div');
+        time.className = 'bubble-time';
+        time.innerHTML = nowTime() + (withTicks ? ' <span class="ticks">✓✓</span>' : '');
+        card.appendChild(txt);
+        card.appendChild(time);
+        row.appendChild(card);
+        chat.appendChild(row);
+        scrollBottom();
+      }
+
+      function addSummary(title, lines, totalLabel, totalValue) {
+        const row = document.createElement('div');
+        row.className = 'row in';
+        const card = document.createElement('div');
+        card.className = 'card in';
+        const sum = document.createElement('div');
+        sum.className = 'summary';
+        let html = '<div class="s-title">' + title + '</div>';
+        lines.forEach(l => {
+          html += '<div class="s-line"><span class="s-label">' + l[0] + '</span><span class="s-value">' + fmt(l[1]) + '</span></div>';
+        });
+        html += '<div class="s-total"><span>' + totalLabel + '</span><span>' + totalValue + '</span></div>';
+        sum.innerHTML = html;
+        const time = document.createElement('div');
+        time.className = 'bubble-time';
+        time.style.padding = '0 12px 8px';
+        time.textContent = nowTime();
+        card.appendChild(sum);
+        card.appendChild(time);
+        row.appendChild(card);
+        chat.appendChild(row);
+        scrollBottom();
+      }
+
+      function showTyping(cb, delay) {
+        status.textContent = 'digitando...';
+        const row = document.createElement('div');
+        row.className = 'row in';
+        const t = document.createElement('div');
+        t.className = 'typing';
+        t.innerHTML = '<span></span><span></span><span></span>';
+        row.appendChild(t);
+        chat.appendChild(row);
+        scrollBottom();
+        setTimeout(() => {
+          row.remove();
+          status.textContent = 'online';
+          cb();
+        }, delay || 900);
+      }
+
+      function addOptions(optionsList, containerCard) {
+        const wrap = document.createElement('div');
+        wrap.className = 'options';
+        optionsList.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.className = 'opt-btn';
+          btn.textContent = opt.label;
+          btn.onclick = () => choose(opt, wrap);
+          wrap.appendChild(btn);
+        });
+        containerCard.appendChild(wrap);
+        scrollBottom();
+        return wrap;
+      }
+
+      function addBubbleWithOptions(text, options) {
+        const row = document.createElement('div');
+        row.className = 'row in';
+        const card = document.createElement('div');
+        card.className = 'card in';
+        const txt = document.createElement('div');
+        txt.className = 'bubble-text';
+        txt.textContent = fmt(text);
+        card.appendChild(txt);
+        row.appendChild(card);
+        chat.appendChild(row);
+        addOptions(options, card);
+        scrollBottom();
+      }
+
+      function choose(opt, wrap) {
+        // trava os botões já usados
+        wrap.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+        if (opt.set) Object.assign(state, opt.set);
+        addBubble('out', opt.label, true);
+        showTyping(() => runStep(opt.next), 850 + Math.random() * 400);
+      }
+
+      // ---------- definição do fluxo (mesma sequência do site) ----------
+      const flow = {
+        start: {
+          divider: "Hoje",
+          messages: [
+            "Oi, {name}! 👋",
+            "Aqui é da Barbearia Corte Certo. Vamos marcar seu próximo horário?"
+          ],
+          options: [
+            { label: "📅 Agendar horário", next: "service" },
+            { label: "💈 Ver serviços e preços", next: "servicesInfo" }
+          ]
+        },
+        servicesInfo: {
+          messages: [
+            "Nossos serviços:\n✂️ Corte — R$ 40\n🧔 Barba — R$ 35\n✂️🧔 Corte + Barba — R$ 65\n🎨 Coloração — R$ 90"
+          ],
+          options: [
+            { label: "📅 Agendar horário", next: "service" }
+          ]
+        },
+        service: {
+          messages: ["Show! Qual serviço você quer marcar?"],
+          options: [
+            { label: "✂️ Corte — R$ 40", next: "professional", set: { service: "Corte", price: 40 } },
+            { label: "🧔 Barba — R$ 35", next: "professional", set: { service: "Barba", price: 35 } },
+            { label: "✂️🧔 Corte + Barba — R$ 65", next: "professional", set: { service: "Corte + Barba", price: 65 } },
+            { label: "🎨 Coloração — R$ 90", next: "professional", set: { service: "Coloração", price: 90 } }
+          ]
+        },
+        professional: {
+          messages: ["Com quem você quer ser atendido?"],
+          options: [
+            { label: "👤 João", next: "datetime", set: { pro: "João" } },
+            { label: "👤 Marcos", next: "datetime", set: { pro: "Marcos" } },
+            { label: "🤷 Sem preferência", next: "datetime", set: { pro: "o profissional disponível" } }
+          ]
+        },
+        datetime: {
+          messages: ["Esses são os horários disponíveis para {service} com {pro} essa semana:"],
+          options: [
+            { label: "Hoje, 16:00", next: "confirm", set: { when: "hoje às 16:00" } },
+            { label: "Amanhã, 10:00", next: "confirm", set: { when: "amanhã às 10:00" } },
+            { label: "Amanhã, 14:00", next: "confirm", set: { when: "amanhã às 14:00" } }
+          ]
+        },
+        confirm: {
+          summary: {
+            title: "Resumo do agendamento",
+            lines: [
+              ["Cliente", "{name}"],
+              ["Serviço", "{service}"],
+              ["Profissional", "{pro}"],
+              ["Quando", "{when}"]
+            ],
+            totalLabel: "Total",
+            totalValueFn: () => "R$ " + state.price + ",00"
+          },
+          options: [
+            { label: "✅ Confirmar horário", next: "confirmed" },
+            { label: "🔄 Escolher outro horário", next: "datetime" }
+          ]
+        },
+        confirmed: {
+          messages: [
+            "Prontinho, {name}! ✅ Seu horário de {service} com {pro} está confirmado para {when}.",
+            "Vou te avisar um dia antes e uma hora antes, combinado?"
+          ],
+          options: [
+            { label: "⏩ Simular passagem do tempo", next: "reminder1" }
+          ]
+        },
+        reminder1: {
+          divider: "Um dia depois",
+          messages: [
+            "Oi, {name}! Passando pra lembrar do seu horário de {service} amanhã, {when}, com {pro} 💈",
+            "Confirma que vai chegar?"
+          ],
+          options: [
+            { label: "✅ Sim, vou", next: "reminder2" },
+            { label: "❌ Preciso remarcar", next: "reschedule" }
+          ]
+        },
+        reschedule: {
+          messages: ["Sem problema! Vamos escolher um novo horário 🙂"],
+          options: [
+            { label: "📅 Escolher novo horário", next: "datetime" }
+          ]
+        },
+        reminder2: {
+          divider: "No dia do atendimento",
+          messages: [
+            "Fala, {name}! Passando 1h antes só pra lembrar: seu horário é hoje, {when}, com {pro}. Até já! ✂️"
+          ],
+          options: [
+            { label: "👍 Combinado", next: "nps" }
+          ]
+        },
+        nps: {
+          divider: "Depois do atendimento",
+          messages: [
+            "E aí, {name}, tudo certo com o atendimento de hoje?",
+            "De 1 a 5, como você avalia?"
+          ],
+          options: [
+            { label: "⭐ 1", next: "npsLow", set: { rating: 1 } },
+            { label: "⭐ 2", next: "npsLow", set: { rating: 2 } },
+            { label: "⭐ 3", next: "npsMid", set: { rating: 3 } },
+            { label: "⭐ 4", next: "npsHigh", set: { rating: 4 } },
+            { label: "⭐ 5", next: "npsHigh", set: { rating: 5 } }
+          ]
+        },
+        npsLow: {
+          messages: [
+            "Poxa, sentimos muito que não tenha sido uma boa experiência 😕",
+            "Vou avisar o responsável pela barbearia pra te dar um retorno pessoalmente."
+          ],
+          options: [{ label: "🔁 Simular nova conversa", next: "start" }]
+        },
+        npsMid: {
+          messages: [
+            "Valeu pela nota, {name}! Vamos trabalhar pra deixar sua próxima visita ainda melhor 🙂"
+          ],
+          options: [{ label: "🔁 Simular nova conversa", next: "start" }]
+        },
+        npsHigh: {
+          messages: [
+            "Que ótimo, {name}! 🙌 Muito obrigado pela nota!",
+            "Te esperamos na próxima 💈"
+          ],
+          options: [{ label: "🔁 Simular nova conversa", next: "start" }]
+        }
+      };
+
+      function runStep(stepId) {
+        if (stepId === 'start') {
+          Object.assign(state, { service: "", price: 0, pro: "", when: "" });
+        }
+        const step = flow[stepId];
+        if (!step) return;
+        if (step.divider) addDivider(step.divider);
+
+        if (step.summary) {
+          showTyping(() => {
+            addSummary(step.summary.title, step.summary.lines, step.summary.totalLabel, step.summary.totalValueFn());
+            addBubbleOptionsOnly(step.options);
+          }, 700);
+          return;
+        }
+
+        const msgs = step.messages.slice();
+        function next() {
+          if (msgs.length === 0) return;
+          const text = msgs.shift();
+          showTyping(() => {
+            if (msgs.length === 0) {
+              addBubbleWithOptions(text, step.options);
+            } else {
+              addBubble('in', text, false);
+              next();
+            }
+          }, 650 + Math.random() * 450);
+        }
+        next();
+      }
+
+      function addBubbleOptionsOnly(options) {
+        const row = document.createElement('div');
+        row.className = 'row in';
+        const card = document.createElement('div');
+        card.className = 'card in';
+        row.appendChild(card);
+        chat.appendChild(row);
+        addOptions(options, card);
+        scrollBottom();
+      }
+
+      // inicia o fluxo
+      runStep('start');
+    })();
+  </script>
+
+</body>
+
+</html>

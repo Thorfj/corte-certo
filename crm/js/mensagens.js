@@ -4,46 +4,37 @@ if (typeof lucide !== "undefined") {
   console.error("Lucide não carregou — verifique a conexão com unpkg.com");
 }
 
-async function checarSessao() {
-  const {
-    data: { session },
-  } = await supabaseClient.auth.getSession();
-  if (!session) {
-    window.location.href = "login.html";
-    return null;
-  }
-  return session;
-}
-
-async function carregarNomeBarbearia() {
-  const { data } = await supabaseClient
-    .from("barbearias")
-    .select("empresa")
-    .single();
-  if (data?.empresa) {
-    document.querySelector(".logo-name").textContent = data.empresa;
-  }
-}
-
-let barbeariaIdCache = null;
-async function obterBarbeariaId() {
-  if (barbeariaIdCache) return barbeariaIdCache;
-  const {
-    data: { user },
-  } = await supabaseClient.auth.getUser();
-  const { data, error } = await supabaseClient
-    .from("profissionais")
-    .select("barbearia_id")
-    .eq("auth_user_id", user.id)
-    .single();
-  if (error) throw error;
-  barbeariaIdCache = data.barbearia_id;
-  return barbeariaIdCache;
-}
-
 // ---------------- TABS ----------------
+let assinanteCache = null; // null = ainda não checou, true/false depois
+
+async function ehAssinante() {
+  if (assinanteCache !== null) return assinanteCache;
+  try {
+    const barbeariaId = await obterBarbeariaId();
+    const { data } = await supabaseClient
+      .from("barbearias")
+      .select("cliente")
+      .eq("id", barbeariaId)
+      .single();
+    assinanteCache = !!data?.cliente;
+  } catch (err) {
+    console.error("Erro ao checar assinatura:", err);
+    assinanteCache = true; // em dúvida, não bloqueia a UI por erro de rede
+  }
+  return assinanteCache;
+}
+
+async function atualizarCadeadoFollowup() {
+  const lockIcon = document.getElementById("followup-lock");
+  if (!(await ehAssinante())) {
+    lockIcon.classList.remove("hidden");
+  } else {
+    lockIcon.classList.add("hidden");
+  }
+}
+
 document.querySelectorAll(".tab-btn").forEach((btn) => {
-  btn.addEventListener("click", () => {
+  btn.addEventListener("click", async () => {
     document
       .querySelectorAll(".tab-btn")
       .forEach((b) => b.classList.remove("active"));
@@ -52,14 +43,15 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
       .forEach((p) => p.classList.remove("active"));
     btn.classList.add("active");
     document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
+
+    if (btn.dataset.tab === "followup") {
+      const banner = document.getElementById("followup-trial-banner");
+      banner.classList.toggle("hidden", await ehAssinante());
+    }
   });
 });
 
-document.querySelectorAll("[data-close]").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    document.getElementById(btn.dataset.close).classList.add("hidden");
-  });
-});
+atualizarCadeadoFollowup();
 
 function confirmarAcao(mensagem, textoBotao = "Confirmar", estilo = "danger") {
   return new Promise((resolve) => {
@@ -86,6 +78,22 @@ function confirmarAcao(mensagem, textoBotao = "Confirmar", estilo = "danger") {
     };
     okBtn.addEventListener("click", onOk);
     cancelBtn.addEventListener("click", onCancel);
+  });
+}
+
+function avisarUsuario(mensagem, titulo = "Aviso") {
+  return new Promise((resolve) => {
+    document.getElementById("aviso-titulo").textContent = titulo;
+    document.getElementById("aviso-mensagem").textContent = mensagem;
+    const okBtn = document.getElementById("aviso-ok-btn");
+    document.getElementById("modal-aviso").classList.remove("hidden");
+
+    const onOk = () => {
+      okBtn.removeEventListener("click", onOk);
+      document.getElementById("modal-aviso").classList.add("hidden");
+      resolve();
+    };
+    okBtn.addEventListener("click", onOk);
   });
 }
 
@@ -146,9 +154,11 @@ function renderizarFluxoVisual(lista) {
 }
 
 async function carregarFluxo() {
+  const barbeariaId = await obterBarbeariaId();
   const { data, error } = await supabaseClient
     .from("fluxo_mensagens")
     .select("id, id_msg, etapa, mensagem, variaveis_captadas")
+    .eq("barbearia_id", barbeariaId)
     .order("id_msg", { ascending: true });
 
   const body = document.getElementById("tabela-fluxo-body");
@@ -461,14 +471,17 @@ function renderizarFollowupVisual(lista) {
 }
 
 async function carregarFollowup() {
+  const barbeariaId = await obterBarbeariaId();
   const [prazosResp, fluxoResp] = await Promise.all([
     supabaseClient
       .from("prazos_followup")
       .select("id, id_msg, prazo_flu")
+      .eq("barbearia_id", barbeariaId)
       .order("id_msg", { ascending: true }),
     supabaseClient
       .from("fluxo_followup")
       .select("id, id_msg, etapa, mensagem, tempo")
+      .eq("barbearia_id", barbeariaId)
       .neq("id_msg", "101")
       .order("id_msg", { ascending: true }),
   ]);
@@ -650,9 +663,11 @@ document
 let finalizacaoCache = null;
 
 async function carregarFinalizacao() {
+  const barbeariaId = await obterBarbeariaId();
   const { data, error } = await supabaseClient
     .from("fluxo_followup")
     .select("id, mensagem")
+    .eq("barbearia_id", barbeariaId)
     .eq("id_msg", "101")
     .maybeSingle();
 
@@ -769,6 +784,14 @@ document
 
     try {
       const barbeariaId = await obterBarbeariaId();
+
+      if (novoStatus === "Sim" && !(await ehAssinante())) {
+        avisarUsuario(
+          "O fluxo de atendimento vai ligar normalmente, mas o follow-up não vai funcionar até você assinar o plano.",
+          "Follow-up indisponível no teste grátis",
+        );
+      }
+
       const { error } = await supabaseClient
         .from("barbearias")
         .update({ status_fluxo: novoStatus })
@@ -783,12 +806,6 @@ document
     }
   });
 
-document.getElementById("logout-link").addEventListener("click", async (e) => {
-  e.preventDefault();
-  await supabaseClient.auth.signOut();
-  window.location.href = "login.html";
-});
-
 (async () => {
   try {
     if (typeof supabaseClient === "undefined") {
@@ -802,6 +819,8 @@ document.getElementById("logout-link").addEventListener("click", async (e) => {
       await carregarFluxo();
       await carregarFollowup();
       await carregarFinalizacao();
+      assinanteCache = null;
+      await atualizarCadeadoFollowup();
     }
   } catch (err) {
     console.error(err);

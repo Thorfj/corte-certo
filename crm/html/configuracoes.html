@@ -12,34 +12,19 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../js/supabase-config.js"></script>
+  <script src="../js/crm-global.js"></script>
 </head>
 
 <body>
   <div class="app">
-    <aside class="sidebar">
-      <div class="logo">
-        <div class="logo-icon"><i data-lucide="scissors" style="width:18px;height:18px"></i></div>
-        <span class="logo-name"></span>
-      </div>
-      <nav class="nav">
-        <a class="nav-item" href="atendimentos.html"><i data-lucide="clipboard-list"></i> Atendimentos</a>
-        <a class="nav-item" href="agenda.html"><i data-lucide="calendar"></i> Agenda</a>
-        <a class="nav-item" href="contatos.html"><i data-lucide="users"></i> Contatos</a>
-        <a class="nav-item" href="servicos.html"><i data-lucide="scissors"></i> Serviços</a>
-        <a class="nav-item" href="mensagens.html"><i data-lucide="message-square"></i> Mensagens</a>
-        <a class="nav-item" href="relatorios.html"><i data-lucide="pie-chart"></i> Relatórios</a>
-        <a class="nav-item active" href="configuracoes.html"><i data-lucide="settings"></i> Configurações</a>
-      </nav>
-      <div class="sidebar-footer">
-        <button class="help-button"><i data-lucide="help-circle" style="width:16px;height:16px"></i></button>
-        <a class="nav-item" href="#" id="logout-link"><i data-lucide="log-out"></i> Sair</a>
-      </div>
-    </aside>
+    <div id="crm-sidebar"></div>
 
     <main class="main-content">
       <div class="page-header">
         <h1 class="page-title" style="margin:0">Configurações</h1>
       </div>
+
+      <div class="trial-banner hidden" id="trial-status-card"></div>
 
       <div class="tabs">
         <button class="tab-btn active" data-tab="geral">Geral</button>
@@ -183,11 +168,11 @@
             <input type="text" id="us-agenda" placeholder="agenda-nome">
           </div>
         </div>
-        <div class="field" id="us-auth-id-field">
-          <label for="us-auth-id">User UID (Supabase Auth)</label>
-          <input type="text" id="us-auth-id">
-          <p class="field-hint">Crie o usuário primeiro em Authentication &gt; Users no painel do Supabase, e cole aqui o UID gerado.</p>
-        </div>
+        <!--
+          Campo de "User UID (Supabase Auth)" removido — a criação de
+          usuário agora passa pela Edge Function `criar-usuario`, que
+          cria a conta no Auth e pega o UID sozinha.
+        -->
         <p class="modal-error" id="us-erro"></p>
         <div class="modal-footer">
           <button type="button" class="btn" data-close="modal-usuario">Cancelar</button>

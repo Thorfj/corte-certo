@@ -19,38 +19,16 @@ const sortOrder = {
   perdido: "asc",
 };
 
-async function checarSessao() {
-  const {
-    data: { session },
-  } = await supabaseClient.auth.getSession();
-  if (!session) {
-    window.location.href = "login.html";
-    return null;
-  }
-  return session;
-}
-
-async function carregarNomeBarbearia() {
-  const { data } = await supabaseClient
-    .from("barbearias")
-    .select("empresa")
-    .single();
-  if (data?.empresa) {
-    document.querySelector(".logo-name").textContent = data.empresa;
-  }
-}
-
-async function carregarNomeBarbearia() {
-  const { data } = await supabaseClient
-    .from("barbearias")
-    .select("empresa")
-    .single();
-  if (data?.empresa) {
-    document.querySelector(".logo-name").textContent = data.empresa;
-  }
-}
-
+// FIX: antes buscava TODOS os atendimentos visíveis pela RLS, sem
+// filtrar pela barbearia do usuário logado.
+//
+// ATENÇÃO: isso assume que a tabela `atendimentos` tem uma coluna
+// `barbearia_id` direta (mesmo padrão de `servicos` e `profissionais`).
+// Se ela não existir, me avise que ajusto pra filtrar via join
+// (ex: profissional_id -> profissionais.barbearia_id).
 async function carregarAtendimentos(dataInicio, dataFim) {
+  const barbeariaId = await obterBarbeariaId();
+
   let query = supabaseClient
     .from("atendimentos")
     .select(
@@ -61,6 +39,7 @@ async function carregarAtendimentos(dataInicio, dataFim) {
   atendimento_servicos ( preco_cobrado, duracao_cobrada, servicos ( nome ) )
 `,
     )
+    .eq("barbearia_id", barbeariaId)
     .order("data_agend", { ascending: true });
 
   if (dataInicio) query = query.gte("data_agend", dataInicio);
@@ -212,12 +191,6 @@ function renderizarKanban(atendimentos) {
     kanban.appendChild(colEl);
   });
 }
-
-document.getElementById("logout-link").addEventListener("click", async (e) => {
-  e.preventDefault();
-  await supabaseClient.auth.signOut();
-  window.location.href = "login.html";
-});
 
 document
   .getElementById("novo-atendimento-btn")

@@ -5,42 +5,6 @@ if (typeof lucide !== "undefined") {
 }
 
 let servicosCache = [];
-let barbeariaIdCache = null;
-
-async function checarSessao() {
-  const {
-    data: { session },
-  } = await supabaseClient.auth.getSession();
-  if (!session) {
-    window.location.href = "login.html";
-    return null;
-  }
-  return session;
-}
-async function carregarNomeBarbearia() {
-  const { data } = await supabaseClient
-    .from("barbearias")
-    .select("empresa")
-    .single();
-  if (data?.empresa) {
-    document.querySelector(".logo-name").textContent = data.empresa;
-  }
-}
-
-async function obterBarbeariaId() {
-  if (barbeariaIdCache) return barbeariaIdCache;
-  const {
-    data: { user },
-  } = await supabaseClient.auth.getUser();
-  const { data, error } = await supabaseClient
-    .from("profissionais")
-    .select("barbearia_id")
-    .eq("auth_user_id", user.id)
-    .single();
-  if (error) throw error;
-  barbeariaIdCache = data.barbearia_id;
-  return barbeariaIdCache;
-}
 
 async function obterProximoSku(barbeariaId) {
   const { data, error } = await supabaseClient
@@ -57,10 +21,15 @@ async function obterProximoSku(barbeariaId) {
   return String(proximo).padStart(3, "0");
 }
 
+// FIX: antes buscava TODOS os serviços visíveis pela RLS, sem filtrar
+// pela barbearia do usuário logado. Por isso apareciam serviços de
+// outras barbearias.
 async function carregarServicos() {
+  const barbeariaId = await obterBarbeariaId();
   const { data, error } = await supabaseClient
     .from("servicos")
     .select("id, sku, nome, preco, duracao_min, recorrencia")
+    .eq("barbearia_id", barbeariaId)
     .order("nome", { ascending: true });
 
   const body = document.getElementById("tabela-servicos-body");
@@ -157,12 +126,6 @@ async function excluirServico(id) {
   await carregarServicos();
 }
 
-document.querySelectorAll("[data-close]").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    document.getElementById(btn.dataset.close).classList.add("hidden");
-  });
-});
-
 document
   .getElementById("novo-servico-btn")
   .addEventListener("click", abrirModalNovo);
@@ -226,12 +189,6 @@ document
       salvarBtn.textContent = "Salvar";
     }
   });
-
-document.getElementById("logout-link").addEventListener("click", async (e) => {
-  e.preventDefault();
-  await supabaseClient.auth.signOut();
-  window.location.href = "login.html";
-});
 
 (async () => {
   try {

@@ -43,7 +43,7 @@
           <h5>Empresa</h5>
           <a href="/website/html/quem-somos.html">Quem somos</a>
           <a href="/website/html/blog.html">Blog</a>
-          <a href="https://wa.me/5541999990000" target="_blank">Falar no WhatsApp</a>
+          <a href="https://wa.me/5541999428022" target="_blank">Falar no WhatsApp</a>
         </div>
         <div class="foot-col">
           <h5>Legal</h5>

@@ -4,7 +4,6 @@ if (typeof lucide !== "undefined") {
   console.error("Lucide não carregou — verifique a conexão com unpkg.com");
 }
 
-let barbeariaIdCache = null;
 let barbeariaCache = null;
 let profissionalAtualCache = null;
 
@@ -13,41 +12,9 @@ let profissionalAtualCache = null;
 const GOOGLE_OAUTH_URL =
   "https://SEU-N8N.exemplo.com/webhook/google-oauth-start";
 
-async function checarSessao() {
-  const {
-    data: { session },
-  } = await supabaseClient.auth.getSession();
-  if (!session) {
-    window.location.href = "login.html";
-    return null;
-  }
-  return session;
-}
-
-async function carregarNomeBarbearia() {
-  const { data } = await supabaseClient
-    .from("barbearias")
-    .select("empresa")
-    .single();
-  if (data?.empresa) {
-    document.querySelector(".logo-name").textContent = data.empresa;
-  }
-}
-
-async function obterBarbeariaId() {
-  if (barbeariaIdCache) return barbeariaIdCache;
-  const {
-    data: { user },
-  } = await supabaseClient.auth.getUser();
-  const { data, error } = await supabaseClient
-    .from("profissionais")
-    .select("barbearia_id")
-    .eq("auth_user_id", user.id)
-    .single();
-  if (error) throw error;
-  barbeariaIdCache = data.barbearia_id;
-  return barbeariaIdCache;
-}
+// TODO: ajustar para a URL real da Edge Function depois do deploy
+const CRIAR_USUARIO_URL =
+  "https://jzqiqrymqbzullysukja.supabase.co/functions/v1/criar-usuario";
 
 async function obterProfissionalAtual() {
   if (profissionalAtualCache) return profissionalAtualCache;
@@ -205,10 +172,15 @@ document.getElementById("form-geral").addEventListener("submit", async (e) => {
 });
 
 // ---------------- ABA USUÁRIOS ----------------
+// FIX: antes buscava TODOS os profissionais visíveis pela RLS, sem
+// filtrar pela barbearia do usuário logado. Por isso apareciam usuários
+// de outras barbearias (ex: "Usuário Teste").
 async function carregarUsuarios() {
+  const barbeariaId = await obterBarbeariaId();
   const { data, error } = await supabaseClient
     .from("profissionais")
     .select("id, nome, email, acesso, agendas")
+    .eq("barbearia_id", barbeariaId)
     .order("nome", { ascending: true });
 
   const body = document.getElementById("tabela-usuarios-body");
@@ -256,7 +228,6 @@ async function carregarUsuarios() {
 }
 
 function abrirModalUsuario(usuario) {
-  const authIdField = document.getElementById("us-auth-id-field");
   document.getElementById("form-usuario").reset();
   document.getElementById("us-erro").style.display = "none";
 
@@ -268,14 +239,13 @@ function abrirModalUsuario(usuario) {
     document.getElementById("us-email").value = usuario.email;
     document.getElementById("us-acesso").value = usuario.acesso;
     document.getElementById("us-agenda").value = usuario.agendas || "";
-    authIdField.style.display = "none";
   } else {
     document.getElementById("modal-usuario-titulo").textContent =
       "Novo Usuário";
     document.getElementById("us-id").value = "";
-    authIdField.style.display = "block";
   }
 
+  // campo de UID manual removido do fluxo — a Edge Function cuida disso
   document.getElementById("modal-usuario").classList.remove("hidden");
 }
 
@@ -302,26 +272,34 @@ document
 
     try {
       if (id) {
+        // edição: continua indo direto na tabela (RLS/policy de UPDATE
+        // já deve restringir pra mesma barbearia)
         const { error } = await supabaseClient
           .from("profissionais")
           .update({ nome, email, acesso, agendas })
           .eq("id", id);
         if (error) throw error;
       } else {
-        const authUserId = document.getElementById("us-auth-id").value.trim();
-        if (!authUserId)
-          throw new Error("Informe o User UID criado no Supabase Auth.");
+        // criação: agora passa pela Edge Function — ela cria o usuário
+        // no Supabase Auth, pega o UID sozinha e insere em profissionais
+        // já com o barbearia_id certo. Ninguém precisa colar UID na mão.
+        const {
+          data: { session },
+        } = await supabaseClient.auth.getSession();
 
-        const barbeariaId = await obterBarbeariaId();
-        const { error } = await supabaseClient.from("profissionais").insert({
-          barbearia_id: barbeariaId,
-          auth_user_id: authUserId,
-          nome,
-          email,
-          acesso,
-          agendas,
+        const resp = await fetch(CRIAR_USUARIO_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ nome, email, acesso, agendas }),
         });
-        if (error) throw error;
+
+        const resultado = await resp.json();
+        if (!resp.ok || resultado.error) {
+          throw new Error(resultado.error || "Erro ao criar usuário.");
+        }
       }
 
       document.getElementById("modal-usuario").classList.add("hidden");
@@ -339,25 +317,14 @@ document
     }
   });
 
-document.querySelectorAll("[data-close]").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    document.getElementById(btn.dataset.close).classList.add("hidden");
-  });
-});
-
-document.querySelectorAll(".modal-overlay").forEach((overlay) => {
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) {
-      overlay.classList.add("hidden");
-    }
-  });
-});
-
 // ---------------- ABA FATURAS ----------------
+// FIX: também filtra por barbearia_id (antes trazia faturas de todo mundo)
 async function carregarFaturas() {
+  const barbeariaId = await obterBarbeariaId();
   const { data, error } = await supabaseClient
     .from("asaas")
     .select("id, fatura_url, data, status")
+    .eq("barbearia_id", barbeariaId)
     .order("data", { ascending: false });
 
   const body = document.getElementById("tabela-faturas-body");
@@ -437,11 +404,71 @@ document
     }
   });
 
-document.getElementById("logout-link").addEventListener("click", async (e) => {
-  e.preventDefault();
-  await supabaseClient.auth.signOut();
-  window.location.href = "login.html";
-});
+// ---------------- Status do teste grátis ----------------
+async function carregarStatusTeste() {
+  const card = document.getElementById("trial-status-card");
+  try {
+    const { data, error } = await supabaseClient.rpc("status_teste");
+    if (error || !data || !data.length) return;
+
+    const status = data[0];
+    card.classList.remove("hidden", "trial-banner-info", "trial-banner-aviso");
+
+    if (status.fase === "assinante") {
+      card.classList.add("hidden");
+      return;
+    }
+
+    if (status.fase === "configurando") {
+      card.classList.add("trial-banner-info");
+      card.innerHTML = `
+        <span>Configure suas informações, profissionais e serviços à vontade. Quando terminar, inicie seus 5 dias de teste grátis.</span>
+        <button type="button" class="btn btn-primary" id="concluir-config-btn">Concluir configuração e iniciar teste</button>
+      `;
+      document
+        .getElementById("concluir-config-btn")
+        .addEventListener("click", concluirConfiguracaoTeste);
+      return;
+    }
+
+    if (status.fase === "teste_ativo") {
+      card.classList.add("trial-banner-info");
+      card.innerHTML = `<span>Você está no teste grátis — ${status.dias_restantes} dia(s) restante(s).</span>`;
+      return;
+    }
+
+    if (status.fase === "grace") {
+      card.classList.add("trial-banner-aviso");
+      card.innerHTML = `<span>Seu teste grátis acabou. Você ainda tem ${status.dias_restantes} dia(s) de acesso ao CRM, mas o fluxo foi desativado até você assinar.</span>`;
+      return;
+    }
+
+    if (status.fase === "bloqueado") {
+      card.classList.add("trial-banner-aviso");
+      card.innerHTML = `<span>Seu período de acesso terminou. Assine o plano pra reativar o CRM.</span>`;
+    }
+  } catch (err) {
+    console.error("Erro ao carregar status do teste:", err);
+  }
+}
+
+async function concluirConfiguracaoTeste() {
+  if (
+    !confirm(
+      "A partir de agora você tem 5 dias de teste grátis. Deseja continuar?",
+    )
+  )
+    return;
+
+  try {
+    const { error } = await supabaseClient.rpc("concluir_configuracao_teste");
+    if (error) throw error;
+    await carregarStatusTeste();
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao iniciar o teste. Tente novamente.");
+  }
+}
 
 (async () => {
   try {
@@ -452,6 +479,7 @@ document.getElementById("logout-link").addEventListener("click", async (e) => {
     if (session) {
       await aplicarTemaUsuario();
       await carregarNomeBarbearia();
+      await carregarStatusTeste();
       await carregarGeral();
       await carregarUsuarios();
       await carregarFaturas();

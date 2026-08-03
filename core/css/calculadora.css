@@ -238,27 +238,52 @@
   position: relative;
   z-index: 1;
 }
-
 .metric {
   min-height: 106px;
   padding: 17px;
   border-radius: 13px;
   background: rgba(255, 255, 255, 0.055);
   border: 1px solid rgba(255, 255, 255, 0.09);
+  display: flex;
+  flex-direction: column;
 }
-
 .metric span {
   display: block;
   color: #a9beb7;
   font-size: 12px;
 }
-
 .metric strong {
   display: block;
   margin-top: 8px;
   color: #fff;
   font-size: 20px;
   line-height: 1.2;
+}
+.metric.highlight {
+  grid-column: 2;
+  grid-row: 2;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.14),
+    rgba(255, 255, 255, 0.08)
+  );
+  border: 2px solid #46d68d;
+  box-shadow:
+    0 10px 25px rgba(0, 0, 0, 0.18),
+    0 0 18px rgba(70, 214, 141, 0.12);
+}
+.metric.highlight span {
+  color: #e6f5ef;
+  font-size: 14px;
+  font-weight: 600;
+}
+.metric.highlight strong {
+  margin-top: 12px;
+  font-size: 42px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
 }
 
 .breakdown {
@@ -344,17 +369,6 @@
 
 .tab-panel.active {
   display: block;
-}
-
-.commission-highlight {
-  margin-top: 14px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  background: rgba(155, 59, 48, 0.08);
-  border: 1px solid rgba(155, 59, 48, 0.18);
-  color: var(--brick);
-  font-size: 12px;
-  line-height: 1.5;
 }
 
 @media (max-width: 900px) {

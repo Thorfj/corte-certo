@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1" name="viewport" />
+  <meta content="Calculadora mensal de receita, custos e lucro por cliente para SaaS." name="description" />
+  <title>Calculadora de lucro por cliente</title>
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet" />
+  <link href="../../website/css/global.css" rel="stylesheet">
+  <link href="../css/calculadora.css" rel="stylesheet">
+  </link>
+  </link>
+</head>
+
+<body>
+  <header>
+    <nav aria-label="Navegação principal" class="nav">
+      <a aria-label="Ir para a central interna" class="brand" href="./index.html">
+        <span class="badge">CC</span>
+        <span>Corte Certo</span>
+      </a>
+    </nav>
+  </header>
+  <main class="calculator-page" id="top">
+    <div class="wrap">
+      <section class="hero-calculator">
+        <div>
+          <span class="eyebrow">Planejamento financeiro</span>
+          <h1>Lucro mensal por cliente do seu SaaS.</h1>
+        </div>
+        <p>
+          Ajuste preço, número de clientes, impostos e custos da operação para estimar faturamento, margem e ponto de equilíbrio.
+        </p>
+      </section>
+      <div aria-label="Tipos de projeção" class="tabs" role="tablist">
+        <button aria-selected="true" class="tab-button active" data-tab="operacao" role="tab" type="button">Operação direta</button>
+        <button aria-selected="false" class="tab-button" data-tab="parcerias" role="tab" type="button">Canal de parcerias</button>
+      </div>
+      <section class="tab-panel active" data-panel="operacao" id="tab-operacao">
+        <div class="calculator-grid">
+          <section class="panel" id="premissas">
+            <div class="panel-title">
+              <div>
+                <h2>Premissas do mês</h2>
+                <p>Todos os valores podem ser alterados.</p>
+              </div>
+              <span class="eyebrow">Entradas</span>
+            </div>
+            <div class="field-grid">
+              <div class="field">
+                <label for="monthlyPrice">Mensalidade do SaaS</label>
+                <div class="input-wrap">
+                  <span class="input-prefix">R$</span>
+                  <input id="monthlyPrice" inputmode="decimal" min="0" step="0.01" type="number" value="69.00" />
+                </div>
+              </div>
+              <div class="field">
+                <label for="clients">Clientes ativos no mês</label>
+                <div class="input-wrap">
+                  <input id="clients" inputmode="numeric" min="0" step="1" type="number" value="10" />
+                  <span class="input-suffix">clientes</span>
+                </div>
+              </div>
+              <div class="section-label">Custos variáveis</div>
+              <div class="field">
+                <label for="asaasCost">Custo Asaas por cliente</label>
+                <div class="input-wrap">
+                  <span class="input-prefix">R$</span>
+                  <input id="asaasCost" inputmode="decimal" min="0" step="0.01" type="number" value="2.00" />
+                </div>
+                <small>Valor médio informado por cliente.</small>
+              </div>
+              <div class="field">
+                <label for="taxRate">Impostos estimados</label>
+                <div class="input-wrap">
+                  <input id="taxRate" inputmode="decimal" max="100" min="0" step="0.01" type="number" value="6.00" />
+                  <span class="input-suffix">% da receita</span>
+                </div>
+                <small>Use a alíquota efetiva orientada pelo contador.</small>
+              </div>
+              <div class="section-label">Custos fixos mensais</div>
+              <div class="field">
+                <label for="vpnCost">VPN</label>
+                <div class="input-wrap">
+                  <span class="input-prefix">R$</span>
+                  <input id="vpnCost" inputmode="decimal" min="0" step="0.01" type="number" value="100.00" />
+                </div>
+              </div>
+              <div class="field">
+                <label for="directCommissionRate">Comissão de parceiros</label>
+                <div class="input-wrap">
+                  <input aria-readonly="true" id="directCommissionRate" readonly="" type="number" value="20.00" />
+                  <span class="input-suffix">% da receita do canal</span>
+                </div>
+                <small>Valor definido na aba Canal de parcerias.</small>
+              </div>
+              <div class="field full">
+                <label for="otherFixedCost">Outros custos fixos</label>
+                <div class="input-wrap">
+                  <span class="input-prefix">R$</span>
+                  <input id="otherFixedCost" inputmode="decimal" min="0" step="0.01" type="number" value="0.00" />
+                </div>
+                <small>Ex.: servidor, domínio, suporte ou ferramentas.</small>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn-ghost btn-sm reset-button" id="resetButton" type="button">Restaurar exemplo</button>
+              <p class="assumption">A simulação considera todos os clientes pagando uma mensalidade completa no mês.</p>
+            </div>
+            <div class="note">
+              Os impostos são apenas uma estimativa configurável. A alíquota real depende do regime tributário, atividade, faturamento e enquadramento da empresa.
+            </div>
+          </section>
+          <section aria-live="polite" class="panel results-panel" id="resultado">
+            <div class="panel-title">
+              <div>
+                <h2>Resultado projetado</h2>
+                <p>Resumo financeiro mensal.</p>
+              </div>
+              <span class="eyebrow" style="color:#e1b5ae">Saída</span>
+            </div>
+            <div class="main-result">
+              <span class="result-label">Lucro líquido estimado</span>
+              <strong id="netProfit">R$ 0,00</strong>
+              <div class="result-meta">
+                <span class="pill" id="marginPill">Margem: 0%</span>
+                <span class="pill" id="statusPill">Operação positiva</span>
+              </div>
+            </div>
+            <div class="metrics">
+              <div class="metric">
+                <span>Faturamento mensal</span>
+                <strong id="revenue">R$ 0,00</strong>
+              </div>
+              <div class="metric">
+                <span>Lucro por cliente</span>
+                <strong id="profitPerClient">R$ 0,00</strong>
+              </div>
+              <div class="metric">
+                <span>Custo total por cliente</span>
+                <strong id="costPerClient">R$ 0,00</strong>
+              </div>
+              <div class="metric">
+                <span>Ponto de equilíbrio</span>
+                <strong id="breakEven">0 clientes</strong>
+              </div>
+            </div>
+            <div class="breakdown">
+              <div class="breakdown-row">
+                <span>Impostos estimados</span>
+                <strong id="taxes">R$ 0,00</strong>
+              </div>
+              <div class="breakdown-row">
+                <span>Asaas</span>
+                <strong id="asaasTotal">R$ 0,00</strong>
+              </div>
+              <div class="breakdown-row">
+                <span>VPN</span>
+                <strong id="coreFixedCosts">R$ 0,00</strong>
+              </div>
+              <div class="breakdown-row">
+                <span>Comissões de parceiros</span>
+                <strong id="partnerCommissionCost">R$ 0,00</strong>
+              </div>
+              <div class="breakdown-row">
+                <span>Outros custos fixos</span>
+                <strong id="otherFixedTotal">R$ 0,00</strong>
+              </div>
+              <div class="breakdown-row total">
+                <span>Custos totais</span>
+                <strong id="totalCosts">R$ 0,00</strong>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+      <section class="tab-panel" data-panel="parcerias" id="tab-parcerias">
+        <div class="calculator-grid" id="parcerias">
+          <section class="panel">
+            <div class="panel-title">
+              <div>
+                <h2>Premissas das parcerias</h2>
+                <p>Projete clientes e comissões do canal.</p>
+              </div>
+              <span class="eyebrow">Entradas</span>
+            </div>
+            <div class="field-grid">
+              <div class="field full">
+                <label for="partnerClients">Clientes via parceiros</label>
+                <div class="input-wrap"><input id="partnerClients" min="0" step="1" type="number" value="10" /><span class="input-suffix">clientes</span></div>
+              </div>
+              <div class="section-label">Comissões</div>
+              <div class="field">
+                <label for="commissionRate">Comissão recorrente</label>
+                <div class="input-wrap"><input id="commissionRate" max="100" min="0" step="0.01" type="number" value="20.00" /><span class="input-suffix">% da receita</span></div>
+                <small>Percentual pago mensalmente ao parceiro.</small>
+              </div>
+              <div class="field">
+                <label for="fixedCommission">Comissão fixa por cliente</label>
+                <div class="input-wrap"><span class="input-prefix">R$</span><input id="fixedCommission" min="0" step="0.01" type="number" value="0.00" /></div>
+                <small>Valor recorrente adicional por cliente ativo.</small>
+              </div>
+              <div class="field full">
+                <label for="acquisitionBonus">Bônus único por novo cliente</label>
+                <div class="input-wrap"><span class="input-prefix">R$</span><input id="acquisitionBonus" min="0" step="0.01" type="number" value="0.00" /></div>
+                <small>Pago somente no mês da aquisição.</small>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn-ghost btn-sm reset-button" id="resetPartnerButton" type="button">Restaurar exemplo</button>
+              <p class="assumption">A projeção considera que todos os clientes do canal estão ativos e pagantes no mês.</p>
+            </div>
+          </section>
+          <section aria-live="polite" class="panel results-panel">
+            <div class="panel-title">
+              <div>
+                <h2>Resultado das parcerias</h2>
+                <p>Impacto financeiro mensal do canal.</p>
+              </div>
+              <span class="eyebrow" style="color:#e1b5ae">Saída</span>
+            </div>
+            <div class="main-result">
+              <span class="result-label">Lucro líquido do canal</span>
+              <strong id="partnerNetProfit">R$ 0,00</strong>
+              <div class="result-meta"><span class="pill" id="partnerMarginPill">Margem: 0%</span><span class="pill" id="partnerStatusPill">Canal positivo</span></div>
+            </div>
+            <div class="metrics">
+              <div class="metric"><span>Receita do canal</span><strong id="partnerRevenue">R$ 0,00</strong></div>
+              <div class="metric"><span>Comissão total</span><strong id="partnerCommissionTotal">R$ 0,00</strong></div>
+              <div class="metric"><span>Lucro por cliente</span><strong id="partnerProfitPerClient">R$ 0,00</strong></div>
+              <div class="metric"><span>Custo de parceria por cliente</span><strong id="partnerCostPerClient">R$ 0,00</strong></div>
+            </div>
+            <div class="breakdown">
+              <div class="breakdown-row"><span>Comissão percentual</span><strong id="partnerPercentageCommission">R$ 0,00</strong></div>
+              <div class="breakdown-row"><span>Comissão fixa recorrente</span><strong id="partnerFixedCommissionTotal">R$ 0,00</strong></div>
+              <div class="breakdown-row"><span>Bônus de aquisição</span><strong id="partnerBonusTotal">R$ 0,00</strong></div>
+              <div class="breakdown-row"><span>Impostos</span><strong id="partnerTaxes">R$ 0,00</strong></div>
+              <div class="breakdown-row"><span>Asaas</span><strong id="partnerAsaasTotal">R$ 0,00</strong></div>
+              <div class="breakdown-row total"><span>Custos totais</span><strong id="partnerTotalCosts">R$ 0,00</strong></div>
+            </div>
+            <div class="commission-highlight" id="commissionSummary">O parceiro receberá R$ 0,00 no mês.</div>
+          </section>
+        </div>
+      </section>
+      <div aria-hidden="true" class="stripe compact"></div>
+    </div>
+  </main>
+  <footer>
+    <div class="wrap">
+      <div class="foot-grid">
+        <div class="foot-brand">
+          <a class="brand" href="./index.html"><span class="badge">CC</span><span>Corte Certo</span></a>
+          <p>Central interna para acessar ferramentas, site e CRM da operação.</p>
+        </div>
+        <div class="foot-col">
+          <h5>Ferramentas</h5>
+          <a href="./calculadora.html">Calculadora financeira</a>
+          <a href="./index.html">Central interna</a>
+        </div>
+        <div class="foot-col">
+          <h5>Acessos</h5>
+          <a href="../../website/html/index.html">Website</a>
+          <a href="../../crm/html/login.html">CRM</a>
+        </div>
+        <div class="foot-col">
+          <h5>Calculadora</h5>
+          <a href="#premissas">Premissas</a>
+          <a href="#resultado">Resultado</a>
+          <a href="#parcerias">Parcerias</a>
+        </div>
+      </div>
+      <div class="foot-bottom">
+        <span>© 2026 Corte Certo</span>
+        <span>Planejamento financeiro</span>
+      </div>
+    </div>
+  </footer>
+  <script src="../js/calculadora.js"></script>
+</body>
+
+</html>

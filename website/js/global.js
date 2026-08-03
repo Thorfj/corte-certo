@@ -85,5 +85,3 @@ const BASE = location.hostname === "thorfj.github.io" ? "/corte-certo" : "";
 
   document.addEventListener("DOMContentLoaded", injectLayout);
 })();
-
-<script src="../../global-git.js"></script>;

@@ -83,3 +83,5 @@
 
   document.addEventListener("DOMContentLoaded", injectLayout);
 })();
+
+<script src="../../global-git.js"></script>;

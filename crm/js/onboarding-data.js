@@ -18,13 +18,13 @@ const ONBOARDING_PASSOS = {
       selector: '.nav-item[data-page="atendimentos.html"]',
       titulo: "Atendimentos",
       texto:
-        "Aqui ficam todos os seus agendamentos, organizados por status — como um quadro de tarefas.",
+        "Aqui ficam todos os seus agendamentos, organizados por status: como um quadro de tarefas.",
     },
     {
       selector: "#novo-atendimento-btn",
       titulo: "Criar um atendimento manual",
       texto:
-        "Use este botão pra agendar sem passar pelo WhatsApp — útil pra encaixes ou clientes que ligaram.",
+        "Use este botão pra agendar sem passar pelo WhatsApp:útil pra encaixes ou clientes que ligaram.",
     },
     {
       selector: "#kanban",
@@ -74,14 +74,13 @@ const ONBOARDING_PASSOS = {
     {
       selector: '.nav-item[data-page="servicos.html"]',
       titulo: "Serviços",
-      texto:
-        "Cadastre aqui tudo que sua barbearia oferece — corte, barba, combo, etc.",
+      texto: "Cadastre aqui todos os serviços que sua barbearia oferece",
     },
     {
       selector: "#novo-servico-btn",
       titulo: "Criar um serviço",
       texto:
-        "Defina nome, preço, duração e recorrência — o bot usa essas informações pra montar o agendamento no WhatsApp.",
+        "Defina nome, preço, duração e recorrência: o bot usa essas informações pra montar o agendamento no WhatsApp.",
     },
   ],
   "mensagens.html": [
@@ -114,8 +113,7 @@ const ONBOARDING_PASSOS = {
     {
       selector: ".tabs",
       titulo: "Vários relatórios diferentes",
-      texto:
-        "Cada aba mostra uma visão diferente dos seus dados — vale explorar todas.",
+      texto: "Cada aba mostra uma visão diferente dos seus dados.",
     },
   ],
   "configuracoes.html": [

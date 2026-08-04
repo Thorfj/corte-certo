@@ -149,7 +149,7 @@
 
   function mostrarBannerTeste(dias) {
     criarBanner(
-      `Você está no teste grátis — ${dias} dia(s) restante(s).`,
+      `Você está no teste grátis: ${dias} dia(s) restante(s).`,
       "info",
     );
   }

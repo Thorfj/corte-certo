@@ -460,7 +460,7 @@ async function carregarStatusTeste() {
 
     if (status.fase === "teste_ativo") {
       card.classList.add("trial-banner-info");
-      card.innerHTML = `<span>Você está no teste grátis — ${status.dias_restantes} dia(s) restante(s).</span>`;
+      card.innerHTML = `<span>Você está no teste grátis: ${status.dias_restantes} dia(s) restante(s).</span>`;
       return;
     }
 

@@ -96,7 +96,7 @@
       '<span class="dot">CC</span>' +
       '<span class="txt">"Oi! Vi vocês no Instagram, será que tem horário essa semana? 💈"</span>' +
       "</div>" +
-      "<p>Montamos uma simulação real do WhatsApp no blog — dá pra marcar um corte do começo ao fim, com o mesmo fluxo que roda de verdade. Leva menos de 1 minuto.</p>" +
+      "<p>Montamos uma simulação real do WhatsApp no blog: dá pra marcar um corte do começo ao fim, com o mesmo fluxo que roda de verdade. Leva menos de 1 minuto.</p>" +
       '<div class="cc-exit-actions">' +
       '<a class="cc-exit-cta" href="' +
       BLOG_POST_URL +

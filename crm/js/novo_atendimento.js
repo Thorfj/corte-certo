@@ -110,7 +110,7 @@ document
     } else {
       clienteEncontradoId = null;
       statusEl.textContent =
-        "Cliente não encontrado — cadastre o nome abaixo para criar um novo contato.";
+        "Cliente não encontrado: cadastre o nome abaixo para criar um novo contato.";
       statusEl.className = "cliente-status novo";
       nomeField.style.display = "block";
     }

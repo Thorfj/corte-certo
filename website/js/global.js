@@ -17,8 +17,7 @@ window.BASE = location.hostname === "thorfj.github.io" ? "/corte-certo" : "";
         <a href="${BASE}/website/html/index.html#como-funciona">Como funciona</a>
         <a href="${BASE}/website/html/index.html#planos">Planos</a>
         <a href="${BASE}/website/html/blog.html">Blog</a>
-        <a href="${BASE}/website/html/quem-somos.html">Quem somos</a>
-        <a href="#contato">Contato</a>
+
       </nav>
       <div class="nav-actions">
         <a href="${BASE}/crm/html/login.html" class="nav-login">Entrar</a>
@@ -43,7 +42,6 @@ window.BASE = location.hostname === "thorfj.github.io" ? "/corte-certo" : "";
         </div>
         <div class="foot-col">
           <h5>Empresa</h5>
-          <a href="${BASE}/website/html/quem-somos.html">Quem somos</a>
           <a href="${BASE}/website/html/blog.html">Blog</a>
           <a href="https://wa.me/5541999428022" target="_blank">Falar no WhatsApp</a>
         </div>

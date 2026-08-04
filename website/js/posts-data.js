@@ -10,18 +10,6 @@
 
 const BLOG_POSTS = [
   {
-    slug: "whatsapp-recepcao-barbearia",
-    title:
-      "O WhatsApp virou a recepção da sua barbearia — você só ainda não percebeu",
-    excerpt:
-      "Todo cliente que manda “oi, tem horário?” já está, na prática, batendo na porta do seu negócio. O problema é que ninguém projetou essa recepção — ela simplesmente aconteceu.",
-    category: "atendimento",
-    categoryLabel: "Atendimento",
-    date: "28 jul 2026",
-    readTime: "6 min de leitura",
-    featured: true,
-  },
-  {
     slug: "reduzir-faltas-barbearia",
     title: "5 jeitos simples de reduzir as faltas na sua barbearia",
     excerpt:
@@ -49,8 +37,8 @@ const BLOG_POSTS = [
     title: "Quanto tempo você perde respondendo “qual horário você tem?”",
     excerpt:
       "Fizemos as contas: em uma barbearia de porte médio, essa pergunta sozinha pode consumir mais de uma hora por dia do profissional.",
-    category: "agendamento",
-    categoryLabel: "Agendamento",
+    category: "atendimento",
+    categoryLabel: "Atendimento",
     date: "08 jul 2026",
     readTime: "3 min",
     featured: false,
@@ -65,5 +53,17 @@ const BLOG_POSTS = [
     date: "30 jun 2026",
     readTime: "4 min",
     featured: false,
+  },
+  {
+    slug: "veja-o-bot-funcionando",
+    title:
+      "Você não precisa confiar na nossa palavra — teste o bot com as próprias mãos",
+    excerpt:
+      "Montamos a simulação abaixo: é o mesmo fluxo que o Corte Certo roda de verdade, etapa por etapa.",
+    category: "materiais",
+    categoryLabel: "Materiais",
+    date: "30 jun 2026",
+    readTime: "4 min",
+    featured: true,
   },
 ];

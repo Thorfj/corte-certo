@@ -85,3 +85,8 @@ window.BASE = location.hostname === "thorfj.github.io" ? "/corte-certo" : "";
 
   document.addEventListener("DOMContentLoaded", injectLayout);
 })();
+
+const script = document.createElement("script");
+script.src = "../js/pop-up.js";
+script.defer = true; // opcional
+document.head.appendChild(script);

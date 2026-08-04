@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mockup WhatsApp — Bot Corte Certo</title>
+  <style>
+    :root {
+      --wa-header: #008069;
+      --wa-bg: #efeae2;
+      --wa-in: #ffffff;
+      --wa-out: #d9fdd3;
+      --wa-btn: #00a5f4;
+      --wa-divider: #e9e9e9;
+      --wa-gray: #667781;
+      --wa-pill: #ffffff;
+      --page-bg: #f0f2f5;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: transparent;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: transparent;
+      font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 12px;
+    }
+
+    /* ---------- moldura do celular ---------- */
+    .device {
+      width: 380px;
+      background: #111;
+      border-radius: 42px;
+      padding: 14px;
+      box-shadow: 0 30px 70px -25px rgba(0, 0, 0, 0.45);
+    }
+
+    .screen {
+      background: #000;
+      border-radius: 28px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 720px;
+      position: relative;
+    }
+
+    .statusbar {
+      background: var(--wa-header);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 22px 4px;
+    }
+
+    .statusbar .icons {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      font-size: 12px;
+    }
+
+    /* ---------- header do contato ---------- */
+    .wa-header {
+      background: var(--wa-header);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px 12px;
+    }
+
+    .wa-back {
+      font-size: 20px;
+      opacity: 0.9;
+    }
+
+    .wa-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #0a5c4c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      flex: 0 0 auto;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    .wa-contact {
+      flex: 1;
+      line-height: 1.25;
+    }
+
+    .wa-contact .name {
+      font-size: 15.5px;
+      font-weight: 600;
+    }
+
+    .wa-contact .status {
+      font-size: 12.5px;
+      opacity: 0.85;
+    }
+
+    .wa-icons {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      opacity: 0.95;
+    }
+
+    .wa-icons span {
+      display: flex;
+      align-items: center;
+    }
+
+    /* ---------- área de chat ---------- */
+    .chat {
+      flex: 1;
+      background-color: var(--wa-bg);
+      background-image:
+        radial-gradient(circle at 20% 15%, rgba(0, 0, 0, 0.02) 0 2px, transparent 2px),
+        radial-gradient(circle at 70% 60%, rgba(0, 0, 0, 0.02) 0 2px, transparent 2px),
+        radial-gradient(circle at 40% 80%, rgba(0, 0, 0, 0.02) 0 2px, transparent 2px);
+      background-size: 60px 60px;
+      overflow-y: auto;
+      padding: 14px 10px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .chat::-webkit-scrollbar {
+      width: 0;
+    }
+
+    /* botão inicial: cliente manda a primeira mensagem */
+    .chat-start {
+      margin: auto;
+      text-align: center;
+      padding: 18px;
+    }
+
+    .chat-start p {
+      font-size: 12.5px;
+      color: #54656f;
+      margin: 0 0 14px;
+      max-width: 220px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.5;
+    }
+
+    .start-btn {
+      background: #fff;
+      border: 1.5px solid var(--wa-header);
+      color: var(--wa-header);
+      padding: 12px 20px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 13.5px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      font-family: inherit;
+      transition: all .15s ease;
+    }
+
+    .start-btn:hover {
+      background: var(--wa-header);
+      color: #fff;
+    }
+
+    .day-pill {
+      align-self: center;
+      background: var(--wa-pill);
+      color: #54656f;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 8px;
+      margin: 10px 0 12px;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .row {
+      display: flex;
+      margin-bottom: 2px;
+    }
+
+    .row.in {
+      justify-content: flex-start;
+    }
+
+    .row.out {
+      justify-content: flex-end;
+    }
+
+    .card {
+      max-width: 82%;
+      border-radius: 8px;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+      position: relative;
+      animation: pop .22s ease both;
+      overflow: hidden;
+    }
+
+    .card.in {
+      background: var(--wa-in);
+      border-top-left-radius: 2px;
+    }
+
+    .card.out {
+      background: var(--wa-out);
+      border-top-right-radius: 2px;
+    }
+
+    .bubble-text {
+      padding: 7px 10px 9px;
+      font-size: 14.3px;
+      line-height: 1.4;
+      color: #111b21;
+      white-space: pre-line;
+    }
+
+    .bubble-time {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 3px;
+      padding: 0 10px 8px;
+      font-size: 10.5px;
+      color: #667781;
+    }
+
+    .ticks {
+      color: #53bdeb;
+      font-size: 13px;
+    }
+
+    .card .options {
+      border-top: 1px solid var(--wa-divider);
+    }
+
+    .opt-btn {
+      display: block;
+      width: 100%;
+      background: none;
+      border: none;
+      border-top: 1px solid var(--wa-divider);
+      color: var(--wa-btn);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 11px 10px;
+      cursor: pointer;
+      text-align: center;
+      font-family: inherit;
+      transition: background .1s ease;
+    }
+
+    .card .options .opt-btn:first-child {
+      border-top: none;
+    }
+
+    .opt-btn:hover {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    .opt-btn:active {
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    .opt-btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    .summary {
+      padding: 10px 12px 4px;
+      font-size: 13.5px;
+      color: #111b21;
+    }
+
+    .summary .s-title {
+      font-weight: 700;
+      margin-bottom: 6px;
+      font-size: 14.3px;
+    }
+
+    .summary .s-line {
+      display: flex;
+      justify-content: space-between;
+      padding: 3px 0;
+      border-bottom: 1px dashed #dcd8ce;
+    }
+
+    .summary .s-line:last-of-type {
+      border-bottom: none;
+    }
+
+    .summary .s-label {
+      color: #667781;
+    }
+
+    .summary .s-value {
+      font-weight: 600;
+      text-align: right;
+      margin-left: 12px;
+    }
+
+    .summary .s-total {
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px solid var(--wa-divider);
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+    }
+
+    @keyframes pop {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* typing indicator */
+    .typing {
+      background: var(--wa-in);
+      border-radius: 8px;
+      border-top-left-radius: 2px;
+      padding: 10px 14px;
+      display: inline-flex;
+      gap: 4px;
+      align-self: flex-start;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+      animation: pop .2s ease both;
+    }
+
+    .typing span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #a9b3ab;
+      animation: bounce 1.1s infinite ease-in-out;
+    }
+
+    .typing span:nth-child(2) {
+      animation-delay: .15s;
+    }
+
+    .typing span:nth-child(3) {
+      animation-delay: .3s;
+    }
+
+    @keyframes bounce {
+
+      0%,
+      60%,
+      100% {
+        transform: translateY(0);
+        opacity: .5;
+      }
+
+      30% {
+        transform: translateY(-4px);
+        opacity: 1;
+      }
+    }
+
+    /* aviso automático (lembretes que não esperam resposta) */
+    .auto-advance-wrap {
+      text-align: center;
+      margin: 8px 0 12px;
+    }
+
+    .auto-advance-btn {
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px dashed #9aa39c;
+      color: #54656f;
+      font-size: 11.5px;
+      padding: 7px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .15s ease;
+    }
+
+    .auto-advance-btn:hover {
+      background: #fff;
+    }
+
+    /* ---------- barra de input ---------- */
+    .wa-inputbar {
+      background: #f0f2f5;
+      padding: 8px 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .wa-inputbar .field {
+      flex: 1;
+      background: #fff;
+      border-radius: 22px;
+      padding: 9px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .wa-text-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 13.5px;
+      font-family: inherit;
+      color: #111b21;
+    }
+
+    .wa-text-input::placeholder {
+      color: #8696a0;
+    }
+
+    .wa-text-input:disabled {
+      color: #8696a0;
+      cursor: default;
+    }
+
+    .wa-mic {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #9aa39c;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 16px;
+      flex: 0 0 auto;
+      cursor: default;
+      font-family: inherit;
+      transition: background .15s ease;
+    }
+
+    .wa-mic.active {
+      background: var(--wa-header);
+      cursor: pointer;
+    }
+
+    .restart-wrap {
+      text-align: center;
+      padding: 16px 0 6px;
+      font-family: Inter, sans-serif;
+    }
+
+    .restart-wrap p {
+      font-size: 13px;
+      color: #54656f;
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="device">
+    <div class="screen">
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="icons">●●●● 5G 🔋</span>
+      </div>
+
+      <div class="wa-header">
+        <span class="wa-back">←</span>
+        <div class="wa-avatar">✂️</div>
+        <div class="wa-contact">
+          <div class="name">Barbearia Corte Certo</div>
+          <div class="status" id="waStatus">online</div>
+        </div>
+        <div class="wa-icons">
+          <span class="wa-icon-video"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3.5l4 3V7.5l-4 3z" />
+            </svg></span>
+          <span class="wa-icon-call"><svg width="17" height="17" viewBox="0 0 24 24" fill="#fff">
+              <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.5 21 3 13.5 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .8-.2 1L6.6 10.8z" />
+            </svg></span>
+          <span class="wa-icon-menu"><svg width="4" height="17" viewBox="0 0 4 18" fill="#fff">
+              <circle cx="2" cy="2" r="2" />
+              <circle cx="2" cy="9" r="2" />
+              <circle cx="2" cy="16" r="2" />
+            </svg></span>
+        </div>
+      </div>
+
+      <div class="chat" id="chat"></div>
+
+      <div class="wa-inputbar">
+        <div class="field">
+          <span>😊</span>
+          <input type="text" id="waTextInput" class="wa-text-input" placeholder="Toque em uma opção acima ↑" disabled>
+        </div>
+        <button type="button" class="wa-mic" id="waMicBtn" disabled>🎤</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const chat = document.getElementById('chat');
+      const status = document.getElementById('waStatus');
+      const textInput = document.getElementById('waTextInput');
+      const micBtn = document.getElementById('waMicBtn');
+
+      const state = { name: "", service: "", price: 0, pro: "", dayLabel: "", when: "", time: "", email: "", rating: null };
+
+      function fmt(str) {
+        return str
+          .replace(/{name}/g, state.name)
+          .replace(/{service}/g, state.service)
+          .replace(/{price}/g, state.price)
+          .replace(/{pro}/g, state.pro)
+          .replace(/{when}/g, state.when)
+          .replace(/{email}/g, state.email);
+      }
+      function scrollBottom() { chat.scrollTop = chat.scrollHeight; }
+      function nowTime() {
+        const d = new Date();
+        return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+      }
+      function parseHM(hm) {
+        const p = hm.split(':');
+        return { hh: parseInt(p[0], 10), mm: parseInt(p[1], 10) };
+      }
+      function formatHM(hh, mm) {
+        hh = ((hh % 24) + 24) % 24;
+        return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+      }
+      function reminderTime(offsetHours) {
+        if (!state.time) return nowTime();
+        const { hh, mm } = parseHM(state.time);
+        return formatHM(hh - offsetHours, mm);
+      }
+      function addDivider(text) {
+        const el = document.createElement('div');
+        el.className = 'day-pill';
+        el.textContent = text;
+        chat.appendChild(el);
+        scrollBottom();
+      }
+      function addBubble(side, text, withTicks, timeOverride) {
+        const row = document.createElement('div');
+        row.className = 'row ' + side;
+        const card = document.createElement('div');
+        card.className = 'card ' + side;
+        const txt = document.createElement('div');
+        txt.className = 'bubble-text';
+        txt.textContent = fmt(text);
+        const time = document.createElement('div');
+        time.className = 'bubble-time';
+        time.innerHTML = (timeOverride || nowTime()) + (withTicks ? ' <span class="ticks">✓✓</span>' : '');
+        card.appendChild(txt);
+        card.appendChild(time);
+        row.appendChild(card);
+        chat.appendChild(row);
+        scrollBottom();
+      }
+      function addSummary(title, lines, totalLabel, totalValue) {
+        const row = document.createElement('div');
+        row.className = 'row in';
+        const card = document.createElement('div');
+        card.className = 'card in';
+        const sum = document.createElement('div');
+        sum.className = 'summary';
+        let html = '<div class="s-title">' + title + '</div>';
+        lines.forEach(l => {
+          html += '<div class="s-line"><span class="s-label">' + l[0] + '</span><span class="s-value">' + fmt(l[1]) + '</span></div>';
+        });
+        html += '<div class="s-total"><span>' + totalLabel + '</span><span>' + totalValue + '</span></div>';
+        sum.innerHTML = html;
+        const time = document.createElement('div');
+        time.className = 'bubble-time';
+        time.textContent = nowTime();
+        card.appendChild(sum);
+        card.appendChild(time);
+        row.appendChild(card);
+        chat.appendChild(row);
+        scrollBottom();
+      }
+      function showTyping(cb, delay) {
+        status.textContent = 'digitando...';
+        const row = document.createElement('div');
+        row.className = 'row in';
+        const t = document.createElement('div');
+        t.className = 'typing';
+        t.innerHTML = '<span></span><span></span><span></span>';
+        row.appendChild(t);
+        chat.appendChild(row);
+        scrollBottom();
+        setTimeout(() => {
+          row.remove();
+          status.textContent = 'online';
+          cb();
+        }, delay || 900);
+      }
+      function addOptions(optionsList, containerCard) {
+        const wrap = document.createElement('div');
+        wrap.className = 'options';
+        optionsList.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.className = 'opt-btn';
+          btn.textContent = opt.label;
+          btn.onclick = () => choose(opt, wrap);
+          wrap.appendChild(btn);
+        });
+        containerCard.appendChild(wrap);
+        scrollBottom();
+        return wrap;
+      }
+      function addBubbleWithOptions(text, options) {
+        const row = document.createElement('div');
+        row.className = 'row in';
+        const card = document.createElement('div');
+        card.className = 'card in';
+        const txt = document.createElement('div');
+        txt.className = 'bubble-text';
+        txt.textContent = fmt(text);
+        card.appendChild(txt);
+        row.appendChild(card);
+        chat.appendChild(row);
+        addOptions(options, card);
+        scrollBottom();
+      }
+      function addBubbleOptionsOnly(options) {
+        const row = document.createElement('div');
+        row.className = 'row in';
+        const card = document.createElement('div');
+        card.className = 'card in';
+        row.appendChild(card);
+        chat.appendChild(row);
+        addOptions(options, card);
+        scrollBottom();
+      }
+      function addAutoAdvance(label, next) {
+        const wrap = document.createElement('div');
+        wrap.className = 'auto-advance-wrap';
+        const btn = document.createElement('button');
+        btn.className = 'auto-advance-btn';
+        btn.type = 'button';
+        btn.textContent = label;
+        btn.onclick = () => {
+          wrap.remove();
+          showTyping(() => runStep(next), 500 + Math.random() * 300);
+        };
+        wrap.appendChild(btn);
+        chat.appendChild(wrap);
+        scrollBottom();
+      }
+
+      function choose(opt, wrap) {
+        wrap.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+        if (opt.action === 'reset') { resetConversation(); return; }
+        if (opt.set) Object.assign(state, opt.set);
+        addBubble('out', opt.label, true);
+        showTyping(() => runStep(opt.next), 850 + Math.random() * 400);
+      }
+
+      // ---------- entrada de texto real (nome / e-mail) ----------
+      function enableInput(placeholder, onSubmit) {
+        textInput.disabled = false;
+        textInput.placeholder = placeholder;
+        textInput.value = '';
+        micBtn.disabled = false;
+        micBtn.textContent = '➤';
+        micBtn.classList.add('active');
+        textInput.focus();
+
+        function submit() {
+          const val = textInput.value.trim();
+          if (!val) return;
+          disableInput();
+          addBubble('out', val, true);
+          showTyping(() => onSubmit(val), 700 + Math.random() * 400);
+        }
+        micBtn.onclick = submit;
+        textInput.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
+      }
+      function disableInput() {
+        textInput.disabled = true;
+        textInput.placeholder = 'Toque em uma opção acima ↑';
+        textInput.value = '';
+        micBtn.disabled = true;
+        micBtn.textContent = '🎤';
+        micBtn.classList.remove('active');
+        micBtn.onclick = null;
+        textInput.onkeydown = null;
+      }
+
+      // ---------- fluxo real (mesma tabela da aba Mensagens do CRM) ----------
+      const flow = {
+        askName: {
+          messages: ["Oi! 👋 Bem-vindo(a) à Barbearia Corte Certo!", "Antes de mais nada, qual é o seu nome?"],
+          type: "input",
+          placeholder: "Digite seu nome...",
+          setKey: "name",
+          next: "service"
+        },
+        service: {
+          messages: ["Prazer, {name}! Qual serviço você quer marcar?"],
+          type: "options",
+          options: [
+            { label: "✂️ Corte — R$ 40", next: "professional", set: { service: "Corte", price: 40 } },
+            { label: "🧔 Barba — R$ 35", next: "professional", set: { service: "Barba", price: 35 } },
+            { label: "✂️🧔 Corte + Barba — R$ 65", next: "professional", set: { service: "Corte + Barba", price: 65 } },
+            { label: "🎨 Coloração — R$ 90", next: "professional", set: { service: "Coloração", price: 90 } }
+          ]
+        },
+        professional: {
+          messages: ["Com quem você quer ser atendido?"],
+          type: "options",
+          options: [
+            { label: "👤 João", next: "day", set: { pro: "João" } },
+            { label: "👤 Marcos", next: "day", set: { pro: "Marcos" } },
+            { label: "🤷 Sem preferência", next: "day", set: { pro: "o profissional disponível" } }
+          ]
+        },
+        day: {
+          messages: ["Pra quando você quer marcar {service} com {pro}?"],
+          type: "options",
+          options: [
+            { label: "Hoje", next: "time", set: { dayLabel: "hoje" } },
+            { label: "Amanhã", next: "time", set: { dayLabel: "amanhã" } },
+            { label: "Depois de amanhã", next: "time", set: { dayLabel: "depois de amanhã" } }
+          ]
+        },
+        time: {
+          messages: ["Esses são os horários disponíveis para {service} com {pro} {dayLabel}:"],
+          type: "options",
+          optionsFn: (state) => {
+            const horarios = {
+              "hoje": ["14:00", "16:00", "17:30"],
+              "amanhã": ["09:00", "10:00", "14:00", "16:00"],
+              "depois de amanhã": ["10:00", "11:00", "15:00"]
+            };
+            const lista = horarios[state.dayLabel] || ["10:00", "14:00", "16:00"];
+            return lista.map(h => ({
+              label: h,
+              next: "askEmail",
+              set: { when: state.dayLabel + " às " + h, time: h }
+            }));
+          }
+        },
+        askEmail: {
+          messages: ["Combinado! {when} para {service} com {pro} 👍", "Só mais uma coisa: pode confirmar seu e-mail? É pra onde eu mando o comprovante do agendamento."],
+          type: "input",
+          placeholder: "seuemail@exemplo.com",
+          setKey: "email",
+          next: "confirmSummary"
+        },
+        confirmSummary: {
+          type: "summary",
+          summary: {
+            title: "Resumo do agendamento",
+            lines: [
+              ["Cliente", "{name}"],
+              ["Serviço", "{service}"],
+              ["Profissional", "{pro}"],
+              ["Quando", "{when}"],
+              ["E-mail", "{email}"]
+            ],
+            totalLabel: "Total",
+            totalValueFn: () => "R$ " + state.price + ",00"
+          },
+          autoLabel: "⏩ Simular passagem do tempo",
+          autoNextFn: (state) => state.dayLabel === "hoje" ? "reminder2" : "reminder1"
+        },
+        reminder1: {
+          divider: "Véspera do atendimento",
+          messages: ["🔔 Lembrete automático — não espera resposta\nOi, {name}! Passando pra lembrar do seu horário de {service} {when}, com {pro} 💈"],
+          type: "auto",
+          timeFn: () => reminderTime(24),
+          autoLabel: "⏩ Passar para 1h antes",
+          next: "reminder2"
+        },
+        reminder2: {
+          dividerFn: (state) => state.dayLabel === "hoje" ? null : "No dia do atendimento",
+          messages: ["🔔 Lembrete automático — não espera resposta\nFala, {name}! Passando 1h antes só pra lembrar: seu horário é {when}, com {pro}. Até já! ✂️"],
+          type: "auto",
+          timeFn: () => reminderTime(1),
+          autoLabel: "⏩ Simular fim do atendimento",
+          next: "nps"
+        },
+        nps: {
+          divider: "Depois do atendimento",
+          messages: ["E aí, {name}, tudo certo com o atendimento de hoje?", "De 1 a 5, como você avalia?"],
+          type: "options",
+          options: [
+            { label: "⭐ 1", next: "npsLow", set: { rating: 1 } },
+            { label: "⭐ 2", next: "npsLow", set: { rating: 2 } },
+            { label: "⭐ 3", next: "npsMid", set: { rating: 3 } },
+            { label: "⭐ 4", next: "npsHigh", set: { rating: 4 } },
+            { label: "⭐ 5", next: "npsHigh", set: { rating: 5 } }
+          ]
+        },
+        npsLow: {
+          messages: ["Poxa, sentimos muito que não tenha sido uma boa experiência 😕", "Vou avisar o responsável pela barbearia pra te dar um retorno pessoalmente."],
+          type: "options",
+          options: [{ label: "🔁 Recomeçar simulação", action: "reset" }]
+        },
+        npsMid: {
+          messages: ["Valeu pela nota, {name}! Vamos trabalhar pra deixar sua próxima visita ainda melhor 🙂"],
+          type: "options",
+          options: [{ label: "🔁 Recomeçar simulação", action: "reset" }]
+        },
+        npsHigh: {
+          messages: ["Que ótimo, {name}! 🙌 Muito obrigado pela nota!", "Te esperamos na próxima 💈"],
+          type: "options",
+          options: [{ label: "🔁 Recomeçar simulação", action: "reset" }]
+        }
+      };
+
+      function runStep(stepId) {
+        const step = flow[stepId];
+        if (!step) return;
+        const dividerText = step.dividerFn ? step.dividerFn(state) : step.divider;
+        if (dividerText) addDivider(dividerText);
+
+        if (step.type === 'summary') {
+          showTyping(() => {
+            addSummary(step.summary.title, step.summary.lines, step.summary.totalLabel, step.summary.totalValueFn());
+            addAutoAdvance(step.autoLabel, step.autoNextFn ? step.autoNextFn(state) : step.autoNext);
+          }, 700);
+          return;
+        }
+
+        const msgs = step.messages.slice();
+        function playNext() {
+          if (msgs.length === 0) return;
+          const text = msgs.shift();
+          showTyping(() => {
+            if (msgs.length === 0) {
+              if (step.type === 'input') {
+                addBubble('in', text, false);
+                enableInput(step.placeholder, (val) => {
+                  state[step.setKey] = val;
+                  runStep(step.next);
+                });
+              } else if (step.type === 'auto') {
+                addBubble('in', text, false, step.timeFn ? step.timeFn() : undefined);
+                addAutoAdvance(step.autoLabel, step.next);
+              } else {
+                addBubbleWithOptions(text, step.optionsFn ? step.optionsFn(state) : step.options);
+              }
+            } else {
+              addBubble('in', text, false);
+              playNext();
+            }
+          }, 650 + Math.random() * 450);
+        }
+        playNext();
+      }
+
+      // ---------- inicia a conversa sozinha: o cliente já manda a 1ª mensagem ----------
+      function resetConversation() {
+        chat.innerHTML = '';
+        Object.assign(state, { name: "", service: "", price: 0, pro: "", dayLabel: "", when: "", time: "", email: "", rating: null });
+        disableInput();
+        addDivider('Hoje');
+        addBubble('out', 'Oi! Vi vocês no Instagram, será que tem horário essa semana? 💈', true);
+        showTyping(() => runStep('askName'), 900);
+      }
+
+      resetConversation();
+    })();
+  </script>
+
+</body>
+
+</html>

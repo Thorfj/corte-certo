@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Central Interna — Corte Certo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/central.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div class="topbar-brand"><span class="badge">CC</span> Central Interna</div>
+    <div class="topbar-status" id="topbarStatus"></div>
+  </header>
+
+  <main class="wrap">
+    <div class="page-header">
+      <h1>Central Interna</h1>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="funil">Funil de Vendas</button>
+      <button class="tab-btn" data-tab="relatorios">Relatórios de SaaS</button>
+    </div>
+
+    <!-- ===================== ABA: FUNIL DE VENDAS ===================== -->
+    <div class="tab-panel active" id="tab-funil">
+      <div class="page-header">
+        <p class="text-secondary" style="margin:0">Arraste os cartões entre as colunas pra mover o lead de etapa.</p>
+        <button class="btn btn-primary" id="novoLeadBtn">+ Novo Lead</button>
+      </div>
+
+      <div id="kanban" class="kanban">
+        <div class="loading">Carregando funil...</div>
+      </div>
+    </div>
+
+    <!-- ===================== ABA: RELATÓRIOS DE SAAS ===================== -->
+    <div class="tab-panel" id="tab-relatorios">
+      <div class="metrics-grid" id="metricsGrid">
+        <div class="loading">Carregando métricas...</div>
+      </div>
+
+      <div class="report-block">
+        <p class="report-title">Novas barbearias por mês</p>
+        <div class="chart-wrap" id="chartNovasBarbearias"></div>
+      </div>
+
+      <div class="report-block">
+        <p class="report-title">Funil de leads (quantidade por etapa)</p>
+        <div id="funilResumo"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal: Novo/Editar Lead -->
+  <div class="modal-overlay hidden" id="modalLead">
+    <div class="modal">
+      <div class="modal-header">
+        <p class="modal-title" id="modalLeadTitulo">Novo Lead</p>
+        <button class="modal-close" data-close="modalLead">&times;</button>
+      </div>
+      <form id="formLead">
+        <input type="hidden" id="ldId">
+        <div class="field">
+          <label for="ldNome">Nome da barbearia</label>
+          <input type="text" id="ldNome" required>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="ldCidade">Cidade</label>
+            <input type="text" id="ldCidade">
+          </div>
+          <div class="field">
+            <label for="ldEstado">Estado (UF)</label>
+            <input type="text" id="ldEstado" maxlength="2">
+          </div>
+        </div>
+        <div class="field">
+          <label for="ldBairro">Bairro</label>
+          <input type="text" id="ldBairro">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="ldContato">Nome do contato</label>
+            <input type="text" id="ldContato">
+          </div>
+          <div class="field">
+            <label for="ldTelefone">Telefone</label>
+            <input type="text" id="ldTelefone" placeholder="5541999990000">
+          </div>
+        </div>
+        <div class="field">
+          <label for="ldOrigem">Origem</label>
+          <select id="ldOrigem">
+            <option value="indicacao">Indicação</option>
+            <option value="instagram">Instagram</option>
+            <option value="google">Google</option>
+            <option value="evento">Evento</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="ldStatus">Etapa</label>
+          <select id="ldStatus">
+            <option value="novo_lead">Novo Lead</option>
+            <option value="contato_feito">Contato Feito</option>
+            <option value="demo_agendada">Demo Agendada</option>
+            <option value="proposta_enviada">Proposta Enviada</option>
+            <option value="fechado_ganho">Fechado (Ganho)</option>
+            <option value="perdido">Perdido</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="ldNotas">Notas</label>
+          <textarea id="ldNotas" rows="3"></textarea>
+        </div>
+
+        <div class="field hidden" id="ldMotivoPerdaField">
+          <label for="ldMotivoPerda">Motivo da perda</label>
+          <input type="text" id="ldMotivoPerda" placeholder="Ex: sem orçamento, escolheu concorrente...">
+        </div>
+
+        <p class="modal-error" id="ldErro"></p>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" id="ldExcluirBtn" style="display:none;margin-right:auto">Excluir</button>
+          <button type="button" class="btn" data-close="modalLead">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="ldSalvarBtn">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tela de acesso negado (some se o usuário não estiver em equipe_interna) -->
+  <div class="access-denied hidden" id="accessDenied">
+    <div class="access-denied-card">
+      <h2>Acesso restrito</h2>
+      <p>Esta área é só para a equipe do Corte Certo. Se você acha que deveria ter acesso, confira se seu usuário está cadastrado na tabela <code>equipe_interna</code>.</p>
+    </div>
+  </div>
+
+  <script src="../js/central.js"></script>
+</body>
+
+</html>

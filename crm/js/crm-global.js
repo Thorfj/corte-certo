@@ -29,6 +29,7 @@
       <a class="nav-item" data-page="servicos.html" href="servicos.html"><i data-lucide="scissors"></i> <span class="nav-label">Serviços</span></a>
       <a class="nav-item" data-page="mensagens.html" href="mensagens.html"><i data-lucide="message-square"></i> <span class="nav-label">Mensagens</span></a>
       <a class="nav-item" data-page="relatorios.html" href="relatorios.html"><i data-lucide="pie-chart"></i> <span class="nav-label">Relatórios</span></a>
+      <a class="nav-item" data-page="pagamentos.html" href="pagamentos.html"><i data-lucide="credit-card"></i> <span class="nav-label">Pagamentos</span></a>
       <a class="nav-item" data-page="configuracoes.html" href="configuracoes.html"><i data-lucide="settings"></i> <span class="nav-label">Configurações</span></a>
     </nav>
     <div class="sidebar-footer">

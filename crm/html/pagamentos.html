@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pagamentos — Corte Certo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/pagamentos.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/onboarding-data.js"></script>
+  <script src="../js/crm-global.js"></script>
+</head>
+
+<body>
+  <div class="app">
+    <div id="crm-sidebar"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1 class="page-title" style="margin:0">Pagamentos</h1>
+      </div>
+
+      <div class="pagamentos-grid">
+        <!-- Situação financeira -->
+        <div class="card pg-card">
+          <p class="pg-card-titulo">Situação financeira</p>
+          <div class="pg-situacao" id="pg-situacao">
+            <span class="badge" id="pg-situacao-badge">Carregando...</span>
+          </div>
+          <p class="pg-situacao-detalhe" id="pg-situacao-detalhe"></p>
+        </div>
+
+        <!-- Assinatura -->
+        <div class="card pg-card">
+          <p class="pg-card-titulo">Assinatura</p>
+          <dl class="pg-lista-dados" id="pg-assinatura-dados">
+            <dt>Plano</dt>
+            <dd id="pg-plano">—</dd>
+            <dt>Status</dt>
+            <dd id="pg-status-raw">—</dd>
+            <dt>Próximo vencimento</dt>
+            <dd id="pg-proximo-vencimento">—</dd>
+          </dl>
+          <a class="btn btn-primary hidden" id="pg-conectar-btn">
+            <i data-lucide="link" style="width:16px;height:16px"></i> Conectar Asaas
+          </a>
+          <p class="pg-conectado-msg hidden" id="pg-conectado-msg">
+            <i data-lucide="check-circle" style="width:15px;height:15px"></i> Assinatura conectada com a Asaas
+          </p>
+        </div>
+      </div>
+
+      <!-- Indicadores -->
+      <div class="pg-indicadores" id="pg-indicadores"></div>
+
+      <!-- Cobranças -->
+      <div class="card" style="padding:0; margin-top:24px">
+        <table class="table" id="tabela-cobrancas">
+          <thead>
+            <tr>
+              <th>Competência</th>
+              <th>Valor</th>
+              <th>Status</th>
+              <th>Vencimento</th>
+              <th>Pagamento</th>
+              <th>Forma</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tabela-cobrancas-body">
+            <tr>
+              <td colspan="7" class="loading">Carregando cobranças...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="pg-erro hidden" id="pg-erro"></p>
+    </main>
+  </div>
+  <script src="../js/pagamentos.js"></script>
+</body>
+
+</html>

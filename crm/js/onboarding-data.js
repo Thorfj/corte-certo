@@ -17,14 +17,13 @@ const ONBOARDING_PASSOS = {
     {
       selector: '.nav-item[data-page="atendimentos.html"]',
       titulo: "Atendimentos",
-      texto:
-        "Aqui ficam todos os seus agendamentos, organizados por status: como um quadro de tarefas.",
+      texto: "Aqui ficam todos os seus agendamentos organizados",
     },
     {
       selector: "#novo-atendimento-btn",
       titulo: "Criar um atendimento manual",
       texto:
-        "Use este botão pra agendar sem passar pelo WhatsApp:útil pra encaixes ou clientes que ligaram.",
+        "Use este botão pra agendar sem passar pelo WhatsApp: útil pra encaixes ou clientes que ligaram.",
     },
     {
       selector: "#kanban",
@@ -62,12 +61,12 @@ const ONBOARDING_PASSOS = {
       selector: "#novo-contato-btn",
       titulo: "Cadastrar um contato",
       texto:
-        "Adicione um cliente manualmente, mesmo antes dele agendar qualquer coisa.",
+        "Adicione um cliente manualmente, mesmo antes dele realizar um agendamento.",
     },
     {
       selector: "#busca-input",
       titulo: "Buscar um cliente",
-      texto: "Digite o nome ou telefone pra encontrar rapidinho.",
+      texto: "Digite o nome ou telefone pra encontrar algum cliente.",
     },
   ],
   "servicos.html": [

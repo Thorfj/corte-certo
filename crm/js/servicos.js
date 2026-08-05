@@ -37,7 +37,7 @@ async function carregarServicos() {
   if (error) {
     console.error(error);
     body.innerHTML =
-      '<tr><td colspan="6" class="empty">Erro ao carregar serviços.</td></tr>';
+      '<tr><td colspan="5" class="empty">Erro ao carregar serviços.</td></tr>';
     return;
   }
 
@@ -51,7 +51,7 @@ function renderizarTabela(lista) {
 
   if (lista.length === 0) {
     body.innerHTML =
-      '<tr><td colspan="6" class="empty">Nenhum serviço cadastrado.</td></tr>';
+      '<tr><td colspan="5" class="empty">Nenhum serviço cadastrado.</td></tr>';
     return;
   }
 
@@ -60,7 +60,6 @@ function renderizarTabela(lista) {
     tr.className = "clickable";
     tr.addEventListener("click", () => abrirModalEdicao(servico));
     tr.innerHTML = `
-      <td>${servico.sku}</td>
       <td>${servico.nome}</td>
       <td>R$ ${Number(servico.preco).toFixed(2)}</td>
       <td>${servico.duracao_min} min</td>
@@ -204,6 +203,6 @@ document
   } catch (err) {
     console.error(err);
     document.getElementById("tabela-servicos-body").innerHTML =
-      `<tr><td colspan="6" class="empty">Erro: ${err.message}</td></tr>`;
+      `<tr><td colspan="5" class="empty">Erro: ${err.message}</td></tr>`;
   }
 })();

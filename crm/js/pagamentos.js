@@ -6,6 +6,7 @@ if (typeof lucide !== "undefined") {
 
 let profissionalAtualCache = null;
 let cobrancasCache = [];
+let cnpjAtualCache = null;
 
 async function obterProfissionalAtual() {
   if (profissionalAtualCache) return profissionalAtualCache;
@@ -51,7 +52,7 @@ async function carregarAssinatura() {
   const { data, error } = await supabaseClient
     .from("barbearias")
     .select(
-      "id, status_assinatura, subscription_status, asaas_customer_id, asaas_subscription_id, proximo_vencimento, criado_em",
+      "id, cnpj, status_assinatura, subscription_status, asaas_customer_id, asaas_subscription_id, proximo_vencimento, criado_em",
     )
     .eq("id", barbeariaId)
     .single();
@@ -60,6 +61,8 @@ async function carregarAssinatura() {
     mostrarErro("Erro ao carregar dados da assinatura.");
     return;
   }
+
+  cnpjAtualCache = data.cnpj || null;
 
   // Card: situação financeira
   const info = SITUACAO_LABELS[data.status_assinatura] || {
@@ -117,31 +120,81 @@ async function carregarAssinatura() {
 document
   .getElementById("pg-conectar-btn")
   .addEventListener("click", async () => {
-    const btn = document.getElementById("pg-conectar-btn");
-    const textoOriginal = btn.innerHTML;
-    btn.style.pointerEvents = "none";
-    btn.textContent = "Conectando...";
-
-    try {
-      const { data, error } = await supabaseClient.functions.invoke(
-        "criar-assinatura-asaas",
-        { body: {} },
-      );
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      await carregarAssinatura();
-    } catch (err) {
-      console.error(err);
-      mostrarErro(
-        "Não foi possível conectar com a Asaas agora. Tente novamente em instantes.",
-      );
-    } finally {
-      btn.style.pointerEvents = "";
-      btn.innerHTML = textoOriginal;
-      if (typeof lucide !== "undefined") lucide.createIcons();
+    if (!cnpjAtualCache) {
+      document.getElementById("cnpj-input").value = "";
+      document.getElementById("cnpj-erro").style.display = "none";
+      document.getElementById("modal-cnpj").classList.remove("hidden");
+      return;
     }
+    await conectarAsaas();
   });
+
+document.getElementById("form-cnpj").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const cnpjInput = document.getElementById("cnpj-input");
+  const erroEl = document.getElementById("cnpj-erro");
+  const salvarBtn = document.getElementById("cnpj-salvar-btn");
+  const cnpj = cnpjInput.value.replace(/\D/g, "");
+
+  erroEl.style.display = "none";
+
+  if (cnpj.length !== 14) {
+    erroEl.textContent = "CNPJ deve ter 14 dígitos.";
+    erroEl.style.display = "block";
+    return;
+  }
+
+  salvarBtn.disabled = true;
+  salvarBtn.textContent = "Salvando...";
+
+  try {
+    const barbeariaId = await obterBarbeariaId();
+    const { error } = await supabaseClient
+      .from("barbearias")
+      .update({ cnpj })
+      .eq("id", barbeariaId);
+    if (error) throw error;
+
+    cnpjAtualCache = cnpj;
+    document.getElementById("modal-cnpj").classList.add("hidden");
+    await conectarAsaas();
+  } catch (err) {
+    console.error(err);
+    erroEl.textContent = "Erro ao salvar o CNPJ. Tente novamente.";
+    erroEl.style.display = "block";
+  } finally {
+    salvarBtn.disabled = false;
+    salvarBtn.textContent = "Salvar e continuar";
+  }
+});
+
+async function conectarAsaas() {
+  const btn = document.getElementById("pg-conectar-btn");
+  const textoOriginal = btn.innerHTML;
+  btn.style.pointerEvents = "none";
+  btn.textContent = "Conectando...";
+
+  try {
+    const { data, error } = await supabaseClient.functions.invoke(
+      "criar-assinatura-asaas",
+      { body: {} },
+    );
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    await carregarAssinatura();
+  } catch (err) {
+    console.error(err);
+    mostrarErro(
+      "Não foi possível conectar com a Asaas agora. Tente novamente em instantes.",
+    );
+  } finally {
+    btn.style.pointerEvents = "";
+    btn.innerHTML = textoOriginal;
+    if (typeof lucide !== "undefined") lucide.createIcons();
+  }
+}
 
 function mostrarErro(mensagem) {
   const erroEl = document.getElementById("pg-erro");

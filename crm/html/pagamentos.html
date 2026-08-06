@@ -83,6 +83,28 @@
       <p class="pg-erro hidden" id="pg-erro"></p>
     </main>
   </div>
+
+  <!-- Modal: CNPJ (exigido pela Asaas pra criar o cliente) -->
+  <div class="modal-overlay hidden" id="modal-cnpj">
+    <div class="modal">
+      <div class="modal-header">
+        <p class="modal-title">Antes de conectar...</p>
+        <button class="modal-close" data-close="modal-cnpj">&times;</button>
+      </div>
+      <form id="form-cnpj">
+        <div class="field">
+          <label for="cnpj-input">CNPJ da barbearia</label>
+          <input type="text" id="cnpj-input" placeholder="00000000000000" inputmode="numeric" maxlength="18" required>
+          <span class="field-hint">A Asaas exige esse dado pra gerar as cobranças da assinatura.</span>
+        </div>
+        <p class="modal-error" id="cnpj-erro"></p>
+        <div class="modal-footer">
+          <button type="button" class="btn" data-close="modal-cnpj">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="cnpj-salvar-btn">Salvar e continuar</button>
+        </div>
+      </form>
+    </div>
+  </div>
   <script src="../js/pagamentos.js"></script>
 </body>
 

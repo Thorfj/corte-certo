@@ -3,6 +3,28 @@
    Usa o MESMO projeto Supabase do site/CRM da barbearia.
    ============================================================ */
 
+// Mostra um erro visível na tela (não só no console) — assim dá
+// pra diagnosticar sem precisar abrir o DevTools.
+function mostrarErroFatal(mensagem) {
+  const banner = document.createElement("div");
+  banner.style.cssText =
+    "position:fixed;top:0;left:0;right:0;z-index:9999;background:#b3261e;" +
+    "color:#fff;padding:12px 20px;font-family:sans-serif;font-size:13.5px;" +
+    "text-align:center;";
+  banner.textContent = "Erro: " + mensagem;
+  document.body.prepend(banner);
+  console.error(mensagem);
+}
+
+if (typeof window.supabase === "undefined") {
+  document.addEventListener("DOMContentLoaded", () => {
+    mostrarErroFatal(
+      "A biblioteca do Supabase não carregou (cdn.jsdelivr.net bloqueado, offline, ou sem internet). Confira sua conexão e recarregue a página.",
+    );
+  });
+  throw new Error("supabase-js não carregado — abortando central.js");
+}
+
 // Mesmas credenciais do projeto já usado no site/CRM.
 const SUPABASE_URL = "https://jzqiqrymqbzullysukja.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_lqY19MJcqfYcVAABzRgiNg_6h4DIWUO";
@@ -26,29 +48,34 @@ let leadsCache = [];
 
 // ---------- sessão + checagem de equipe interna ----------
 async function checarAcesso() {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-  if (!session) {
-    window.location.href = LOGIN_URL;
+    if (!session) {
+      window.location.href = LOGIN_URL;
+      return false;
+    }
+
+    const { data: membro, error } = await supabase
+      .from("equipe_interna")
+      .select("nome, papel")
+      .eq("auth_user_id", session.user.id)
+      .maybeSingle();
+
+    if (error || !membro) {
+      document.getElementById("accessDenied").classList.remove("hidden");
+      return false;
+    }
+
+    document.getElementById("topbarStatus").textContent =
+      `${membro.nome} · ${membro.papel}`;
+    return true;
+  } catch (err) {
+    mostrarErroFatal("Falha ao checar sessão/acesso — " + (err.message || err));
     return false;
   }
-
-  const { data: membro, error } = await supabase
-    .from("equipe_interna")
-    .select("nome, papel")
-    .eq("auth_user_id", session.user.id)
-    .maybeSingle();
-
-  if (error || !membro) {
-    document.getElementById("accessDenied").classList.remove("hidden");
-    return false;
-  }
-
-  document.getElementById("topbarStatus").textContent =
-    `${membro.nome} · ${membro.papel}`;
-  return true;
 }
 
 // ---------- abas ----------
@@ -372,10 +399,16 @@ function renderizarFunilResumo() {
 
 // ---------- init ----------
 document.addEventListener("DOMContentLoaded", async () => {
-  const ok = await checarAcesso();
-  if (!ok) return;
-
+  // abas e modal não dependem de rede — inicializam sempre,
+  // mesmo que a checagem de sessão abaixo falhe ou demore.
   initTabs();
   initModal();
-  await carregarLeads();
+
+  try {
+    const ok = await checarAcesso();
+    if (!ok) return;
+    await carregarLeads();
+  } catch (err) {
+    mostrarErroFatal("Falha ao carregar a página — " + (err.message || err));
+  }
 });

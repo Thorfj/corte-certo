@@ -33,7 +33,7 @@ const BLOG_POSTS = [
     featured: false,
   },
   {
-    slug: "/blog-posts/tempo-perdido-respondendo-horario",
+    slug: "tempo-perdido-respondendo-horario",
     title: "Quanto tempo você perde respondendo “qual horário você tem?”",
     excerpt:
       "Fizemos as contas: em uma barbearia de porte médio, essa pergunta sozinha pode consumir mais de uma hora por dia do profissional.",

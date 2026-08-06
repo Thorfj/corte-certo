@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (typeof BLOG_POSTS === "undefined" || (!featuredMount && !gridMount))
     return;
 
-  const postUrl = (slug) => `/website/html/blog-posts/${slug}.html`;
+  const postUrl = (slug) => `corte-certo/website/html/blog-posts/${slug}.html`;
 
   function featuredCardHTML(post) {
     return `
@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function cardHTML(post) {
     return `
       <a href="${postUrl(post.slug)}" class="post-card" data-category="${post.category}">
-        <div class="post-cover cat-${post.category}"><span>${post.categoryLabel}</span></div>
+        <div class="post-cover-${post.category}"><span>${post.categoryLabel}</span></div>
         <div class="post-body">
           <span class="post-meta">${post.date} · ${post.readTime}</span>
           <h3>${post.title}</h3>

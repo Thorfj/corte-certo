@@ -28,7 +28,10 @@ if (typeof window.supabase === "undefined") {
 // Mesmas credenciais do projeto já usado no site/CRM.
 const SUPABASE_URL = "https://jzqiqrymqbzullysukja.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_lqY19MJcqfYcVAABzRgiNg_6h4DIWUO";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseCentral = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY,
+);
 
 // TODO: ajuste este caminho pra onde o login.html realmente fica
 // em relação a esta página, dependendo de onde você colocar
@@ -51,14 +54,14 @@ async function checarAcesso() {
   try {
     const {
       data: { session },
-    } = await supabase.auth.getSession();
+    } = await supabaseCentral.auth.getSession();
 
     if (!session) {
       window.location.href = LOGIN_URL;
       return false;
     }
 
-    const { data: membro, error } = await supabase
+    const { data: membro, error } = await supabaseCentral
       .from("equipe_interna")
       .select("nome, papel")
       .eq("auth_user_id", session.user.id)
@@ -97,7 +100,7 @@ function initTabs() {
 // ---------- kanban: carregar e renderizar ----------
 async function carregarLeads() {
   const kanban = document.getElementById("kanban");
-  const { data, error } = await supabase
+  const { data, error } = await supabaseCentral
     .from("leads")
     .select("*")
     .order("criado_em", { ascending: false });
@@ -181,7 +184,7 @@ async function moverLead(leadId, novoStatus) {
   lead.status = novoStatus;
   renderizarKanban();
 
-  const { error } = await supabase
+  const { error } = await supabaseCentral
     .from("leads")
     .update({ status: novoStatus })
     .eq("id", leadId);
@@ -251,7 +254,7 @@ function initModal() {
     const id = document.getElementById("ldId").value;
     if (!id) return;
     if (!confirm("Excluir este lead? Essa ação não pode ser desfeita.")) return;
-    const { error } = await supabase.from("leads").delete().eq("id", id);
+    const { error } = await supabaseCentral.from("leads").delete().eq("id", id);
     if (error) {
       alert("Erro ao excluir.");
       return;
@@ -295,13 +298,13 @@ function initModal() {
 
     try {
       if (id) {
-        const { error } = await supabase
+        const { error } = await supabaseCentral
           .from("leads")
           .update(payload)
           .eq("id", id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("leads").insert(payload);
+        const { error } = await supabaseCentral.from("leads").insert(payload);
         if (error) throw error;
       }
       fecharModal();
@@ -328,7 +331,7 @@ async function carregarRelatorios() {
   const grid = document.getElementById("metricsGrid");
 
   try {
-    const { data: metricas, error: erroMetricas } = await supabase
+    const { data: metricas, error: erroMetricas } = await supabaseCentral
       .from("vw_saas_metricas")
       .select("*")
       .single();
@@ -348,7 +351,7 @@ async function carregarRelatorios() {
   }
 
   try {
-    const { data: porMes, error: erroMes } = await supabase
+    const { data: porMes, error: erroMes } = await supabaseCentral
       .from("vw_novas_barbearias_por_mes")
       .select("*");
     if (erroMes) throw erroMes;

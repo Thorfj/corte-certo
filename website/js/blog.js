@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (typeof BLOG_POSTS === "undefined" || (!featuredMount && !gridMount))
     return;
 
-  const postUrl = (slug) => `corte-certo/website/html/blog-posts/${slug}.html`;
+  const postUrl = (slug) => `/website/html/blog-posts/${slug}.html`;
 
   function featuredCardHTML(post) {
     return `

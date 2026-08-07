@@ -484,3 +484,52 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- login ---------- */
+.login-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+.login-card {
+  width: 360px;
+  max-width: 90vw;
+}
+.login-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+.login-logo .logo-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--brand-dark);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+.login-logo span {
+  font-weight: 600;
+  font-size: 16px;
+}
+.login-btn {
+  width: 100%;
+  justify-content: center;
+  margin-top: 8px;
+}
+.login-error {
+  color: #b3261e;
+  font-size: 13px;
+  margin: 12px 0 0;
+  display: none;
+  text-align: center;
+}
+.login-error.show {
+  display: block;
+}

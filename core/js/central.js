@@ -33,10 +33,8 @@ const supabaseCentral = window.supabase.createClient(
   SUPABASE_ANON_KEY,
 );
 
-// TODO: ajuste este caminho pra onde o login.html realmente fica
-// em relação a esta página, dependendo de onde você colocar
-// central.html no projeto.
-const LOGIN_URL = "../crm/html/login.html";
+// login-interno.html fica na mesma pasta que central.html.
+const LOGIN_URL = "login-interno.html";
 
 const STAGES = [
   { status: "novo_lead", label: "Novo Lead" },

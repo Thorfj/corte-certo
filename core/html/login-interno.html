@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Central Interna</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/central.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body class="login-body">
+
+  <div class="card login-card">
+    <div class="login-logo">
+      <div class="logo-icon">CC</div>
+      <span>Central Interna</span>
+    </div>
+
+    <form id="loginInternoForm">
+      <div class="field">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" required autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="password">Senha</label>
+        <input type="password" id="password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary login-btn" id="loginBtn">Entrar</button>
+      <p class="login-error" id="loginError"></p>
+    </form>
+  </div>
+
+  <script src="../js/login-interno.js"></script>
+</body>
+
+</html>

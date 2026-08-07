@@ -85,7 +85,7 @@ async function carregarAssinatura() {
     detalheEl.textContent =
       "Assinatura criada, aguardando confirmação do primeiro pagamento.";
   } else if (data.status_assinatura === "cancelada") {
-    detalheEl.textContent = "Assinatura cancelada na Asaas.";
+    detalheEl.textContent = "Assinatura cancelada.";
   } else {
     detalheEl.textContent = "Nenhuma assinatura conectada ainda.";
   }
@@ -184,10 +184,14 @@ async function conectarAsaas() {
     if (data?.error) throw new Error(data.error);
 
     await carregarAssinatura();
+
+    if (data?.checkout_url) {
+      window.open(data.checkout_url, "_blank", "noopener");
+    }
   } catch (err) {
     console.error(err);
     mostrarErro(
-      "Não foi possível conectar com a Asaas agora. Tente novamente em instantes.",
+      "Não foi possível processar sua assinatura agora. Tente novamente em instantes.",
     );
   } finally {
     btn.style.pointerEvents = "";

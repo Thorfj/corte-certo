@@ -29,6 +29,7 @@
 
       <div class="tabs">
         <button class="tab-btn active" data-tab="geral">Geral</button>
+        <button class="tab-btn" data-tab="usuarios">Usuários</button>
         <button class="tab-btn" data-tab="faturas">Faturas</button>
       </div>
 
@@ -173,6 +174,11 @@
           usuário agora passa pela Edge Function `criar-usuario`, que
           cria a conta no Auth e pega o UID sozinha.
         -->
+        <div class="field" id="us-senha-field">
+          <label for="us-senha">Senha de acesso</label>
+          <input type="password" id="us-senha" minlength="6" placeholder="mínimo 6 caracteres" autocomplete="new-password">
+          <p class="field-hint">É a senha que esse usuário vai usar pra entrar no CRM.</p>
+        </div>
         <p class="modal-error" id="us-erro"></p>
         <div class="modal-footer">
           <button type="button" class="btn" data-close="modal-usuario">Cancelar</button>

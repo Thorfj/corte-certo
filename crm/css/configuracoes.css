@@ -158,3 +158,113 @@
   color: var(--text-secondary);
   margin: 8px 0 20px;
 }
+
+/* ------------------------------------------------------------
+   Aba Pagamentos
+   ------------------------------------------------------------ */
+.pagamentos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 16px;
+}
+
+.pg-card-titulo {
+  font-weight: 600;
+  font-size: 15px;
+  margin: 0 0 14px;
+}
+
+.pg-situacao {
+  margin-bottom: 8px;
+}
+.pg-situacao .badge {
+  font-size: 15px;
+  padding: 6px 16px;
+}
+.pg-situacao-detalhe {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.badge.pagante {
+  background: var(--brand-light);
+  color: var(--brand-dark);
+}
+.badge.pendente {
+  background: #fdf1d6;
+  color: #8a5a00;
+}
+.badge.inadimplente {
+  background: #fde3e0;
+  color: #b3261e;
+}
+.badge.cancelada,
+.badge.indisponivel {
+  background: rgba(28, 28, 26, 0.06);
+  color: var(--text-secondary);
+}
+
+.pg-lista-dados {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+  margin: 0 0 16px;
+}
+.pg-lista-dados dt {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.pg-lista-dados dd {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: right;
+}
+
+.pg-conectado-msg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--brand-dark);
+  font-size: 13px;
+  margin: 0;
+}
+
+.pg-indicadores {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.pg-indicador {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+.pg-indicador-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0 0 4px;
+}
+.pg-indicador-valor {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.pg-erro {
+  color: #b3261e;
+  font-size: 13px;
+  margin-top: 16px;
+}
+
+@media (max-width: 900px) {
+  .pagamentos-grid {
+    grid-template-columns: 1fr;
+  }
+  .pg-indicadores {
+    grid-template-columns: 1fr 1fr;
+  }
+}

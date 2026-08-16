@@ -19,15 +19,9 @@ const sortOrder = {
   perdido: "asc",
 };
 
-// FIX: antes buscava TODOS os atendimentos visíveis pela RLS, sem
-// filtrar pela barbearia do usuário logado.
-//
-// ATENÇÃO: isso assume que a tabela `atendimentos` tem uma coluna
-// `barbearia_id` direta (mesmo padrão de `servicos` e `profissionais`).
-// Se ela não existir, me avise que ajusto pra filtrar via join
-// (ex: profissional_id -> profissionais.barbearia_id).
 async function carregarAtendimentos(dataInicio, dataFim) {
   const barbeariaId = await obterBarbeariaId();
+  const meuProf = await obterMeuProfissional();
 
   let query = supabaseClient
     .from("atendimentos")
@@ -39,8 +33,14 @@ async function carregarAtendimentos(dataInicio, dataFim) {
   atendimento_servicos ( preco_cobrado, duracao_cobrada, servicos ( nome ) )
 `,
     )
-    .eq("barbearia_id", barbeariaId)
-    .order("data_agend", { ascending: true });
+    .eq("barbearia_id", barbeariaId);
+
+  // papel "usuario" só vê os próprios atendimentos, não os de todo mundo
+  if (meuProf.acesso === "usuario") {
+    query = query.eq("id_prof", meuProf.id);
+  }
+
+  query = query.order("data_agend", { ascending: true });
 
   if (dataInicio) query = query.gte("data_agend", dataInicio);
   if (dataFim) query = query.lte("data_agend", dataFim);

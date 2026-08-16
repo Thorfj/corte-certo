@@ -199,8 +199,7 @@ async function carregarUsuarios() {
 
   const rotulos = {
     admin: "Admin",
-    cabeleireiro: "Cabeleireiro",
-    teste: "Teste",
+    usuario: "Usuário",
   };
 
   body.innerHTML = data
@@ -231,9 +230,6 @@ function abrirModalUsuario(usuario) {
   document.getElementById("form-usuario").reset();
   document.getElementById("us-erro").style.display = "none";
 
-  const senhaField = document.getElementById("us-senha-field");
-  const senhaInput = document.getElementById("us-senha");
-
   if (usuario) {
     document.getElementById("modal-usuario-titulo").textContent =
       "Editar Usuário";
@@ -242,14 +238,10 @@ function abrirModalUsuario(usuario) {
     document.getElementById("us-email").value = usuario.email;
     document.getElementById("us-acesso").value = usuario.acesso;
     document.getElementById("us-agenda").value = usuario.agendas || "";
-    senhaField.style.display = "none";
-    senhaInput.required = false;
   } else {
     document.getElementById("modal-usuario-titulo").textContent =
       "Novo Usuário";
     document.getElementById("us-id").value = "";
-    senhaField.style.display = "block";
-    senhaInput.required = true;
   }
 
   // campo de UID manual removido do fluxo — a Edge Function cuida disso
@@ -270,18 +262,10 @@ document
     const email = document.getElementById("us-email").value.trim();
     const acesso = document.getElementById("us-acesso").value;
     const agendas = document.getElementById("us-agenda").value.trim() || null;
-    const senha = document.getElementById("us-senha").value;
     const erroEl = document.getElementById("us-erro");
     const salvarBtn = document.getElementById("us-salvar-btn");
 
     erroEl.style.display = "none";
-
-    if (!id && senha.length < 6) {
-      erroEl.textContent = "A senha precisa ter pelo menos 6 caracteres.";
-      erroEl.style.display = "block";
-      return;
-    }
-
     salvarBtn.disabled = true;
     salvarBtn.textContent = "Salvando...";
 
@@ -308,7 +292,7 @@ document
             "Content-Type": "application/json",
             Authorization: `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ nome, email, acesso, agendas, senha }),
+          body: JSON.stringify({ nome, email, acesso, agendas }),
         });
 
         const resultado = await resp.json();
@@ -475,7 +459,7 @@ async function carregarStatusTeste() {
 
     if (status.fase === "teste_ativo") {
       card.classList.add("trial-banner-info");
-      card.innerHTML = `<span>Você está no teste grátis — ${status.dias_restantes} dia(s) restante(s).</span>`;
+      card.innerHTML = `<span>Você está no teste grátis: ${status.dias_restantes} dia(s) restante(s).</span>`;
       return;
     }
 

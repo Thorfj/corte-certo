@@ -30,7 +30,7 @@
       <div class="tabs">
         <button class="tab-btn active" data-tab="geral">Geral</button>
         <button class="tab-btn" data-tab="usuarios">Usuários</button>
-        <button class="tab-btn" data-tab="faturas">Faturas</button>
+        <button class="tab-btn" data-tab="pagamentos">Pagamentos</button>
       </div>
 
       <!-- ABA GERAL -->
@@ -110,30 +110,71 @@
         </div>
       </div>
 
-      <!-- ABA FATURAS -->
-      <div class="tab-panel" id="tab-faturas">
-        <div class="card" style="padding:0; margin-bottom:20px">
-          <table class="table" id="tabela-faturas">
+      <!-- ABA PAGAMENTOS -->
+      <div class="tab-panel" id="tab-pagamentos">
+        <div class="pagamentos-grid">
+          <!-- Situação financeira -->
+          <div class="card pg-card">
+            <p class="pg-card-titulo">Situação financeira</p>
+            <div class="pg-situacao" id="pg-situacao">
+              <span class="badge" id="pg-situacao-badge">Carregando...</span>
+            </div>
+            <p class="pg-situacao-detalhe" id="pg-situacao-detalhe"></p>
+          </div>
+
+          <!-- Assinatura -->
+          <div class="card pg-card">
+            <p class="pg-card-titulo">Assinatura</p>
+            <dl class="pg-lista-dados" id="pg-assinatura-dados">
+              <dt>Plano</dt>
+              <dd id="pg-plano">—</dd>
+              <dt>Status</dt>
+              <dd id="pg-status-raw">—</dd>
+              <dt>Próximo vencimento</dt>
+              <dd id="pg-proximo-vencimento">—</dd>
+            </dl>
+            <a class="btn btn-primary hidden" id="pg-conectar-btn">
+              <i data-lucide="credit-card" style="width:16px;height:16px"></i> Assinar agora
+            </a>
+            <p class="pg-conectado-msg hidden" id="pg-conectado-msg">
+              <i data-lucide="check-circle" style="width:15px;height:15px"></i> Assinatura configurada
+            </p>
+          </div>
+        </div>
+
+        <!-- Indicadores -->
+        <div class="pg-indicadores" id="pg-indicadores"></div>
+
+        <!-- Cobranças -->
+        <div class="card" style="padding:0; margin-top:24px">
+          <table class="table" id="tabela-cobrancas">
             <thead>
               <tr>
-                <th>Fatura</th>
-                <th>Data</th>
+                <th>Competência</th>
+                <th>Valor</th>
                 <th>Status</th>
+                <th>Vencimento</th>
+                <th>Pagamento</th>
+                <th>Forma</th>
+                <th></th>
               </tr>
             </thead>
-            <tbody id="tabela-faturas-body">
+            <tbody id="tabela-cobrancas-body">
               <tr>
-                <td colspan="3" class="loading">Carregando faturas...</td>
+                <td colspan="7" class="loading">Carregando cobranças...</td>
               </tr>
             </tbody>
           </table>
         </div>
+
         <div class="plano-status">
           <div>
             <p style="margin:0;font-weight:500" id="plano-status-texto">Verificando assinatura...</p>
           </div>
           <button class="btn" id="cancelar-plano-btn" style="display:none">Cancelar assinatura</button>
         </div>
+
+        <p class="pg-erro hidden" id="pg-erro"></p>
       </div>
     </main>
   </div>
@@ -160,8 +201,7 @@
             <label for="us-acesso">Papel</label>
             <select id="us-acesso" required>
               <option value="admin">Admin</option>
-              <option value="cabeleireiro">Cabeleireiro</option>
-              <option value="teste">Teste</option>
+              <option value="usuario">Usuário</option>
             </select>
           </div>
           <div class="field">
@@ -177,7 +217,7 @@
         <div class="field" id="us-senha-field">
           <label for="us-senha">Senha de acesso</label>
           <input type="password" id="us-senha" minlength="6" placeholder="mínimo 6 caracteres" autocomplete="new-password">
-          <p class="field-hint">É a senha que esse usuário vai usar pra entrar no CRM.</p>
+          <p class="field-hint">Não enviamos e-mail nenhum — é essa a senha que o usuário vai usar pra entrar.</p>
         </div>
         <p class="modal-error" id="us-erro"></p>
         <div class="modal-footer">
@@ -197,6 +237,28 @@
         <button class="btn" id="confirm-cancelar-btn">Cancelar</button>
         <button class="btn btn-primary" id="confirm-ok-btn">Confirmar</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal: CNPJ (exigido pra criar a assinatura) -->
+  <div class="modal-overlay hidden" id="modal-cnpj">
+    <div class="modal">
+      <div class="modal-header">
+        <p class="modal-title">Antes de assinar...</p>
+        <button class="modal-close" data-close="modal-cnpj">&times;</button>
+      </div>
+      <form id="form-cnpj">
+        <div class="field">
+          <label for="cnpj-input">CNPJ da barbearia</label>
+          <input type="text" id="cnpj-input" placeholder="00000000000000" inputmode="numeric" maxlength="18" required>
+          <span class="field-hint">Precisamos desse dado pra gerar as cobranças da sua assinatura.</span>
+        </div>
+        <p class="modal-error" id="cnpj-erro"></p>
+        <div class="modal-footer">
+          <button type="button" class="btn" data-close="modal-cnpj">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="cnpj-salvar-btn">Salvar e continuar</button>
+        </div>
+      </form>
     </div>
   </div>
   <script src="../js/configuracoes.js"></script>

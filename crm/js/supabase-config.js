@@ -55,6 +55,26 @@ async function carregarNomeBarbearia() {
   }
 }
 
+// ---------------- Papel do usuário logado (admin / usuario) ----------------
+// Usado pelo crm-global.js pra montar o sidebar certo, e por
+// atendimentos.js/agenda.js pra filtrar "só os meus" quando o
+// papel for "usuario".
+let meuProfissionalCache = null;
+async function obterMeuProfissional() {
+  if (meuProfissionalCache) return meuProfissionalCache;
+  const {
+    data: { user },
+  } = await supabaseClient.auth.getUser();
+  const { data, error } = await supabaseClient
+    .from("profissionais")
+    .select("id, barbearia_id, acesso")
+    .eq("auth_user_id", user.id)
+    .single();
+  if (error) throw error;
+  meuProfissionalCache = data;
+  return meuProfissionalCache;
+}
+
 // ---------------- Tema (light/dark) ----------------
 // Aplica na hora, a partir do cache local, pra tela não "piscar" clara
 // antes de trocar pra escura enquanto a sessão ainda está carregando.

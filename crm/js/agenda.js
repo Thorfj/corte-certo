@@ -135,6 +135,8 @@ function atualizarLabel() {
 // ---------------- PROFISSIONAIS (seletor) ----------------
 async function carregarProfissionais() {
   const barbeariaId = await obterBarbeariaId();
+  const meuProf = await obterMeuProfissional();
+
   const { data, error } = await supabaseClient
     .from("profissionais")
     .select("id, nome")
@@ -149,11 +151,33 @@ async function carregarProfissionais() {
     return;
   }
 
-  profissionaisCache = data;
-  profSelecionados = new Set(data.map((p) => p.id));
+  // papel "usuario" só enxerga a própria agenda — nem mostra os
+  // outros profissionais como opção de filtro
+  const listaExibida =
+    meuProf.acesso === "usuario"
+      ? data.filter((p) => p.id === meuProf.id)
+      : data;
+
+  profissionaisCache = listaExibida;
+  profSelecionados = new Set(listaExibida.map((p) => p.id));
   corPorProfissional = new Map(
-    data.map((p, i) => [p.id, PALETA_CORES[i % PALETA_CORES.length]]),
+    listaExibida.map((p, i) => [p.id, PALETA_CORES[i % PALETA_CORES.length]]),
   );
+
+  if (meuProf.acesso === "usuario") {
+    // só ele mesmo — sem chip clicável, não tem o que filtrar
+    container.innerHTML = listaExibida
+      .map(
+        (p) => `
+      <span class="prof-chip active" style="cursor:default">
+        <span class="prof-dot" style="background:${corPorProfissional.get(p.id)}"></span>
+        ${p.nome}
+      </span>
+    `,
+      )
+      .join("");
+    return;
+  }
 
   container.innerHTML = data
     .map(
@@ -438,8 +462,20 @@ document.getElementById("hoje-btn").addEventListener("click", () => {
 // ---------------- BLOQUEIOS DE AGENDA ----------------
 let bloqueiosCache = [];
 
-function popularSelectProfBloqueio() {
+async function popularSelectProfBloqueio() {
   const select = document.getElementById("bl-prof");
+  const meuProf = await obterMeuProfissional();
+
+  // "usuario" só pode bloquear a própria agenda — nada de escolher
+  // outro profissional ou "barbearia inteira"
+  if (meuProf.acesso === "usuario") {
+    const eu = profissionaisCache.find((p) => p.id === meuProf.id);
+    select.innerHTML = eu ? `<option value="${eu.id}">${eu.nome}</option>` : "";
+    select.disabled = true;
+    return;
+  }
+
+  select.disabled = false;
   const opcoesProf = profissionaisCache
     .map((p) => `<option value="${p.id}">${p.nome}</option>`)
     .join("");
@@ -554,9 +590,9 @@ document.getElementById("bl-dia-inteiro").addEventListener("change", (e) => {
     .classList.toggle("hidden", e.target.checked);
 });
 
-document.getElementById("novo-bloqueio-btn").addEventListener("click", () => {
+document.getElementById("novo-bloqueio-btn").addEventListener("click", async () => {
   document.getElementById("form-bloqueio").reset();
-  popularSelectProfBloqueio();
+  await popularSelectProfBloqueio();
   document.getElementById("bl-campo-unico").classList.remove("hidden");
   document.getElementById("bl-campo-periodo").classList.add("hidden");
   document.getElementById("bl-campo-recorrente").classList.add("hidden");

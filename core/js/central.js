@@ -36,6 +36,11 @@ const supabaseCentral = window.supabase.createClient(
 // login-interno.html fica na mesma pasta que central.html.
 const LOGIN_URL = "login-interno.html";
 
+// Preencha com a URL do seu app Streamlit publicado (Streamlit Community
+// Cloud) pra aparecer o botão "Abrir ferramenta de extração" na aba de
+// Prospecção. Deixe em branco ("") que o botão fica escondido.
+const EXTRACAO_APP_URL = "";
+
 const STAGES = [
   { status: "novo_lead", label: "Novo Lead" },
   { status: "contato_feito", label: "Contato Feito" },
@@ -44,6 +49,7 @@ const STAGES = [
   { status: "fechado_ganho", label: "Fechado (Ganho)" },
   { status: "perdido", label: "Perdido" },
 ];
+const STAGE_LABEL = Object.fromEntries(STAGES.map((s) => [s.status, s.label]));
 
 let leadsCache = [];
 
@@ -66,6 +72,10 @@ async function checarAcesso() {
       .maybeSingle();
 
     if (error || !membro) {
+      // encerra a sessão: sem isso, login-interno.js vê que já tem sessão
+      // ativa e te manda de volta pra central automaticamente, sem nunca
+      // mostrar o formulário de login.
+      await supabaseCentral.auth.signOut();
       document.getElementById("accessDenied").classList.remove("hidden");
       return false;
     }
@@ -91,6 +101,7 @@ function initTabs() {
         .forEach((p) => p.classList.remove("active"));
       document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
       if (btn.dataset.tab === "relatorios") carregarRelatorios();
+      if (btn.dataset.tab === "extracao") renderizarExtracao();
     });
   });
 }
@@ -112,6 +123,11 @@ async function carregarLeads() {
 
   leadsCache = data || [];
   renderizarKanban();
+
+  // se a aba de Prospecção estiver aberta, mantém ela em dia também
+  if (document.getElementById("tab-extracao")?.classList.contains("active")) {
+    renderizarExtracao();
+  }
 }
 
 function renderizarKanban() {
@@ -398,12 +414,99 @@ function renderizarFunilResumo() {
   }).join("");
 }
 
+// ---------- prospecção (Google Maps) ----------
+
+// A ferramenta em python/supabase_sync.py grava o endereço e o site dentro
+// de `notas`, no formato "Endereço: ... | Site: ...". Essa função separa
+// isso de volta pra exibir em colunas na tabela.
+function parseNotasExtracao(notas) {
+  if (!notas) return { endereco: "", site: "" };
+  const matchEndereco = notas.match(/Endereço:\s*([^|]+)/);
+  const matchSite = notas.match(/Site:\s*(.+)$/);
+  const site = matchSite ? matchSite[1].trim() : "";
+  return {
+    endereco: matchEndereco ? matchEndereco[1].trim() : "",
+    site: site && site !== "—" ? site : "",
+  };
+}
+
+function renderizarExtracao() {
+  const container = document.getElementById("extracaoTabela");
+  const filtro = document.getElementById("extracaoStatusFiltro").value;
+
+  const leads = leadsCache
+    .filter((l) => l.origem === "google_maps")
+    .filter((l) => !filtro || l.status === filtro)
+    .sort((a, b) => new Date(b.criado_em || 0) - new Date(a.criado_em || 0));
+
+  if (leads.length === 0) {
+    container.innerHTML =
+      '<div class="loading">Nenhum lead extraído ainda por aqui. Rode a ferramenta de prospecção (pasta <code>python/</code>) e clique em "Adicionar selecionados ao CRM" pra eles aparecerem nessa lista.</div>';
+    return;
+  }
+
+  container.innerHTML = `
+    <table class="extracao-table">
+      <thead>
+        <tr>
+          <th>Barbearia</th>
+          <th>Cidade / Bairro</th>
+          <th>Telefone</th>
+          <th>Site</th>
+          <th>Etapa</th>
+          <th>Extraído em</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${leads
+          .map((lead) => {
+            const { site } = parseNotasExtracao(lead.notas);
+            const local = [lead.bairro, lead.cidade].filter(Boolean).join(" / ") || "—";
+            const data = lead.criado_em
+              ? new Date(lead.criado_em).toLocaleDateString("pt-BR")
+              : "—";
+            return `
+              <tr data-lead-id="${lead.id}">
+                <td class="et-nome">${lead.nome_barbearia}</td>
+                <td>${local}</td>
+                <td>${lead.telefone || "—"}</td>
+                <td>${site ? `<a class="et-link" href="${site}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Site ↗</a>` : "—"}</td>
+                <td><span class="status-badge" data-status="${lead.status}">${STAGE_LABEL[lead.status] || lead.status}</span></td>
+                <td>${data}</td>
+              </tr>
+            `;
+          })
+          .join("")}
+      </tbody>
+    </table>
+  `;
+
+  container.querySelectorAll("tbody tr").forEach((row) => {
+    row.addEventListener("click", () => {
+      const lead = leadsCache.find((l) => String(l.id) === String(row.dataset.leadId));
+      if (lead) abrirModalEdicao(lead);
+    });
+  });
+}
+
+function initExtracao() {
+  const filtro = document.getElementById("extracaoStatusFiltro");
+  filtro?.addEventListener("change", renderizarExtracao);
+
+  const linkFerramenta = document.getElementById("abrirFerramentaExtracao");
+  if (linkFerramenta && EXTRACAO_APP_URL) {
+    linkFerramenta.href = EXTRACAO_APP_URL;
+    linkFerramenta.style.display = "inline-flex";
+  }
+}
+
 // ---------- init ----------
 document.addEventListener("DOMContentLoaded", async () => {
-  // abas e modal não dependem de rede — inicializam sempre,
+  // abas, modal e prospecção não dependem de rede — inicializam sempre,
   // mesmo que a checagem de sessão abaixo falhe ou demore.
   initTabs();
   initModal();
+  initExtracao();
 
   try {
     const ok = await checarAcesso();

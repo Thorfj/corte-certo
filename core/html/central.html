@@ -26,6 +26,7 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="funil">Funil de Vendas</button>
       <button class="tab-btn" data-tab="relatorios">Relatórios de SaaS</button>
+      <button class="tab-btn" data-tab="extracao">Prospecção (Maps)</button>
     </div>
 
     <!-- ===================== ABA: FUNIL DE VENDAS ===================== -->
@@ -54,6 +55,38 @@
       <div class="report-block">
         <p class="report-title">Funil de leads (quantidade por etapa)</p>
         <div id="funilResumo"></div>
+      </div>
+    </div>
+
+    <!-- ===================== ABA: PROSPECÇÃO (GOOGLE MAPS) ===================== -->
+    <div class="tab-panel" id="tab-extracao">
+      <div class="page-header">
+        <p class="text-secondary" style="margin:0">
+          Leads extraídos pela ferramenta de prospecção (pasta <code>python/</code>, Google Maps).
+          Clique num lead pra abrir e editar ou mover ele pro funil.
+        </p>
+        <a class="btn" id="abrirFerramentaExtracao" href="#" target="_blank" rel="noopener" style="display:none">
+          Abrir ferramenta de extração ↗
+        </a>
+      </div>
+
+      <div class="field" style="max-width:260px;margin-bottom:16px">
+        <label for="extracaoStatusFiltro">Filtrar por etapa</label>
+        <select id="extracaoStatusFiltro">
+          <option value="">Todas as etapas</option>
+          <option value="novo_lead">Novo Lead</option>
+          <option value="contato_feito">Contato Feito</option>
+          <option value="demo_agendada">Demo Agendada</option>
+          <option value="proposta_enviada">Proposta Enviada</option>
+          <option value="fechado_ganho">Fechado (Ganho)</option>
+          <option value="perdido">Perdido</option>
+        </select>
+      </div>
+
+      <div class="report-block">
+        <div id="extracaoTabela">
+          <div class="loading">Carregando leads extraídos...</div>
+        </div>
       </div>
     </div>
   </main>
@@ -101,6 +134,7 @@
             <option value="indicacao">Indicação</option>
             <option value="instagram">Instagram</option>
             <option value="google">Google</option>
+            <option value="google_maps">Google Maps (prospecção)</option>
             <option value="evento">Evento</option>
             <option value="outro">Outro</option>
           </select>
@@ -141,6 +175,7 @@
     <div class="access-denied-card">
       <h2>Acesso restrito</h2>
       <p>Esta área é só para a equipe do Corte Certo. Se você acha que deveria ter acesso, confira se seu usuário está cadastrado na tabela <code>equipe_interna</code>.</p>
+      <a class="btn btn-primary" href="login-interno.html" style="margin-top:18px;justify-content:center">Ir para o login</a>
     </div>
   </div>
 

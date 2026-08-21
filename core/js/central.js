@@ -36,11 +36,6 @@ const supabaseCentral = window.supabase.createClient(
 // login-interno.html fica na mesma pasta que central.html.
 const LOGIN_URL = "login-interno.html";
 
-// Preencha com a URL do seu app Streamlit publicado (Streamlit Community
-// Cloud) pra aparecer o botão "Abrir ferramenta de extração" na aba de
-// Prospecção. Deixe em branco ("") que o botão fica escondido.
-const EXTRACAO_APP_URL = "";
-
 const STAGES = [
   { status: "novo_lead", label: "Novo Lead" },
   { status: "contato_feito", label: "Contato Feito" },
@@ -49,7 +44,6 @@ const STAGES = [
   { status: "fechado_ganho", label: "Fechado (Ganho)" },
   { status: "perdido", label: "Perdido" },
 ];
-const STAGE_LABEL = Object.fromEntries(STAGES.map((s) => [s.status, s.label]));
 
 let leadsCache = [];
 
@@ -101,7 +95,6 @@ function initTabs() {
         .forEach((p) => p.classList.remove("active"));
       document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
       if (btn.dataset.tab === "relatorios") carregarRelatorios();
-      if (btn.dataset.tab === "extracao") renderizarExtracao();
     });
   });
 }
@@ -123,11 +116,6 @@ async function carregarLeads() {
 
   leadsCache = data || [];
   renderizarKanban();
-
-  // se a aba de Prospecção estiver aberta, mantém ela em dia também
-  if (document.getElementById("tab-extracao")?.classList.contains("active")) {
-    renderizarExtracao();
-  }
 }
 
 function renderizarKanban() {
@@ -414,99 +402,253 @@ function renderizarFunilResumo() {
   }).join("");
 }
 
-// ---------- prospecção (Google Maps) ----------
+// ---------- prospecção (importação de CSV) ----------
 
-// A ferramenta em python/supabase_sync.py grava o endereço e o site dentro
-// de `notas`, no formato "Endereço: ... | Site: ...". Essa função separa
-// isso de volta pra exibir em colunas na tabela.
-function parseNotasExtracao(notas) {
-  if (!notas) return { endereco: "", site: "" };
-  const matchEndereco = notas.match(/Endereço:\s*([^|]+)/);
-  const matchSite = notas.match(/Site:\s*(.+)$/);
-  const site = matchSite ? matchSite[1].trim() : "";
+function normalizarTelefone(tel) {
+  return (tel || "").replace(/\D/g, "");
+}
+
+function leadJaNoCrm(lead) {
+  const tel = normalizarTelefone(lead.telefone);
+  const nome = (lead.nome || "").trim().toLowerCase();
+  const cidade = (lead.cidade || "").trim().toLowerCase();
+  return leadsCache.some((l) => {
+    if (tel && normalizarTelefone(l.telefone) === tel) return true;
+    return (
+      (l.nome_barbearia || "").trim().toLowerCase() === nome &&
+      (l.cidade || "").trim().toLowerCase() === cidade
+    );
+  });
+}
+
+// Nomes de coluna aceitos no CSV (sem acento/maiúscula, pra aceitar
+// variações como "Cidade", "CIDADE", "cidade "...). A primeira variação
+// encontrada em cada linha é usada.
+const MAPA_COLUNAS_CSV = {
+  nome: ["nome", "nome_barbearia", "empresa", "barbearia"],
+  cidade: ["cidade"],
+  estado: ["estado", "uf"],
+  bairro: ["bairro"],
+  contato: ["contato", "nome_contato", "responsavel"],
+  telefone: ["telefone", "telefone_principal", "whatsapp", "celular", "fone"],
+  origem: ["origem"],
+  notas: ["notas", "observacoes", "obs"],
+  email: ["email", "e-mail"],
+  instagram: ["instagram"],
+  endereco: ["endereco", "endereço", "address"],
+};
+
+function normalizarChaveCsv(s) {
+  return (s || "")
+    .toString()
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+// Converte uma linha do CSV (objeto { "Nome da coluna": valor, ... })
+// num lead no formato que a gente usa internamente.
+function mapearLinhaCsv(linha) {
+  const chavesLinha = Object.keys(linha);
+  const pegar = (candidatos) => {
+    for (const alvo of candidatos) {
+      const chave = chavesLinha.find((k) => normalizarChaveCsv(k) === alvo);
+      if (chave && linha[chave] != null && String(linha[chave]).trim() !== "") {
+        return String(linha[chave]).trim();
+      }
+    }
+    return "";
+  };
+
+  const email = pegar(MAPA_COLUNAS_CSV.email);
+  const instagram = pegar(MAPA_COLUNAS_CSV.instagram);
+  const endereco = pegar(MAPA_COLUNAS_CSV.endereco);
+  const notasCsv = pegar(MAPA_COLUNAS_CSV.notas);
+
+  const extras = [];
+  if (endereco) extras.push(`Endereço: ${endereco}`);
+  if (email) extras.push(`Email: ${email}`);
+  if (instagram) extras.push(`Instagram: ${instagram}`);
+  if (notasCsv) extras.push(notasCsv);
+
   return {
-    endereco: matchEndereco ? matchEndereco[1].trim() : "",
-    site: site && site !== "—" ? site : "",
+    nome: pegar(MAPA_COLUNAS_CSV.nome),
+    cidade: pegar(MAPA_COLUNAS_CSV.cidade),
+    estado: pegar(MAPA_COLUNAS_CSV.estado).toUpperCase().slice(0, 2),
+    bairro: pegar(MAPA_COLUNAS_CSV.bairro),
+    contato: pegar(MAPA_COLUNAS_CSV.contato),
+    telefone: pegar(MAPA_COLUNAS_CSV.telefone),
+    origem: pegar(MAPA_COLUNAS_CSV.origem) || "csv_import",
+    notas: extras.join(" | ") || null,
   };
 }
 
-function renderizarExtracao() {
-  const container = document.getElementById("extracaoTabela");
-  const filtro = document.getElementById("extracaoStatusFiltro").value;
+function lidarComArquivoCsv(file) {
+  const container = document.getElementById("extracaoResultado");
+  document.getElementById("pqArquivoNome").textContent = file.name;
+  container.innerHTML = '<div class="loading">Lendo arquivo...</div>';
 
-  const leads = leadsCache
-    .filter((l) => l.origem === "google_maps")
-    .filter((l) => !filtro || l.status === filtro)
-    .sort((a, b) => new Date(b.criado_em || 0) - new Date(a.criado_em || 0));
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: async (resultado) => {
+      if (resultado.errors && resultado.errors.length) {
+        console.warn("Avisos ao ler CSV:", resultado.errors);
+      }
+      const linhas = resultado.data.map(mapearLinhaCsv).filter((l) => l.nome);
+      if (linhas.length === 0) {
+        container.innerHTML =
+          '<div class="loading">Não encontrei nenhuma linha válida (com a coluna "nome" preenchida) nesse CSV. Confira o modelo.</div>';
+        return;
+      }
 
-  if (leads.length === 0) {
-    container.innerHTML =
-      '<div class="loading">Nenhum lead extraído ainda por aqui. Rode a ferramenta de prospecção (pasta <code>python/</code>) e clique em "Adicionar selecionados ao CRM" pra eles aparecerem nessa lista.</div>';
-    return;
-  }
+      container.innerHTML =
+        '<div class="loading">Validando contra os leads já trabalhados no CRM...</div>';
 
-  container.innerHTML = `
+      // "já trabalhado" = já existe em `leads`, seja qual for a etapa
+      // (Novo Lead, Contato Feito, Fechado, Perdido...). Só o que não
+      // existe ainda entra como lead novo.
+      const novos = linhas.filter((l) => !leadJaNoCrm(l));
+      const jaTrabalhados = linhas.filter((l) => leadJaNoCrm(l));
+
+      if (novos.length === 0) {
+        renderizarResumoImportacao([], jaTrabalhados, linhas.length);
+        return;
+      }
+
+      const payloads = novos.map((lead) => ({
+        nome_barbearia: lead.nome,
+        cidade: lead.cidade || null,
+        estado: lead.estado || null,
+        bairro: lead.bairro || null,
+        nome_contato: lead.contato || null,
+        telefone: lead.telefone || null,
+        origem: lead.origem || "csv_import",
+        status: "novo_lead",
+        notas: lead.notas,
+      }));
+
+      const { error } = await supabaseCentral.from("leads").insert(payloads);
+      if (error) {
+        container.innerHTML = `<div class="loading">Erro ao adicionar leads ao funil: ${error.message}</div>`;
+        return;
+      }
+
+      await carregarLeads(); // atualiza Kanban + leadsCache com os leads recém-inseridos
+      renderizarResumoImportacao(novos, jaTrabalhados, linhas.length);
+    },
+    error: (err) => {
+      container.innerHTML = `<div class="loading">Erro ao ler o CSV: ${err.message}</div>`;
+    },
+  });
+}
+
+function renderizarResumoImportacao(adicionados, jaTrabalhados, totalBruto) {
+  const container = document.getElementById("extracaoResultado");
+
+  const tabelaLeads = (leads, colunas) => `
     <table class="extracao-table">
       <thead>
-        <tr>
-          <th>Barbearia</th>
-          <th>Cidade / Bairro</th>
-          <th>Telefone</th>
-          <th>Site</th>
-          <th>Etapa</th>
-          <th>Extraído em</th>
-        </tr>
+        <tr>${colunas.map((c) => `<th>${c}</th>`).join("")}</tr>
       </thead>
       <tbody>
         ${leads
-          .map((lead) => {
-            const { site } = parseNotasExtracao(lead.notas);
-            const local = [lead.bairro, lead.cidade].filter(Boolean).join(" / ") || "—";
-            const data = lead.criado_em
-              ? new Date(lead.criado_em).toLocaleDateString("pt-BR")
-              : "—";
-            return `
-              <tr data-lead-id="${lead.id}">
-                <td class="et-nome">${lead.nome_barbearia}</td>
-                <td>${local}</td>
-                <td>${lead.telefone || "—"}</td>
-                <td>${site ? `<a class="et-link" href="${site}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Site ↗</a>` : "—"}</td>
-                <td><span class="status-badge" data-status="${lead.status}">${STAGE_LABEL[lead.status] || lead.status}</span></td>
-                <td>${data}</td>
-              </tr>
-            `;
-          })
+          .map(
+            (lead) => `
+          <tr>
+            <td class="et-nome">${lead.nome}</td>
+            <td>${[lead.bairro, lead.cidade].filter(Boolean).join(" / ") || "—"}</td>
+            <td>${lead.telefone || "—"}</td>
+          </tr>
+        `,
+          )
           .join("")}
       </tbody>
     </table>
   `;
 
-  container.querySelectorAll("tbody tr").forEach((row) => {
-    row.addEventListener("click", () => {
-      const lead = leadsCache.find((l) => String(l.id) === String(row.dataset.leadId));
-      if (lead) abrirModalEdicao(lead);
-    });
-  });
+  const blocoAdicionados = adicionados.length
+    ? tabelaLeads(adicionados, ["Barbearia", "Cidade / Bairro", "Telefone"])
+    : '<p class="text-secondary" style="margin:0">Nenhum lead novo pra adicionar — todos já estavam no CRM.</p>';
+
+  const blocoIgnorados = jaTrabalhados.length
+    ? `
+      <details style="margin-top:18px">
+        <summary style="cursor:pointer;font-size:13px;color:var(--text-secondary)">
+          ${jaTrabalhados.length} lead(s) já trabalhado(s) no CRM e ignorado(s) nessa importação
+        </summary>
+        <div style="margin-top:10px">
+          ${tabelaLeads(jaTrabalhados, ["Barbearia", "Cidade / Bairro", "Telefone"])}
+        </div>
+      </details>
+    `
+    : "";
+
+  container.innerHTML = `
+    <p class="text-secondary" style="margin:0 0 14px">
+      ${totalBruto} linha(s) lida(s) no CSV ·
+      <strong style="color:var(--text-primary)">${adicionados.length} novo(s) adicionado(s) ao funil</strong> (etapa Novo Lead) ·
+      ${jaTrabalhados.length} já trabalhado(s), ignorado(s).
+    </p>
+    ${blocoAdicionados}
+    ${blocoIgnorados}
+  `;
 }
 
-function initExtracao() {
-  const filtro = document.getElementById("extracaoStatusFiltro");
-  filtro?.addEventListener("change", renderizarExtracao);
+function gerarModeloCsv() {
+  const cabecalho = [
+    "nome",
+    "cidade",
+    "estado",
+    "bairro",
+    "contato",
+    "telefone",
+    "email",
+    "instagram",
+    "endereco",
+    "origem",
+    "notas",
+  ];
+  const linhaExemplo = [
+    "Barbearia Exemplo",
+    "Curitiba",
+    "PR",
+    "Água Verde",
+    "João",
+    "5541999998888",
+    "contato@exemplo.com",
+    "@barbeariaexemplo",
+    "Rua Exemplo, 123",
+    "csv_import",
+    "",
+  ];
+  return [cabecalho, linhaExemplo]
+    .map((linha) => linha.map((v) => `"${String(v || "").replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+}
 
-  const linkFerramenta = document.getElementById("abrirFerramentaExtracao");
-  if (linkFerramenta && EXTRACAO_APP_URL) {
-    linkFerramenta.href = EXTRACAO_APP_URL;
-    linkFerramenta.style.display = "inline-flex";
+function initImportacaoCsv() {
+  const input = document.getElementById("pqArquivoCsv");
+  input?.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) lidarComArquivoCsv(file);
+  });
+
+  const linkModelo = document.getElementById("pqBaixarModelo");
+  if (linkModelo) {
+    const blob = new Blob([gerarModeloCsv()], { type: "text/csv;charset=utf-8;" });
+    linkModelo.href = URL.createObjectURL(blob);
   }
 }
 
 // ---------- init ----------
 document.addEventListener("DOMContentLoaded", async () => {
-  // abas, modal e prospecção não dependem de rede — inicializam sempre,
-  // mesmo que a checagem de sessão abaixo falhe ou demore.
+  // abas, modal e importação de CSV não dependem de rede — inicializam
+  // sempre, mesmo que a checagem de sessão abaixo falhe ou demore.
   initTabs();
   initModal();
-  initExtracao();
+  initImportacaoCsv();
 
   try {
     const ok = await checarAcesso();

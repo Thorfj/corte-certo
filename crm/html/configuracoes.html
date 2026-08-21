@@ -228,6 +228,29 @@
     </div>
   </div>
 
+  <!-- Modal: Alterar senha de um usuário (admin) -->
+  <div class="modal-overlay hidden" id="modal-alterar-senha">
+    <div class="modal">
+      <div class="modal-header">
+        <p class="modal-title">Alterar senha</p>
+        <button class="modal-close" data-close="modal-alterar-senha">&times;</button>
+      </div>
+      <form id="form-alterar-senha">
+        <input type="hidden" id="as-profissional-id">
+        <p class="text-secondary" id="as-usuario-nome" style="margin:0 0 12px;font-size:13px"></p>
+        <div class="field">
+          <label for="as-nova-senha">Nova senha</label>
+          <input type="password" id="as-nova-senha" minlength="6" placeholder="mínimo 6 caracteres" autocomplete="new-password" required>
+        </div>
+        <p class="modal-error" id="as-erro"></p>
+        <div class="modal-footer">
+          <button type="button" class="btn" data-close="modal-alterar-senha">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="as-salvar-btn">Salvar nova senha</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Modal: Confirmação customizada -->
   <div class="modal-overlay hidden" id="modal-confirm">
     <div class="modal confirm-modal">

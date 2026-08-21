@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/central.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 
 <body>
@@ -58,34 +59,25 @@
       </div>
     </div>
 
-    <!-- ===================== ABA: PROSPECÇÃO (GOOGLE MAPS) ===================== -->
+    <!-- ===================== ABA: PROSPECÇÃO (IMPORTAÇÃO DE CSV) ===================== -->
     <div class="tab-panel" id="tab-extracao">
       <div class="page-header">
         <p class="text-secondary" style="margin:0">
-          Leads extraídos pela ferramenta de prospecção (pasta <code>python/</code>, Google Maps).
-          Clique num lead pra abrir e editar ou mover ele pro funil.
+          Importe um CSV com leads novos pra prospectar. Quem já está no CRM é filtrado
+          automaticamente — você só precisa selecionar os que quer adicionar ao funil.
         </p>
-        <a class="btn" id="abrirFerramentaExtracao" href="#" target="_blank" rel="noopener" style="display:none">
-          Abrir ferramenta de extração ↗
-        </a>
       </div>
 
-      <div class="field" style="max-width:260px;margin-bottom:16px">
-        <label for="extracaoStatusFiltro">Filtrar por etapa</label>
-        <select id="extracaoStatusFiltro">
-          <option value="">Todas as etapas</option>
-          <option value="novo_lead">Novo Lead</option>
-          <option value="contato_feito">Contato Feito</option>
-          <option value="demo_agendada">Demo Agendada</option>
-          <option value="proposta_enviada">Proposta Enviada</option>
-          <option value="fechado_ganho">Fechado (Ganho)</option>
-          <option value="perdido">Perdido</option>
-        </select>
+      <div class="prospeccao-upload">
+        <label class="btn btn-primary" for="pqArquivoCsv">📄 Escolher arquivo CSV</label>
+        <input type="file" id="pqArquivoCsv" accept=".csv" hidden>
+        <span id="pqArquivoNome" class="text-secondary" style="font-size:13px"></span>
+        <a class="btn" id="pqBaixarModelo" download="modelo-leads.csv">⬇ Baixar modelo CSV</a>
       </div>
 
       <div class="report-block">
-        <div id="extracaoTabela">
-          <div class="loading">Carregando leads extraídos...</div>
+        <div id="extracaoResultado">
+          <div class="loading">Nenhum arquivo importado ainda. Escolha um CSV acima pra começar.</div>
         </div>
       </div>
     </div>
@@ -134,7 +126,7 @@
             <option value="indicacao">Indicação</option>
             <option value="instagram">Instagram</option>
             <option value="google">Google</option>
-            <option value="google_maps">Google Maps (prospecção)</option>
+            <option value="csv_import">Importação CSV</option>
             <option value="evento">Evento</option>
             <option value="outro">Outro</option>
           </select>

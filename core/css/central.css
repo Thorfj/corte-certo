@@ -431,7 +431,15 @@ button {
   background: var(--brand);
 }
 
-/* ---------- prospecção (google maps) ---------- */
+/* ---------- prospecção (importação de csv) ---------- */
+.prospeccao-upload {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
 .extracao-table {
   width: 100%;
   border-collapse: collapse;

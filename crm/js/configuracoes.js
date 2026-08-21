@@ -18,6 +18,9 @@ const GOOGLE_OAUTH_URL =
 const CRIAR_USUARIO_URL =
   "https://jzqiqrymqbzullysukja.supabase.co/functions/v1/criar-usuario";
 
+const ALTERAR_SENHA_URL =
+  "https://jzqiqrymqbzullysukja.supabase.co/functions/v1/alterar-senha-usuario";
+
 async function obterProfissionalAtual() {
   if (profissionalAtualCache) return profissionalAtualCache;
   const {
@@ -212,7 +215,12 @@ async function carregarUsuarios() {
       <td>${u.email}</td>
       <td><span class="badge">${rotulos[u.acesso] || u.acesso}</span></td>
       <td>${u.agendas || "—"}</td>
-      <td class="col-acoes"><i data-lucide="pencil" style="width:16px;height:16px"></i></td>
+      <td class="col-acoes">
+        <button class="icon-btn" data-trocar-senha="${u.id}" data-nome="${u.nome}" title="Alterar senha">
+          <i data-lucide="key" style="width:16px;height:16px"></i>
+        </button>
+        <i data-lucide="pencil" style="width:16px;height:16px"></i>
+      </td>
     </tr>
   `,
     )
@@ -226,7 +234,77 @@ async function carregarUsuarios() {
       abrirModalUsuario(usuario);
     });
   });
+
+  body.querySelectorAll("[data-trocar-senha]").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      abrirModalAlterarSenha(btn.dataset.trocarSenha, btn.dataset.nome);
+    });
+  });
 }
+
+function abrirModalAlterarSenha(profissionalId, nome) {
+  document.getElementById("form-alterar-senha").reset();
+  document.getElementById("as-erro").style.display = "none";
+  document.getElementById("as-profissional-id").value = profissionalId;
+  document.getElementById("as-usuario-nome").textContent =
+    `Definindo uma nova senha de acesso pra ${nome}.`;
+  document.getElementById("modal-alterar-senha").classList.remove("hidden");
+}
+
+document
+  .getElementById("form-alterar-senha")
+  .addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const profissionalId = document.getElementById("as-profissional-id").value;
+    const novaSenha = document.getElementById("as-nova-senha").value;
+    const erroEl = document.getElementById("as-erro");
+    const salvarBtn = document.getElementById("as-salvar-btn");
+
+    erroEl.style.display = "none";
+
+    if (novaSenha.length < 6) {
+      erroEl.textContent = "A senha precisa ter pelo menos 6 caracteres.";
+      erroEl.style.display = "block";
+      return;
+    }
+
+    salvarBtn.disabled = true;
+    salvarBtn.textContent = "Salvando...";
+
+    try {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+
+      const resp = await fetch(ALTERAR_SENHA_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          profissional_id: profissionalId,
+          nova_senha: novaSenha,
+        }),
+      });
+
+      const resultado = await resp.json();
+      if (!resp.ok || resultado.error) {
+        throw new Error(resultado.error || "Erro ao alterar a senha.");
+      }
+
+      document.getElementById("modal-alterar-senha").classList.add("hidden");
+    } catch (err) {
+      console.error(err);
+      erroEl.textContent = err.message || "Erro ao alterar a senha.";
+      erroEl.style.display = "block";
+    } finally {
+      salvarBtn.disabled = false;
+      salvarBtn.textContent = "Salvar nova senha";
+    }
+  });
 
 function abrirModalUsuario(usuario) {
   document.getElementById("form-usuario").reset();
@@ -260,6 +338,72 @@ function abrirModalUsuario(usuario) {
 document
   .getElementById("novo-usuario-btn")
   .addEventListener("click", () => abrirModalUsuario(null));
+
+function abrirModalAlterarSenha(profissionalId, nome) {
+  document.getElementById("form-alterar-senha").reset();
+  document.getElementById("as-erro").style.display = "none";
+  document.getElementById("as-profissional-id").value = profissionalId;
+  document.getElementById("as-usuario-nome").textContent =
+    `Definindo uma nova senha pra ${nome}.`;
+  document.getElementById("modal-alterar-senha").classList.remove("hidden");
+}
+
+document
+  .getElementById("form-alterar-senha")
+  .addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const profissionalId = document.getElementById("as-profissional-id").value;
+    const novaSenha = document.getElementById("as-nova-senha").value;
+    const erroEl = document.getElementById("as-erro");
+    const salvarBtn = document.getElementById("as-salvar-btn");
+
+    erroEl.style.display = "none";
+
+    if (novaSenha.length < 6) {
+      erroEl.textContent = "A senha precisa ter pelo menos 6 caracteres.";
+      erroEl.style.display = "block";
+      return;
+    }
+
+    salvarBtn.disabled = true;
+    salvarBtn.textContent = "Salvando...";
+
+    try {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+
+      const resp = await fetch(
+        "https://jzqiqrymqbzullysukja.supabase.co/functions/v1/alterar-senha-usuario",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            profissional_id: profissionalId,
+            nova_senha: novaSenha,
+          }),
+        },
+      );
+
+      const resultado = await resp.json();
+      if (!resp.ok || resultado.error) {
+        throw new Error(resultado.error || "Erro ao alterar a senha.");
+      }
+
+      document.getElementById("modal-alterar-senha").classList.add("hidden");
+    } catch (err) {
+      console.error(err);
+      erroEl.textContent = err.message || "Erro ao alterar a senha.";
+      erroEl.style.display = "block";
+    } finally {
+      salvarBtn.disabled = false;
+      salvarBtn.textContent = "Salvar nova senha";
+    }
+  });
 
 document
   .getElementById("form-usuario")

@@ -9,7 +9,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/central.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 
 <body>
@@ -27,7 +26,6 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="funil">Funil de Vendas</button>
       <button class="tab-btn" data-tab="relatorios">Relatórios de SaaS</button>
-      <button class="tab-btn" data-tab="extracao">Prospecção (Maps)</button>
     </div>
 
     <!-- ===================== ABA: FUNIL DE VENDAS ===================== -->
@@ -56,29 +54,6 @@
       <div class="report-block">
         <p class="report-title">Funil de leads (quantidade por etapa)</p>
         <div id="funilResumo"></div>
-      </div>
-    </div>
-
-    <!-- ===================== ABA: PROSPECÇÃO (IMPORTAÇÃO DE CSV) ===================== -->
-    <div class="tab-panel" id="tab-extracao">
-      <div class="page-header">
-        <p class="text-secondary" style="margin:0">
-          Importe um CSV com leads novos pra prospectar. Quem já está no CRM é filtrado
-          automaticamente — você só precisa selecionar os que quer adicionar ao funil.
-        </p>
-      </div>
-
-      <div class="prospeccao-upload">
-        <label class="btn btn-primary" for="pqArquivoCsv">📄 Escolher arquivo CSV</label>
-        <input type="file" id="pqArquivoCsv" accept=".csv" hidden>
-        <span id="pqArquivoNome" class="text-secondary" style="font-size:13px"></span>
-        <a class="btn" id="pqBaixarModelo" download="modelo-leads.csv">⬇ Baixar modelo CSV</a>
-      </div>
-
-      <div class="report-block">
-        <div id="extracaoResultado">
-          <div class="loading">Nenhum arquivo importado ainda. Escolha um CSV acima pra começar.</div>
-        </div>
       </div>
     </div>
   </main>

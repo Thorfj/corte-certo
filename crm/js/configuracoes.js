@@ -9,10 +9,10 @@ let profissionalAtualCache = null;
 let cobrancasCache = [];
 let cnpjAtualCache = null;
 
-// TODO: trocar pela URL real do webhook n8n que inicia o OAuth do Google
-// (deve receber a barbearia_id como parâmetro pra saber onde salvar o retorno)
+// Webhook n8n que inicia o OAuth do Google. Recebe a barbearia_id (onde salvar
+// o token) e a URL desta página (pra onde voltar depois da autorização).
 const GOOGLE_OAUTH_URL =
-  "https://SEU-N8N.exemplo.com/webhook/google-oauth-start";
+  "https://cortecerto.app.n8n.cloud/webhook/google-oauth-iniciar";
 
 // TODO: ajustar para a URL real da Edge Function depois do deploy
 const CRIAR_USUARIO_URL =
@@ -121,7 +121,10 @@ function atualizarStatusGoogle(barbearia) {
   conectarBtn.textContent = conectado
     ? "Reconectar com Google"
     : "Conectar com Google";
-  conectarBtn.href = `${GOOGLE_OAUTH_URL}?barbearia_id=${barbearia.id}`;
+  const retorno = encodeURIComponent(
+    window.location.origin + window.location.pathname,
+  );
+  conectarBtn.href = `${GOOGLE_OAUTH_URL}?barbearia_id=${barbearia.id}&retorno=${retorno}`;
 }
 
 async function configurarAparenciaEGoogle(barbearia) {

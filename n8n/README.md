@@ -41,7 +41,9 @@ Ao concluir, a sessão fica com `etapa_atual = 'concluido'` e a próxima mensage
    - `bloqueios_agenda` INSERT/DELETE → `/webhook/sincronizar-bloqueio`
 5. **Publicar (ativar)** os workflows com gatilho: Roteador, Agendador, Notificação de Falta, as 3 sincronizações e os 2 de OAuth.
 
-## Esquema que os workflows assumem
+## Esquema usado pelos workflows
+
+As colunas que faltavam no banco foram criadas pela migração `supabase/migrations/20261014000000_colunas_bot_n8n.sql` (já aplicada no projeto).
 
 - `sessoes`: `id_cliente`, `etapa_atual`, `aguardando_resposta`, `servicos_selecionados` (array), `id_prof_selecionado`, `dia_selecionado`, `horario_selecionado`.
 - `atendimentos`: `aviso_1dia_enviado`, `aviso_1hora_enviado`, `nps_solicitado`, `google_event_id`, `duracao_atend`.

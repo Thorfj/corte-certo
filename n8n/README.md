@@ -35,10 +35,7 @@ Ao concluir, a sessão fica com `etapa_atual = 'concluido'` e a próxima mensage
    - `Google OAuth Client (Corte Certo)` (tipo *Basic Auth*): usuário = Client ID, senha = Client Secret.
 2. **Evolution API**: trocar `https://SUA-EVOLUTION-API.com` no workflow *Enviar WhatsApp*; configurar o webhook da instância (evento `MESSAGES_UPSERT`) para `https://cortecerto.app.n8n.cloud/webhook/whatsapp-mensagem`. O nome da instância deve ser igual a `barbearias.whatsapp_barbearia`.
 3. **Google Cloud**: trocar `SEU_GOOGLE_CLIENT_ID` no *Google OAuth Iniciar*; cadastrar `https://cortecerto.app.n8n.cloud/webhook/google-oauth-retorno` como URI de redirecionamento autorizada; habilitar a Google Calendar API.
-4. **Supabase → Database Webhooks** (POST):
-   - `atendimentos` INSERT/UPDATE/DELETE → `/webhook/atendimento-alterado`
-   - `atendimentos` UPDATE → `/webhook/atendimento-falta`
-   - `bloqueios_agenda` INSERT/DELETE → `/webhook/sincronizar-bloqueio`
+4. **Supabase → webhooks para o n8n**: já criados como triggers (`n8n_atendimento_alterado`, `n8n_atendimento_falta`, `n8n_sincronizar_bloqueio`) pela migração `20261014010000_webhooks_n8n.sql`, usando `pg_net`.
 5. **Publicar (ativar)** os workflows com gatilho: Roteador, Agendador, Notificação de Falta, as 3 sincronizações e os 2 de OAuth.
 
 ## Esquema usado pelos workflows

@@ -27,6 +27,12 @@ Eles foram migrados dos JSONs do Google Drive, corrigidos para rodar no n8n Clou
 Fluxo do bot: `00101 nome → 00201 serviços → 00301 profissional → 00401 dia → 00501 horário → atendimento criado`.
 Ao concluir, a sessão fica com `etapa_atual = 'concluido'` e a próxima mensagem do cliente recomeça em 00201.
 
+Antes de chamar a etapa, o Roteador (nó *Verifica NPS, cancelar e remarcar*) trata:
+
+- **Nota de NPS**: resposta `1` a `5` (mesma escala do CRM) ao pedido enviado pelo Agendador grava `atendimentos.nps`; a média do cliente (`clientes.media_nps`) é recalculada pelo trigger `trg_media_nps`.
+- **Cancelar** (`cancelar`, `desmarcar`): mostra o próximo horário e pede *SIM*/*NÃO* (`etapa_atual = 'cancelar_confirma'`, `id_atend_alvo` = atendimento). Com *SIM* o atendimento é apagado (o evento sai do Google Calendar pelo webhook).
+- **Remarcar** (`remarcar`, `reagendar`, `mudar o horário`): volta para 00401 com os mesmos serviços e profissional e `id_atend_alvo` preenchido; na 00501 o horário escolhido **atualiza** o atendimento existente em vez de criar outro.
+
 ## Checklist para colocar no ar
 
 1. **Credenciais no n8n** (Overview → Credentials) e selecionar nos nós HTTP:
@@ -42,7 +48,7 @@ Ao concluir, a sessão fica com `etapa_atual = 'concluido'` e a próxima mensage
 
 As colunas que faltavam no banco foram criadas pela migração `supabase/migrations/20261014000000_colunas_bot_n8n.sql` (já aplicada no projeto).
 
-- `sessoes`: `id_cliente`, `etapa_atual`, `aguardando_resposta`, `servicos_selecionados` (array), `id_prof_selecionado`, `dia_selecionado`, `horario_selecionado`.
+- `sessoes`: `id_cliente`, `etapa_atual`, `aguardando_resposta`, `servicos_selecionados` (array), `id_prof_selecionado`, `dia_selecionado`, `horario_selecionado`, `id_atend_alvo` (cancelamento/remarcação).
 - `atendimentos`: `aviso_1dia_enviado`, `aviso_1hora_enviado`, `nps_solicitado`, `google_event_id`, `duracao_atend`.
 - `clientes`: `ciclo_followup_atual`, `recorrencia_followup`, `data_proximo_followup`, `data_ult_agend`.
 - `bloqueios_agenda`: `origem`, `google_event_ids` (jsonb).

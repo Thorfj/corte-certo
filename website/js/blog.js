@@ -1,5 +1,5 @@
 /* ============================================================
-   CORTE CERTO — BLOG.JS
+   BARBOZAP — BLOG.JS
    Monta a listagem do blog (destaque + grid) a partir de
    posts-data.js, e cuida do filtro por categoria.
    Depende de posts-data.js (importar ANTES deste script).

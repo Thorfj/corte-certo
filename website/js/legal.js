@@ -1,5 +1,5 @@
 /* ============================================================
-   CORTE CERTO — LEGAL.JS
+   BARBOZAP — LEGAL.JS
    Scrollspy simples do sumário nas páginas de texto legal
    (Termos de Uso, Políticas e Privacidade).
    ============================================================ */

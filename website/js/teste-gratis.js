@@ -1,5 +1,5 @@
 /* ============================================================
-   CORTE CERTO — TESTE-GRATIS.JS
+   BARBOZAP — TESTE-GRATIS.JS
    Formulário de cadastro em 3 steps:
      Step 1 — dados da barbearia e do responsável
      Step 2 — WhatsApp da barbearia (checagem antecipada de duplicado)

@@ -1,5 +1,5 @@
 /* ============================================================
-   CORTE CERTO — CRM-GLOBAL.JS
+   BARBOZAP — CRM-GLOBAL.JS
    Sidebar compartilhada por todas as páginas internas do CRM.
    Toda página do dashboard deve ter:
      <div id="crm-sidebar"></div>
@@ -221,7 +221,7 @@
     overlay.innerHTML = `
       <div class="trial-block-card">
         <p class="trial-block-title">Seu período de acesso terminou</p>
-        <p class="trial-block-desc">Assine o plano do Corte Certo pra continuar usando o CRM.</p>
+        <p class="trial-block-desc">Assine o plano do Barbozap pra continuar usando o CRM.</p>
         <a class="btn btn-primary" href="configuracoes.html">Assinar agora</a>
       </div>
     `;

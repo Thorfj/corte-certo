@@ -1,5 +1,5 @@
 /* ============================================================
-   CORTE CERTO — POSTS-DATA.JS
+   BARBOZAP — POSTS-DATA.JS
    Fonte única dos posts do blog.
    Pra publicar um post novo:
      1) adicione uma entrada aqui
@@ -59,7 +59,7 @@ const BLOG_POSTS = [
     title:
       "Você não precisa confiar na nossa palavra — teste o bot com as próprias mãos",
     excerpt:
-      "Montamos a simulação abaixo: é o mesmo fluxo que o Corte Certo roda de verdade, etapa por etapa.",
+      "Montamos a simulação abaixo: é o mesmo fluxo que o Barbozap roda de verdade, etapa por etapa.",
     category: "materiais",
     categoryLabel: "Materiais",
     date: "30 jun 2026",

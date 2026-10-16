@@ -81,6 +81,27 @@
           </div>
         </div>
 
+        <div class="card form-card hidden" id="card-whatsapp" style="margin-top:20px">
+          <p class="card-section-title">WhatsApp do bot</p>
+          <p class="text-secondary card-section-desc">É por esse número que o Barbozap conversa com seus clientes. Conecte uma vez, como no WhatsApp Web, e o celular pode continuar sendo usado normalmente.</p>
+          <div class="google-status-row">
+            <span class="badge" id="whatsapp-status-badge">Verificando…</span>
+            <button type="button" class="btn btn-primary hidden" id="whatsapp-conectar-btn">
+              <i data-lucide="qr-code" style="width:16px;height:16px"></i> Conectar WhatsApp
+            </button>
+            <button type="button" class="btn hidden" id="whatsapp-desconectar-btn">Desconectar</button>
+          </div>
+          <div class="whatsapp-qr hidden" id="whatsapp-qr">
+            <img id="whatsapp-qr-img" alt="QR Code para conectar o WhatsApp">
+            <ol class="whatsapp-passos">
+              <li>Abra o WhatsApp no celular do número <strong id="whatsapp-numero"></strong>.</li>
+              <li>Toque em <strong>Mais opções</strong> (⋮) ou <strong>Configurações</strong> e depois em <strong>Aparelhos conectados</strong>.</li>
+              <li>Toque em <strong>Conectar um aparelho</strong> e aponte a câmera para este QR Code.</li>
+            </ol>
+          </div>
+          <p class="modal-error" id="whatsapp-erro"></p>
+        </div>
+
         <div class="card form-card hidden" id="card-horario" style="margin-top:20px">
           <p class="card-section-title">Horário de funcionamento</p>
           <p class="text-secondary card-section-desc">O bot só oferece horários dentro desse período. Folgas, feriados e pausas continuam sendo marcados como bloqueios na Agenda.</p>

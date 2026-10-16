@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agenda — Barbozap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/app/css/global.css">
+  <link rel="stylesheet" href="/app/css/agenda.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/app/js/supabase-config.js"></script>
+  <script src="/app/js/onboarding-data.js"></script>
+  <script src="/app/js/crm-global.js"></script>
+</head>
+
+<body>
+  <div class="app">
+    <div id="crm-sidebar"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1 class="page-title" style="margin:0">Agenda</h1>
+      </div>
+
+      <div class="agenda-toolbar">
+        <div class="semana-nav" id="semana-nav">
+          <button class="btn" id="semana-anterior-btn">←</button>
+          <button class="btn" id="hoje-btn">Hoje</button>
+          <button class="btn" id="semana-seguinte-btn">→</button>
+          <span class="semana-label" id="semana-label">Carregando...</span>
+        </div>
+        <div class="view-switcher" id="view-switcher">
+          <button type="button" class="view-btn active" data-view="dia">Diário</button>
+          <button type="button" class="view-btn" data-view="mes">Mensal</button>
+          <button type="button" class="view-btn" data-view="bloqueios">Bloqueios</button>
+        </div>
+      </div>
+
+      <div class="prof-selector" id="prof-selector">
+        <span class="loading">Carregando profissionais...</span>
+      </div>
+
+      <div class="bloqueios-toolbar hidden" id="bloqueios-toolbar">
+        <button type="button" class="btn btn-primary" id="novo-bloqueio-btn">+ Novo bloqueio</button>
+      </div>
+
+      <div id="agenda-semana">
+        <p class="loading">Carregando agenda...</p>
+      </div>
+
+      <div class="hidden" id="bloqueios-panel">
+        <div class="card" style="padding:0">
+          <table class="table" id="tabela-bloqueios">
+            <thead>
+              <tr>
+                <th>Profissional</th>
+                <th>Quando</th>
+                <th>Motivo</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tabela-bloqueios-body">
+              <tr>
+                <td colspan="4" class="loading">Carregando bloqueios...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal: Novo Bloqueio -->
+  <div class="modal-overlay hidden" id="modal-bloqueio">
+    <div class="modal">
+      <div class="modal-header">
+        <p class="modal-title">Novo bloqueio</p>
+        <button class="modal-close" data-close="modal-bloqueio">&times;</button>
+      </div>
+      <form id="form-bloqueio">
+        <div class="field">
+          <label for="bl-prof">Profissional</label>
+          <select id="bl-prof">
+            <option value="">Barbearia inteira</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="bl-tipo">Tipo de bloqueio</label>
+          <select id="bl-tipo">
+            <option value="unico">Dia único</option>
+            <option value="periodo">Período (vários dias)</option>
+            <option value="recorrente">Recorrente (toda semana)</option>
+          </select>
+        </div>
+
+        <div class="field" id="bl-campo-unico">
+          <label for="bl-data-unica">Data</label>
+          <input type="date" id="bl-data-unica">
+        </div>
+
+        <div class="field-row hidden" id="bl-campo-periodo">
+          <div class="field">
+            <label for="bl-data-inicio">De</label>
+            <input type="date" id="bl-data-inicio">
+          </div>
+          <div class="field">
+            <label for="bl-data-fim">Até</label>
+            <input type="date" id="bl-data-fim">
+          </div>
+        </div>
+
+        <div class="field hidden" id="bl-campo-recorrente">
+          <label for="bl-dia-semana">Dia da semana</label>
+          <select id="bl-dia-semana">
+            <option value="0">Domingo</option>
+            <option value="1">Segunda-feira</option>
+            <option value="2">Terça-feira</option>
+            <option value="3">Quarta-feira</option>
+            <option value="4">Quinta-feira</option>
+            <option value="5">Sexta-feira</option>
+            <option value="6">Sábado</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="checkbox-label">
+            <input type="checkbox" id="bl-dia-inteiro" checked>
+            Bloquear o dia inteiro
+          </label>
+        </div>
+
+        <div class="field-row hidden" id="bl-campo-horario">
+          <div class="field">
+            <label for="bl-horario-inicio">A partir de</label>
+            <input type="time" id="bl-horario-inicio">
+          </div>
+          <div class="field">
+            <label for="bl-horario-fim">Até</label>
+            <input type="time" id="bl-horario-fim">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="bl-motivo">Motivo (opcional)</label>
+          <input type="text" id="bl-motivo" placeholder="Ex: Feriado, folga, viagem...">
+        </div>
+
+        <p class="modal-error" id="bl-erro"></p>
+        <div class="modal-footer">
+          <button type="button" class="btn" data-close="modal-bloqueio">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="bl-salvar-btn">Salvar bloqueio</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script src="/app/js/agenda.js"></script>
+</body>
+
+</html>

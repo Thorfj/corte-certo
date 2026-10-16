@@ -21,13 +21,13 @@
   // pro papel "usuario" some do menu E o acesso direto pela URL é
   // bloqueado (redireciona pra atendimentos.html).
   const NAV_ITEMS = [
-    { page: "atendimentos.html", icon: "clipboard-list", label: "Atendimentos", restrito: false },
-    { page: "agenda.html", icon: "calendar", label: "Agenda", restrito: false },
-    { page: "contatos.html", icon: "users", label: "Contatos", restrito: false },
-    { page: "servicos.html", icon: "scissors", label: "Serviços", restrito: true },
-    { page: "mensagens.html", icon: "message-square", label: "Mensagens", restrito: true },
-    { page: "relatorios.html", icon: "pie-chart", label: "Relatórios", restrito: true },
-    { page: "configuracoes.html", icon: "settings", label: "Configurações", restrito: true },
+    { page: "atendimentos", icon: "clipboard-list", label: "Atendimentos", restrito: false },
+    { page: "agenda", icon: "calendar", label: "Agenda", restrito: false },
+    { page: "contatos", icon: "users", label: "Contatos", restrito: false },
+    { page: "servicos", icon: "scissors", label: "Serviços", restrito: true },
+    { page: "mensagens", icon: "message-square", label: "Mensagens", restrito: true },
+    { page: "relatorios", icon: "pie-chart", label: "Relatórios", restrito: true },
+    { page: "configuracoes", icon: "settings", label: "Configurações", restrito: true },
   ];
   const PAGINAS_RESTRITAS = NAV_ITEMS.filter((i) => i.restrito).map((i) => i.page);
 
@@ -36,7 +36,7 @@
     return itensVisiveis
       .map(
         (i) => `
-      <a class="nav-item" data-page="${i.page}" href="${i.page}"><i data-lucide="${i.icon}"></i> <span class="nav-label">${i.label}</span></a>
+      <a class="nav-item" data-page="${i.page}" href="/app/${i.page}/"><i data-lucide="${i.icon}"></i> <span class="nav-label">${i.label}</span></a>
     `,
       )
       .join("");
@@ -74,7 +74,7 @@
         <i data-lucide="chevrons-right" class="icon-collapse" style="width:16px;height:16px"></i>
         <span class="nav-label">Recolher menu</span>
       </button>
-      <a class="help-button" href="ajuda.html"><i data-lucide="help-circle" style="width:16px;height:16px"></i></a>
+      <a class="help-button" href="/app/ajuda/"><i data-lucide="help-circle" style="width:16px;height:16px"></i></a>
       <a class="nav-item" href="#" id="logout-link"><i data-lucide="log-out"></i> <span class="nav-label">Sair</span></a>
     </div>
   `;
@@ -157,7 +157,7 @@
   }
 
   function marcarItemAtivo() {
-    const paginaAtual = window.location.pathname.split("/").pop();
+    const paginaAtual = window.location.pathname.split("/").filter(Boolean).pop();
     document.querySelectorAll(".nav-item[data-page]").forEach((item) => {
       item.classList.toggle("active", item.dataset.page === paginaAtual);
     });
@@ -169,7 +169,7 @@
     logoutLink.addEventListener("click", async (e) => {
       e.preventDefault();
       await supabaseClient.auth.signOut();
-      window.location.href = "login.html";
+      window.location.href = "/app/";
     });
   }
 
@@ -222,7 +222,7 @@
       <div class="trial-block-card">
         <p class="trial-block-title">Seu período de acesso terminou</p>
         <p class="trial-block-desc">Assine o plano do Barbozap pra continuar usando o CRM.</p>
-        <a class="btn btn-primary" href="configuracoes.html">Assinar agora</a>
+        <a class="btn btn-primary" href="/app/configuracoes/">Assinar agora</a>
       </div>
     `;
     document.body.appendChild(overlay);
@@ -231,7 +231,7 @@
   function criarBanner(texto, tipo) {
     const banner = document.createElement("div");
     banner.className = `trial-banner trial-banner-${tipo}`;
-    banner.innerHTML = `<span>${texto}</span> <a href="configuracoes.html">Assinar agora</a>`;
+    banner.innerHTML = `<span>${texto}</span> <a href="/app/configuracoes/">Assinar agora</a>`;
     const mainContent = document.querySelector(".main-content");
     if (mainContent) mainContent.prepend(banner);
   }
@@ -343,7 +343,7 @@
   }
 
   async function iniciarOnboardingSePreciso() {
-    const pagina = window.location.pathname.split("/").pop();
+    const pagina = window.location.pathname.split("/").filter(Boolean).pop();
     const passosBrutos = ONBOARDING_PASSOS[pagina];
     if (!passosBrutos) return;
 
@@ -387,9 +387,9 @@
     // Bloqueia acesso direto (por URL) a páginas restritas pro papel
     // "usuario". Isso é só uma trava de navegação — a proteção de
     // dados de verdade é a RLS do banco.
-    const paginaAtual = window.location.pathname.split("/").pop();
+    const paginaAtual = window.location.pathname.split("/").filter(Boolean).pop();
     if (acesso === "usuario" && PAGINAS_RESTRITAS.includes(paginaAtual)) {
-      window.location.href = "atendimentos.html";
+      window.location.href = "/app/atendimentos/";
       return;
     }
 
@@ -416,7 +416,7 @@
 
     // Não bloqueia a própria página de Configurações — é lá que o usuário
     // vai clicar em "Assinar agora"/"Concluir configuração".
-    if (paginaAtual !== "configuracoes.html") {
+    if (paginaAtual !== "configuracoes") {
       checarStatusTeste();
     }
 

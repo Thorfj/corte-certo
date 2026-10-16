@@ -7,21 +7,21 @@
    e importar este script (antes de qualquer script específico da página).
    ============================================================ */
 
-window.BASE = location.hostname === "thorfj.github.io" ? "/corte-certo" : "";
+window.BASE = "";
 
 (function () {
   const HEADER_HTML = `
     <div class="nav">
-      <a href="${BASE}/website/html/index.html" class="brand"><span class="badge">BZ</span> Barbozap</a>
+      <a href="${BASE}/" class="brand"><span class="badge">BZ</span> Barbozap</a>
       <nav class="nav-links">
-        <a href="${BASE}/website/html/index.html#como-funciona">Como funciona</a>
-        <a href="${BASE}/website/html/index.html#planos">Planos</a>
-        <a href="${BASE}/website/html/blog.html">Blog</a>
+        <a href="${BASE}/#como-funciona">Como funciona</a>
+        <a href="${BASE}/#planos">Planos</a>
+        <a href="${BASE}/blog/">Blog</a>
 
       </nav>
       <div class="nav-actions">
-        <a href="${BASE}/crm/html/login.html" class="nav-login">Entrar</a>
-        <a href="${BASE}/website/html/teste-gratis.html" class="nav-cta">Teste grátis</a>
+        <a href="${BASE}/app/" class="nav-login">Entrar</a>
+        <a href="${BASE}/teste-gratis/" class="nav-cta">Teste grátis</a>
       </div>
       <button class="nav-toggle" aria-label="Abrir menu">☰</button>
     </div>
@@ -31,24 +31,24 @@ window.BASE = location.hostname === "thorfj.github.io" ? "/corte-certo" : "";
     <div class="wrap">
       <div class="foot-grid">
         <div class="foot-brand">
-          <a href="${BASE}/website/html/index.html" class="brand"><span class="badge">BZ</span> Barbozap</a>
+          <a href="${BASE}/" class="brand"><span class="badge">BZ</span> Barbozap</a>
           <p>O CRM que atende, agenda e faz follow-up com seus clientes direto no WhatsApp.</p>
         </div>
         <div class="foot-col">
           <h5>Produto</h5>
-          <a href="${BASE}/website/html/index.html#como-funciona">Como funciona</a>
-          <a href="${BASE}/website/html/index.html#planos">Planos</a>
-          <a href="${BASE}/website/html/teste-gratis.html">Teste grátis</a>
+          <a href="${BASE}/#como-funciona">Como funciona</a>
+          <a href="${BASE}/#planos">Planos</a>
+          <a href="${BASE}/teste-gratis/">Teste grátis</a>
         </div>
         <div class="foot-col">
           <h5>Empresa</h5>
-          <a href="${BASE}/website/html/blog.html">Blog</a>
+          <a href="${BASE}/blog/">Blog</a>
           <a href="https://wa.me/5541999428022" target="_blank">Falar no WhatsApp</a>
         </div>
         <div class="foot-col">
           <h5>Legal</h5>
-          <a href="${BASE}/website/html/politicas.html">Políticas e Privacidade</a>
-          <a href="${BASE}/website/html/termos-de-uso.html">Termos de Uso</a>
+          <a href="${BASE}/privacidade/">Políticas e Privacidade</a>
+          <a href="${BASE}/termos-de-uso/">Termos de Uso</a>
         </div>
       </div>
       <div class="foot-bottom">
@@ -85,6 +85,6 @@ window.BASE = location.hostname === "thorfj.github.io" ? "/corte-certo" : "";
 })();
 
 const script = document.createElement("script");
-script.src = "../js/pop-up.js";
+script.src = "/assets/js/pop-up.js";
 script.defer = true; // opcional
 document.head.appendChild(script);

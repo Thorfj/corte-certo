@@ -1,101 +1,13 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Contatos — Barbozap</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/global.css">
-  <link rel="stylesheet" href="../css/contatos.css">
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../js/supabase-config.js"></script>
-  <script src="../js/onboarding-data.js"></script>
-  <script src="../js/crm-global.js"></script>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://barbozap.com.br/app/contatos/">
+  <meta http-equiv="refresh" content="0; url=/app/contatos/">
+  <title>Barbozap</title>
+  <!-- Endereço antigo: redireciona para /app/contatos/ mantendo ?parâmetros e #âncora -->
+  <script>location.replace("/app/contatos/" + location.search + location.hash);</script>
 </head>
-
-<body>
-  <div class="app">
-    <div id="crm-sidebar"></div>
-
-    <main class="main-content">
-      <div class="page-header">
-        <h1 class="page-title" style="margin:0">Contatos</h1>
-        <button class="btn btn-primary" id="novo-contato-btn">
-          <i data-lucide="plus" style="width:16px;height:16px"></i> Novo Contato
-        </button>
-      </div>
-
-      <div class="toolbar">
-        <input type="text" id="busca-input" placeholder="Buscar por nome ou telefone...">
-      </div>
-
-      <div class="card" style="padding:0">
-        <table class="table" id="tabela-clientes">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>Telefone</th>
-              <th>Status</th>
-              <th>Atendimentos</th>
-              <th>NPS médio</th>
-              <th>Último atendimento</th>
-            </tr>
-          </thead>
-          <tbody id="tabela-clientes-body">
-            <tr>
-              <td colspan="6" class="loading">Carregando contatos...</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </main>
-  </div>
-
-  <!-- Modal: Novo Contato -->
-  <div class="modal-overlay hidden" id="modal-novo-contato">
-    <div class="modal">
-      <div class="modal-header">
-        <p class="modal-title">Novo Contato</p>
-        <button class="modal-close" data-close="modal-novo-contato">&times;</button>
-      </div>
-      <form id="form-novo-contato">
-        <div class="field">
-          <label for="nc-nome">Nome</label>
-          <input type="text" id="nc-nome" required>
-        </div>
-        <div class="field">
-          <label for="nc-telefone">Telefone (com DDD)</label>
-          <input type="text" id="nc-telefone" required placeholder="5541999990000">
-        </div>
-        <div class="field">
-          <label for="nc-email">E-mail (opcional)</label>
-          <input type="email" id="nc-email">
-        </div>
-        <p class="modal-error" id="nc-erro"></p>
-        <div class="modal-footer">
-          <button type="button" class="btn" data-close="modal-novo-contato">Cancelar</button>
-          <button type="submit" class="btn btn-primary" id="nc-salvar-btn">Salvar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal: Histórico do Cliente -->
-  <div class="modal-overlay hidden" id="modal-historico">
-    <div class="modal">
-      <div class="modal-header">
-        <p class="modal-title" id="hist-nome">Histórico</p>
-        <button class="modal-close" data-close="modal-historico">&times;</button>
-      </div>
-      <div id="hist-lista">
-        <div class="loading">Carregando histórico...</div>
-      </div>
-    </div>
-  </div>
-  <script src="../js/contatos.js"></script>
-</body>
-
+<body><a href="/app/contatos/">Continuar para o Barbozap</a></body>
 </html>

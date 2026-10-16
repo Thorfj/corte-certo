@@ -227,7 +227,7 @@ document
         .insert(linhasServicos);
       if (erroServicos) throw erroServicos;
 
-      window.location.href = "atendimentos.html";
+      window.location.href = "/app/atendimentos/";
     } catch (err) {
       console.error(err);
       erroEl.textContent = err.message || "Erro ao salvar atendimento.";
@@ -262,7 +262,7 @@ document
         if (erroCliente) throw erroCliente;
       }
 
-      window.location.href = "atendimentos.html";
+      window.location.href = "/app/atendimentos/";
     } catch (err) {
       console.error(err);
       alert("Erro ao registrar falta do cliente.");
@@ -284,7 +284,7 @@ document.getElementById("excluir-btn").addEventListener("click", async () => {
     alert("Erro ao excluir atendimento.");
     return;
   }
-  window.location.href = "atendimentos.html";
+  window.location.href = "/app/atendimentos/";
 });
 
 async function carregarModoEdicao() {

@@ -13,9 +13,9 @@
    ============================================================ */
 
 const ONBOARDING_PASSOS = {
-  "atendimentos.html": [
+  "atendimentos": [
     {
-      selector: '.nav-item[data-page="atendimentos.html"]',
+      selector: '.nav-item[data-page="atendimentos"]',
       titulo: "Atendimentos",
       texto: "Aqui ficam todos os seus agendamentos organizados",
     },
@@ -32,9 +32,9 @@ const ONBOARDING_PASSOS = {
         "Clique em qualquer cartão pra abrir e editar os detalhes daquele atendimento.",
     },
   ],
-  "agenda.html": [
+  "agenda": [
     {
-      selector: '.nav-item[data-page="agenda.html"]',
+      selector: '.nav-item[data-page="agenda"]',
       titulo: "Agenda",
       texto: "Veja os horários da sua barbearia em formato de calendário.",
     },
@@ -51,9 +51,9 @@ const ONBOARDING_PASSOS = {
         "Clique nos nomes pra mostrar ou esconder a agenda de cada profissional.",
     },
   ],
-  "contatos.html": [
+  "contatos": [
     {
-      selector: '.nav-item[data-page="contatos.html"]',
+      selector: '.nav-item[data-page="contatos"]',
       titulo: "Contatos",
       texto: "A lista de todos os clientes que já falaram com a sua barbearia.",
     },
@@ -69,9 +69,9 @@ const ONBOARDING_PASSOS = {
       texto: "Digite o nome ou telefone pra encontrar algum cliente.",
     },
   ],
-  "servicos.html": [
+  "servicos": [
     {
-      selector: '.nav-item[data-page="servicos.html"]',
+      selector: '.nav-item[data-page="servicos"]',
       titulo: "Serviços",
       texto: "Cadastre aqui todos os serviços que sua barbearia oferece",
     },
@@ -82,9 +82,9 @@ const ONBOARDING_PASSOS = {
         "Defina nome, preço, duração e recorrência: o bot usa essas informações pra montar o agendamento no WhatsApp.",
     },
   ],
-  "mensagens.html": [
+  "mensagens": [
     {
-      selector: '.nav-item[data-page="mensagens.html"]',
+      selector: '.nav-item[data-page="mensagens"]',
       titulo: "Mensagens",
       texto:
         "Aqui você configura tudo que o bot fala com o cliente no WhatsApp.",
@@ -102,9 +102,9 @@ const ONBOARDING_PASSOS = {
         "Quando terminar de configurar as mensagens, ative o fluxo aqui pra o bot começar a responder de verdade.",
     },
   ],
-  "relatorios.html": [
+  "relatorios": [
     {
-      selector: '.nav-item[data-page="relatorios.html"]',
+      selector: '.nav-item[data-page="relatorios"]',
       titulo: "Relatórios",
       texto:
         "Acompanhe faturamento, NPS, ocupação dos profissionais e outros números da barbearia.",
@@ -115,9 +115,9 @@ const ONBOARDING_PASSOS = {
       texto: "Cada aba mostra uma visão diferente dos seus dados.",
     },
   ],
-  "configuracoes.html": [
+  "configuracoes": [
     {
-      selector: '.nav-item[data-page="configuracoes.html"]',
+      selector: '.nav-item[data-page="configuracoes"]',
       titulo: "Configurações",
       texto:
         "O painel de controle da sua barbearia: dados gerais, usuários e faturas.",

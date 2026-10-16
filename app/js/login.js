@@ -23,12 +23,12 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
     return;
   }
 
-  window.location.href = "atendimentos.html";
+  window.location.href = "/app/atendimentos/";
 });
 
 (async () => {
   const {
     data: { session },
   } = await supabaseClient.auth.getSession();
-  if (session) window.location.href = "atendimentos.html";
+  if (session) window.location.href = "/app/atendimentos/";
 })();

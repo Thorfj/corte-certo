@@ -3,7 +3,7 @@
    Fonte única dos posts do blog.
    Pra publicar um post novo:
      1) adicione uma entrada aqui
-     2) crie o arquivo HTML correspondente em /html/blog-posts/<slug>.html
+     2) crie o arquivo HTML correspondente em /blog/<slug>/index.html
    O blog.js lê esta lista e gera a listagem sozinho — não precisa
    editar blog.html na mão.
    ============================================================ */

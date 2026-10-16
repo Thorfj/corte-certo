@@ -7,8 +7,8 @@
    Inclua este script em QUALQUER página do site institucional,
    depois de global.js:
 
-     <script src="../js/global.js"></script>
-     <script src="../js/exit-intent-popup.js"></script>
+     <script src="/assets/js/global.js"></script>
+     <script src="/assets/js/exit-intent-popup.js"></script>
 
    Ele se injeta sozinho (HTML + CSS) e usa os tokens de
    --cream/--green/--brick/--font-display etc. já definidos em
@@ -28,7 +28,7 @@
 (function () {
   var STORAGE_KEY = "cc_exit_popup_shown";
   var ARM_DELAY_MS = 4000;
-  var BLOG_POST_URL = "/website/html/blog-posts/veja-o-bot-funcionando.html";
+  var BLOG_POST_URL = "/blog/veja-o-bot-funcionando/";
 
   // já mostrado nesta sessão — não faz nada
   if (sessionStorage.getItem(STORAGE_KEY)) return;

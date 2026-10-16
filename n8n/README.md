@@ -23,6 +23,8 @@ Eles foram migrados dos JSONs do Google Drive, corrigidos para rodar no n8n Clou
 | Sincronizar Google Calendar com CRM | a cada 30 min | `oeETNOoLkVezss0C` |
 | Google OAuth Iniciar | Webhook `GET /webhook/google-oauth-iniciar` | `QDWsTv6Cd0HNByao` |
 | Google OAuth Retorno | Webhook `GET /webhook/google-oauth-retorno` | `u3DDkroH1esFGqZQ` |
+| Criar agendas dos profissionais | sub-workflow + Webhook `POST /webhook/profissional-criado` | `ztT9jpz4sfvsyMJ9` |
+| Alerta de erro | Error Trigger (é o *Error workflow* dos workflows com gatilho) | `LO9MFNlWYRaCsKz8` |
 
 Fluxo do bot: `00101 nome → 00201 serviços → 00301 profissional → 00401 dia → 00501 horário → atendimento criado`.
 Ao concluir, a sessão fica com `etapa_atual = 'concluido'` e a próxima mensagem do cliente recomeça em 00201.
@@ -54,4 +56,8 @@ As colunas que faltavam no banco foram criadas pela migração `supabase/migrati
 - `bloqueios_agenda`: `origem`, `google_event_ids` (jsonb).
 - `google_calendar_tokens`: `barbearia_id` (único), `access_token`, `refresh_token`, `expires_at`.
 
-Horário de funcionamento usado para oferecer horários: **09:00–19:00, fechado domingo**, em passos de 30 min (constantes no nó *Calcula horários livres e escolha* da etapa 00501). Folgas e feriados vêm de `bloqueios_agenda`.
+Horário de funcionamento: `barbearias.horario_funcionamento` (por dia da semana, `null` = fechado), editado no CRM em **Configurações > Horário de funcionamento**. Sem configuração, vale seg–sáb 09:00–19:00. Passos de 30 min e antecedência mínima de 30 min (constantes no nó *Calcula horários livres e escolha* da etapa 00501). Folgas e feriados vêm de `bloqueios_agenda`.
+
+## Alerta de erro
+
+Roteador, Agendador, Notificação de Falta, OAuth, sincronizações do Google e Criar agendas têm o *Error workflow* apontando para **Alerta de erro**. Ele grava a falha em `n8n_erros` (Supabase) e manda WhatsApp para `numero_alertas` pela instância `instancia_alertas` (nó *Monta alerta*). O *Enviar WhatsApp* fica de fora para não entrar em loop se a Evolution cair.

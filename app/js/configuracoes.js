@@ -21,6 +21,14 @@ const CRIAR_USUARIO_URL =
 const ALTERAR_SENHA_URL =
   "https://jzqiqrymqbzullysukja.supabase.co/functions/v1/alterar-senha-usuario";
 
+// A agenda de cada profissional é criada pelo n8n na conta Google da
+// barbearia; aqui só mostramos o status (o ID não é editável).
+function textoAgenda(agendas) {
+  return agendas
+    ? "Criada automaticamente ✅"
+    : "Será criada quando o Google Agenda estiver conectado";
+}
+
 async function obterProfissionalAtual() {
   if (profissionalAtualCache) return profissionalAtualCache;
   const {
@@ -56,7 +64,7 @@ async function carregarGeral() {
   const { data, error } = await supabaseClient
     .from("barbearias")
     .select(
-      "id, empresa, email, whatsapp, cliente, google_calendar_status, google_calendar_email",
+      "id, empresa, email, whatsapp, cliente, google_calendar_status, google_calendar_email, horario_funcionamento",
     )
     .eq("id", barbeariaId)
     .single();
@@ -132,13 +140,104 @@ async function configurarAparenciaEGoogle(barbearia) {
   marcarTemaAtivo(profissional.tema === "dark" ? "dark" : "light");
 
   const cardGoogle = document.getElementById("card-google");
+  const cardHorario = document.getElementById("card-horario");
   if (profissional.acesso === "admin") {
     cardGoogle.classList.remove("hidden");
     atualizarStatusGoogle(barbearia);
+    cardHorario.classList.remove("hidden");
+    renderizarHorario(barbearia.horario_funcionamento);
   } else {
     cardGoogle.classList.add("hidden");
+    cardHorario.classList.add("hidden");
   }
 }
+
+// ---------------- ABA GERAL — Horário de funcionamento ----------------
+// Formato salvo em barbearias.horario_funcionamento:
+//   { "0": null, "1": ["09:00","19:00"], ... }  (0 = domingo ... 6 = sábado; null = fechado)
+// O bot (etapa 00501 no n8n) só oferece horários dentro desse período.
+const DIAS_SEMANA = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+const ORDEM_DIAS = [1, 2, 3, 4, 5, 6, 0];
+const HORARIO_PADRAO = { 0: null, 1: ["09:00", "19:00"], 2: ["09:00", "19:00"], 3: ["09:00", "19:00"], 4: ["09:00", "19:00"], 5: ["09:00", "19:00"], 6: ["09:00", "19:00"] };
+
+function renderizarHorario(horario) {
+  const h = horario && typeof horario === "object" ? horario : HORARIO_PADRAO;
+  const lista = document.getElementById("horario-lista");
+  lista.innerHTML = ORDEM_DIAS.map((d) => {
+    const faixa = h[d] ?? h[String(d)] ?? null;
+    const aberto = Array.isArray(faixa);
+    const [ini, fim] = aberto ? faixa : ["09:00", "19:00"];
+    return `
+      <div class="horario-linha${aberto ? "" : " fechado"}" data-dia="${d}">
+        <span class="horario-dia">${DIAS_SEMANA[d]}</span>
+        <label class="horario-aberto">
+          <input type="checkbox" class="h-aberto" ${aberto ? "checked" : ""}> ${aberto ? "Aberto" : "Fechado"}
+        </label>
+        <div class="horario-horas">
+          <input type="time" class="h-ini" value="${ini}" step="900">
+          <span class="text-secondary">até</span>
+          <input type="time" class="h-fim" value="${fim}" step="900">
+        </div>
+      </div>`;
+  }).join("");
+
+  lista.querySelectorAll(".h-aberto").forEach((chk) => {
+    chk.addEventListener("change", () => {
+      const linha = chk.closest(".horario-linha");
+      linha.classList.toggle("fechado", !chk.checked);
+      chk.parentElement.lastChild.textContent = chk.checked ? " Aberto" : " Fechado";
+    });
+  });
+}
+
+document.getElementById("form-horario").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const erroEl = document.getElementById("h-erro");
+  const sucessoEl = document.getElementById("h-sucesso");
+  const salvarBtn = document.getElementById("h-salvar-btn");
+  erroEl.style.display = "none";
+  sucessoEl.style.display = "none";
+
+  const horario = {};
+  for (const linha of document.querySelectorAll("#horario-lista .horario-linha")) {
+    const dia = linha.dataset.dia;
+    if (!linha.querySelector(".h-aberto").checked) {
+      horario[dia] = null;
+      continue;
+    }
+    const ini = linha.querySelector(".h-ini").value;
+    const fim = linha.querySelector(".h-fim").value;
+    if (!ini || !fim || ini >= fim) {
+      erroEl.textContent = `Confira o horário de ${DIAS_SEMANA[dia]}: a abertura precisa ser antes do fechamento.`;
+      erroEl.style.display = "block";
+      return;
+    }
+    horario[dia] = [ini, fim];
+  }
+
+  salvarBtn.disabled = true;
+  salvarBtn.textContent = "Salvando...";
+  try {
+    const barbeariaId = await obterBarbeariaId();
+    const { error } = await supabaseClient
+      .from("barbearias")
+      .update({ horario_funcionamento: horario })
+      .eq("id", barbeariaId);
+    if (error) throw error;
+    if (barbeariaCache) barbeariaCache.horario_funcionamento = horario;
+    sucessoEl.style.display = "block";
+    setTimeout(() => {
+      sucessoEl.style.display = "none";
+    }, 3000);
+  } catch (err) {
+    console.error(err);
+    erroEl.textContent = "Erro ao salvar o horário. Tente novamente.";
+    erroEl.style.display = "block";
+  } finally {
+    salvarBtn.disabled = false;
+    salvarBtn.textContent = "Salvar horário";
+  }
+});
 
 document.getElementById("form-geral").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -217,7 +316,7 @@ async function carregarUsuarios() {
       <td>${u.nome}</td>
       <td>${u.email}</td>
       <td><span class="badge">${rotulos[u.acesso] || u.acesso}</span></td>
-      <td>${u.agendas || "—"}</td>
+      <td>${u.agendas ? "✅ Criada automaticamente" : "—"}</td>
       <td class="col-acoes">
         <button class="icon-btn" data-trocar-senha="${u.id}" data-nome="${u.nome}" title="Alterar senha">
           <i data-lucide="key" style="width:16px;height:16px"></i>
@@ -323,13 +422,14 @@ function abrirModalUsuario(usuario) {
     document.getElementById("us-nome").value = usuario.nome;
     document.getElementById("us-email").value = usuario.email;
     document.getElementById("us-acesso").value = usuario.acesso;
-    document.getElementById("us-agenda").value = usuario.agendas || "";
+    document.getElementById("us-agenda").value = textoAgenda(usuario.agendas);
     senhaField.style.display = "none";
     senhaInput.required = false;
   } else {
     document.getElementById("modal-usuario-titulo").textContent =
       "Novo Usuário";
     document.getElementById("us-id").value = "";
+    document.getElementById("us-agenda").value = textoAgenda(null);
     senhaField.style.display = "block";
     senhaInput.required = true;
   }
@@ -417,7 +517,6 @@ document
     const nome = document.getElementById("us-nome").value.trim();
     const email = document.getElementById("us-email").value.trim();
     const acesso = document.getElementById("us-acesso").value;
-    const agendas = document.getElementById("us-agenda").value.trim() || null;
     const senha = document.getElementById("us-senha").value;
     const erroEl = document.getElementById("us-erro");
     const salvarBtn = document.getElementById("us-salvar-btn");
@@ -439,7 +538,7 @@ document
         // já deve restringir pra mesma barbearia)
         const { error } = await supabaseClient
           .from("profissionais")
-          .update({ nome, email, acesso, agendas })
+          .update({ nome, email, acesso })
           .eq("id", id);
         if (error) throw error;
       } else {
@@ -457,7 +556,7 @@ document
             "Content-Type": "application/json",
             Authorization: `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ nome, email, acesso, agendas, senha }),
+          body: JSON.stringify({ nome, email, acesso, senha }),
         });
 
         const resultado = await resp.json();

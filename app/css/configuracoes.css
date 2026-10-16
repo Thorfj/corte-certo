@@ -268,3 +268,57 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+/* Horário de funcionamento (aba Geral) */
+.horario-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.horario-linha {
+  display: grid;
+  grid-template-columns: 110px 96px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+.horario-linha .horario-dia {
+  font-weight: 500;
+}
+.horario-linha .horario-aberto {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+}
+.horario-linha .horario-horas {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.horario-linha .horario-horas input {
+  width: 120px;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  background: var(--bg-card);
+  color: inherit;
+}
+.horario-linha .horario-aberto input {
+  accent-color: var(--brand);
+}
+.horario-linha.fechado .horario-horas {
+  opacity: 0.4;
+  pointer-events: none;
+}
+@media (max-width: 560px) {
+  .horario-linha {
+    grid-template-columns: 1fr auto;
+  }
+  .horario-linha .horario-horas {
+    grid-column: 1 / -1;
+  }
+}

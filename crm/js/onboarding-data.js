@@ -1,5 +1,5 @@
 /* ============================================================
-   CORTE CERTO — ONBOARDING-DATA.JS
+   BARBOZAP — ONBOARDING-DATA.JS
    Dados do tour guiado (onboarding) — separado do crm-global.js
    só pra facilitar editar o texto dos passos sem mexer na lógica
    do tour.

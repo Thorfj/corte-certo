@@ -2,7 +2,7 @@
 const chatScript = [
   {
     who: "in",
-    text: "Oiee! Bem-vindo à Barbearia Corte Certo 💈 Qual seu nome?",
+    text: "Oiee! Bem-vindo à Barbearia do Zé 💈 Qual seu nome?",
     wait: 900,
   },
   { who: "out", text: "Oi! André", wait: 650 },

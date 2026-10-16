@@ -1,6 +1,6 @@
-# n8n — Corte Certo
+# n8n — Barbozap
 
-Os workflows ficam no n8n Cloud (`https://cortecerto.app.n8n.cloud`), pasta **Corte Certo**.
+Os workflows ficam no n8n Cloud (`https://cortecerto.app.n8n.cloud`), pasta **Barbozap**.
 Eles foram migrados dos JSONs do Google Drive, corrigidos para rodar no n8n Cloud (sem `$env` e sem HTTP dentro de Code node) e completados com as etapas que faltavam no bot.
 
 ## Workflows
@@ -30,9 +30,9 @@ Ao concluir, a sessão fica com `etapa_atual = 'concluido'` e a próxima mensage
 ## Checklist para colocar no ar
 
 1. **Credenciais no n8n** (Overview → Credentials) e selecionar nos nós HTTP:
-   - `Supabase Corte Certo` (tipo *Supabase API*): host `https://jzqiqrymqbzullysukja.supabase.co` + **service role key**.
+   - `Supabase Barbozap` (tipo *Supabase API*): host `https://jzqiqrymqbzullysukja.supabase.co` + **service role key**.
    - `Evolution API` (tipo *Header Auth*): nome `apikey`, valor = API key da Evolution.
-   - `Google OAuth Client (Corte Certo)` (tipo *Basic Auth*): usuário = Client ID, senha = Client Secret.
+   - `Google OAuth Client (Barbozap)` (tipo *Basic Auth*): usuário = Client ID, senha = Client Secret.
 2. **Evolution API**: trocar `https://SUA-EVOLUTION-API.com` no workflow *Enviar WhatsApp*; configurar o webhook da instância (evento `MESSAGES_UPSERT`) para `https://cortecerto.app.n8n.cloud/webhook/whatsapp-mensagem`. O nome da instância deve ser igual a `barbearias.whatsapp_barbearia`.
 3. **Google Cloud**: trocar `SEU_GOOGLE_CLIENT_ID` no *Google OAuth Iniciar*; cadastrar `https://cortecerto.app.n8n.cloud/webhook/google-oauth-retorno` como URI de redirecionamento autorizada; habilitar a Google Calendar API.
 4. **Supabase → webhooks para o n8n**: já criados como triggers (`n8n_atendimento_alterado`, `n8n_atendimento_falta`, `n8n_sincronizar_bloqueio`) pela migração `20261014010000_webhooks_n8n.sql`, usando `pg_net`.

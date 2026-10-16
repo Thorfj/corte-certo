@@ -1,5 +1,5 @@
 /* ============================================================
-   CORTE CERTO — GLOBAL.JS
+   BARBOZAP — GLOBAL.JS
    Header e footer globais do site.
    Toda página deve ter:
      <header><div id="site-header"></div></header>
@@ -12,7 +12,7 @@ window.BASE = location.hostname === "thorfj.github.io" ? "/corte-certo" : "";
 (function () {
   const HEADER_HTML = `
     <div class="nav">
-      <a href="${BASE}/website/html/index.html" class="brand"><span class="badge">CC</span> Corte Certo</a>
+      <a href="${BASE}/website/html/index.html" class="brand"><span class="badge">BZ</span> Barbozap</a>
       <nav class="nav-links">
         <a href="${BASE}/website/html/index.html#como-funciona">Como funciona</a>
         <a href="${BASE}/website/html/index.html#planos">Planos</a>
@@ -31,7 +31,7 @@ window.BASE = location.hostname === "thorfj.github.io" ? "/corte-certo" : "";
     <div class="wrap">
       <div class="foot-grid">
         <div class="foot-brand">
-          <a href="${BASE}/website/html/index.html" class="brand"><span class="badge">CC</span> Corte Certo</a>
+          <a href="${BASE}/website/html/index.html" class="brand"><span class="badge">BZ</span> Barbozap</a>
           <p>O CRM que atende, agenda e faz follow-up com seus clientes direto no WhatsApp.</p>
         </div>
         <div class="foot-col">
@@ -52,7 +52,7 @@ window.BASE = location.hostname === "thorfj.github.io" ? "/corte-certo" : "";
         </div>
       </div>
       <div class="foot-bottom">
-        <span>© 2026 Corte Certo. Todos os direitos reservados.</span>
+        <span>© 2026 Barbozap. Todos os direitos reservados.</span>
         <span class="mono">feito para barbearias</span>
       </div>
     </div>

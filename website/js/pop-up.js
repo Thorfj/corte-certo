@@ -1,5 +1,5 @@
 /* ============================================================
-   CORTE CERTO — EXIT-INTENT-POPUP.JS
+   BARBOZAP — EXIT-INTENT-POPUP.JS
    Pop-up de saída: convida o visitante a ver o bot funcionando
    no blog, antes de ele sair do site.
 
@@ -93,7 +93,7 @@
       '<span class="cc-exit-eyebrow">Antes de você ir</span>' +
       '<h2 id="ccExitTitle">Quer ver o bot marcando um horário sozinho?</h2>' +
       '<div class="cc-exit-phone-preview">' +
-      '<span class="dot">CC</span>' +
+      '<span class="dot">BZ</span>' +
       '<span class="txt">"Oi! Vi vocês no Instagram, será que tem horário essa semana? 💈"</span>' +
       "</div>" +
       "<p>Montamos uma simulação real do WhatsApp no blog: dá pra marcar um corte do começo ao fim, com o mesmo fluxo que roda de verdade. Leva menos de 1 minuto.</p>" +

@@ -16,7 +16,9 @@ async function checarSessao() {
     data: { session },
   } = await supabaseClient.auth.getSession();
   if (!session) {
-    window.location.href = "/app/";
+    // Guarda a página atual (com ?parâmetros) para voltar depois do login
+    const voltar = window.location.pathname + window.location.search;
+    window.location.href = "/app/?voltar=" + encodeURIComponent(voltar);
     return null;
   }
   return session;

@@ -47,3 +47,9 @@ drop trigger if exists n8n_sincronizar_bloqueio on public.bloqueios_agenda;
 create trigger n8n_sincronizar_bloqueio
   after insert or delete on public.bloqueios_agenda
   for each row execute function public.notificar_n8n('https://cortecerto.app.n8n.cloud/webhook/sincronizar-bloqueio');
+
+-- Profissional cadastrado -> n8n cria a agenda dele no Google da barbearia
+drop trigger if exists n8n_profissional_criado on public.profissionais;
+create trigger n8n_profissional_criado
+  after insert on public.profissionais
+  for each row execute function public.notificar_n8n('https://cortecerto.app.n8n.cloud/webhook/profissional-criado');

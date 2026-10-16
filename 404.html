@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Página não encontrada — Barbozap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/global.css">
+  <style>
+    .nao-encontrada { min-height: 60vh; display: flex; flex-direction: column; justify-content: center; gap: 20px; padding-block: 64px; }
+    .nao-encontrada h1 { font-family: "Fraunces", serif; font-size: clamp(2rem, 5vw, 3.25rem); line-height: 1.1; margin: 0; }
+    .nao-encontrada p { max-width: 520px; margin: 0; opacity: .8; }
+    .nao-encontrada .acoes { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div id="site-header"></div>
+  </header>
+
+  <main>
+    <section class="nao-encontrada wrap">
+      <span class="eyebrow">Erro 404</span>
+      <h1>Essa página não existe.</h1>
+      <p>O endereço pode ter mudado ou ter sido digitado errado. Mas a sua agenda continua aqui: volte para o início ou entre no seu painel.</p>
+      <div class="acoes">
+        <a href="/" class="btn-primary">Ir para o início</a>
+        <a href="/app/" class="btn-ghost">Entrar no painel</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div id="site-footer"></div>
+  </footer>
+
+  <script src="/assets/js/global.js"></script>
+</body>
+
+</html>

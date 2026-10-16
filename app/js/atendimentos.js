@@ -167,7 +167,7 @@ function renderizarKanban(atendimentos) {
       const card = document.createElement("div");
       card.className = "card atendimento-card";
       card.addEventListener("click", () => {
-        window.location.href = `novo_atendimento.html?id=${atend.id}`;
+        window.location.href = `/app/novo-atendimento/?id=${atend.id}`;
       });
 
       const telefone = atend.clientes?.telefone || "";
@@ -195,7 +195,7 @@ function renderizarKanban(atendimentos) {
 document
   .getElementById("novo-atendimento-btn")
   .addEventListener("click", () => {
-    window.location.href = "novo_atendimento.html";
+    window.location.href = "/app/novo-atendimento/";
   });
 
 document.getElementById("filtrar-btn").addEventListener("click", () => {

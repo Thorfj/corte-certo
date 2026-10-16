@@ -38,7 +38,7 @@ async function checarSessaoAjuda() {
     data: { session },
   } = await supabaseClient.auth.getSession();
   if (!session) {
-    window.location.href = "login.html";
+    window.location.href = "/app/";
   }
 }
 

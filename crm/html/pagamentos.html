@@ -1,111 +1,13 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pagamentos — Barbozap</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/global.css">
-  <link rel="stylesheet" href="../css/pagamentos.css">
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../js/supabase-config.js"></script>
-  <script src="../js/onboarding-data.js"></script>
-  <script src="../js/crm-global.js"></script>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://barbozap.com.br/app/pagamentos/">
+  <meta http-equiv="refresh" content="0; url=/app/pagamentos/">
+  <title>Barbozap</title>
+  <!-- Endereço antigo: redireciona para /app/pagamentos/ mantendo ?parâmetros e #âncora -->
+  <script>location.replace("/app/pagamentos/" + location.search + location.hash);</script>
 </head>
-
-<body>
-  <div class="app">
-    <div id="crm-sidebar"></div>
-
-    <main class="main-content">
-      <div class="page-header">
-        <h1 class="page-title" style="margin:0">Pagamentos</h1>
-      </div>
-
-      <div class="pagamentos-grid">
-        <!-- Situação financeira -->
-        <div class="card pg-card">
-          <p class="pg-card-titulo">Situação financeira</p>
-          <div class="pg-situacao" id="pg-situacao">
-            <span class="badge" id="pg-situacao-badge">Carregando...</span>
-          </div>
-          <p class="pg-situacao-detalhe" id="pg-situacao-detalhe"></p>
-        </div>
-
-        <!-- Assinatura -->
-        <div class="card pg-card">
-          <p class="pg-card-titulo">Assinatura</p>
-          <dl class="pg-lista-dados" id="pg-assinatura-dados">
-            <dt>Plano</dt>
-            <dd id="pg-plano">—</dd>
-            <dt>Status</dt>
-            <dd id="pg-status-raw">—</dd>
-            <dt>Próximo vencimento</dt>
-            <dd id="pg-proximo-vencimento">—</dd>
-          </dl>
-          <a class="btn btn-primary hidden" id="pg-conectar-btn">
-            <i data-lucide="credit-card" style="width:16px;height:16px"></i> Assinar agora
-          </a>
-          <p class="pg-conectado-msg hidden" id="pg-conectado-msg">
-            <i data-lucide="check-circle" style="width:15px;height:15px"></i> Assinatura configurada
-          </p>
-        </div>
-      </div>
-
-      <!-- Indicadores -->
-      <div class="pg-indicadores" id="pg-indicadores"></div>
-
-      <!-- Cobranças -->
-      <div class="card" style="padding:0; margin-top:24px">
-        <table class="table" id="tabela-cobrancas">
-          <thead>
-            <tr>
-              <th>Competência</th>
-              <th>Valor</th>
-              <th>Status</th>
-              <th>Vencimento</th>
-              <th>Pagamento</th>
-              <th>Forma</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="tabela-cobrancas-body">
-            <tr>
-              <td colspan="7" class="loading">Carregando cobranças...</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <p class="pg-erro hidden" id="pg-erro"></p>
-    </main>
-  </div>
-
-  <!-- Modal: CNPJ (exigido pela Asaas pra criar o cliente) -->
-  <div class="modal-overlay hidden" id="modal-cnpj">
-    <div class="modal">
-      <div class="modal-header">
-        <p class="modal-title">Antes de conectar...</p>
-        <button class="modal-close" data-close="modal-cnpj">&times;</button>
-      </div>
-      <form id="form-cnpj">
-        <div class="field">
-          <label for="cnpj-input">CNPJ da barbearia</label>
-          <input type="text" id="cnpj-input" placeholder="00000000000000" inputmode="numeric" maxlength="18" required>
-          <span class="field-hint">Precisamos desse dado pra gerar as cobranças da sua assinatura.</span>
-        </div>
-        <p class="modal-error" id="cnpj-erro"></p>
-        <div class="modal-footer">
-          <button type="button" class="btn" data-close="modal-cnpj">Cancelar</button>
-          <button type="submit" class="btn btn-primary" id="cnpj-salvar-btn">Salvar e continuar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-  <script src="../js/pagamentos.js"></script>
-</body>
-
+<body><a href="/app/pagamentos/">Continuar para o Barbozap</a></body>
 </html>

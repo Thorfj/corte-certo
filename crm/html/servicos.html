@@ -1,91 +1,13 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Serviços — Barbozap</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/global.css">
-  <link rel="stylesheet" href="../css/servicos.css">
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../js/supabase-config.js"></script>
-  <script src="../js/onboarding-data.js"></script>
-  <script src="../js/crm-global.js"></script>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://barbozap.com.br/app/servicos/">
+  <meta http-equiv="refresh" content="0; url=/app/servicos/">
+  <title>Barbozap</title>
+  <!-- Endereço antigo: redireciona para /app/servicos/ mantendo ?parâmetros e #âncora -->
+  <script>location.replace("/app/servicos/" + location.search + location.hash);</script>
 </head>
-
-<body>
-  <div class="app">
-    <div id="crm-sidebar"></div>
-
-    <main class="main-content">
-      <div class="page-header">
-        <h1 class="page-title" style="margin:0">Serviços</h1>
-        <button class="btn btn-primary" id="novo-servico-btn">
-          <i data-lucide="plus" style="width:16px;height:16px"></i> Novo Serviço
-        </button>
-      </div>
-
-      <div class="card" style="padding:0">
-        <table class="table" id="tabela-servicos">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>Preço</th>
-              <th>Duração</th>
-              <th>Recorrência</th>
-              <th class="col-acoes"></th>
-            </tr>
-          </thead>
-          <tbody id="tabela-servicos-body">
-            <tr>
-              <td colspan="5" class="loading">Carregando serviços...</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </main>
-  </div>
-
-  <!-- Modal: Novo/Editar Serviço -->
-  <div class="modal-overlay hidden" id="modal-servico">
-    <div class="modal">
-      <div class="modal-header">
-        <p class="modal-title" id="modal-servico-titulo">Novo Serviço</p>
-        <button class="modal-close" data-close="modal-servico">&times;</button>
-      </div>
-      <form id="form-servico">
-        <input type="hidden" id="sv-id">
-        <p class="sku-display" id="sv-sku-display" style="display:none"></p>
-        <div class="field">
-          <label for="sv-nome">Nome do serviço</label>
-          <input type="text" id="sv-nome" required>
-        </div>
-        <div class="field-row">
-          <div class="field">
-            <label for="sv-preco">Preço (R$)</label>
-            <input type="number" id="sv-preco" min="0" step="0.01" required>
-          </div>
-          <div class="field">
-            <label for="sv-duracao">Duração (min)</label>
-            <input type="number" id="sv-duracao" min="1" required>
-          </div>
-          <div class="field">
-            <label for="sv-recorrencia">Recorrência (dias)</label>
-            <input type="number" id="sv-recorrencia" min="1" required>
-          </div>
-        </div>
-        <p class="modal-error" id="sv-erro"></p>
-        <div class="modal-footer">
-          <button type="button" class="btn" data-close="modal-servico">Cancelar</button>
-          <button type="submit" class="btn btn-primary" id="sv-salvar-btn">Salvar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-  <script src="../js/servicos.js"></script>
-</body>
-
+<body><a href="/app/servicos/">Continuar para o Barbozap</a></body>
 </html>

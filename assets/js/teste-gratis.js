@@ -17,7 +17,7 @@ const SUPABASE_URL = "https://jzqiqrymqbzullysukja.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_lqY19MJcqfYcVAABzRgiNg_6h4DIWUO";
 
 // TODO: confirmar a URL real da página de atendimentos do CRM
-const CRM_ATENDIMENTOS_URL = "/crm/html/atendimentos.html";
+const CRM_ATENDIMENTOS_URL = "/app/atendimentos/";
 
 // TODO: ajustar se quiser outro contato de suporte
 const SUPORTE_WHATSAPP_URL = "https://wa.me/5541999428022";

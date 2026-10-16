@@ -25,9 +25,14 @@ async function carregarProfissionais() {
     select.innerHTML = '<option value="">Erro ao carregar</option>';
     return;
   }
-  select.innerHTML = data
+  // papel "usuario" só agenda pra si mesmo (o banco também barra os outros)
+  const meuProf = await obterMeuProfissional();
+  const lista =
+    meuProf.acesso === "usuario" ? data.filter((p) => p.id === meuProf.id) : data;
+  select.innerHTML = lista
     .map((p) => `<option value="${p.id}">${p.nome}</option>`)
     .join("");
+  select.disabled = meuProf.acesso === "usuario";
 }
 
 async function carregarServicos(selecionados = []) {

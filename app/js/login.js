@@ -23,12 +23,19 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
     return;
   }
 
-  window.location.href = "/app/atendimentos/";
+  window.location.href = destinoPosLogin();
 });
 
 (async () => {
   const {
     data: { session },
   } = await supabaseClient.auth.getSession();
-  if (session) window.location.href = "/app/atendimentos/";
+  if (session) window.location.href = destinoPosLogin();
 })();
+
+// Volta para a página que pediu o login (?voltar=), só se for do próprio CRM
+function destinoPosLogin() {
+  const voltar = new URLSearchParams(window.location.search).get("voltar");
+  if (voltar && voltar.startsWith("/app/") && !voltar.startsWith("//")) return voltar;
+  return "/app/atendimentos/";
+}

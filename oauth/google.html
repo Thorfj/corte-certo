@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Conectando com o Google… | Barbozap</title>
+  <script>
+    // Retorno do login do Google. O redirect_uri cadastrado no Google Cloud
+    // fica no domínio do Barbozap (exigência da verificação do app); esta
+    // página só repassa o code/state para o workflow "Google OAuth Retorno" no n8n.
+    location.replace("https://cortecerto.app.n8n.cloud/webhook/google-oauth-retorno" + location.search);
+  </script>
+</head>
+<body style="font-family: system-ui, sans-serif; text-align: center; padding: 48px 16px;">
+  <p>Conectando com o Google…</p>
+</body>
+</html>

@@ -322,3 +322,35 @@
     grid-column: 1 / -1;
   }
 }
+
+/* WhatsApp do bot (aba Geral) */
+.whatsapp-qr {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.whatsapp-qr img {
+  width: 220px;
+  height: 220px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: #fff;
+  padding: 8px;
+}
+.whatsapp-passos {
+  flex: 1;
+  min-width: 220px;
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+.badge.aguardando {
+  background: rgba(186, 117, 23, 0.12);
+  color: #8a5a12;
+}

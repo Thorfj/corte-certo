@@ -25,6 +25,7 @@ Eles foram migrados dos JSONs do Google Drive, corrigidos para rodar no n8n Clou
 | Google OAuth Retorno | Webhook `GET /webhook/google-oauth-retorno` | `u3DDkroH1esFGqZQ` |
 | Criar agendas dos profissionais | sub-workflow + Webhook `POST /webhook/profissional-criado` | `ztT9jpz4sfvsyMJ9` |
 | Alerta de erro | Error Trigger (é o *Error workflow* dos workflows com gatilho) | `LO9MFNlWYRaCsKz8` |
+| Conexão WhatsApp | Webhook `POST /webhook/whatsapp-conexao` (CRM > Configurações) | `2ch6yXqWnITsEyBJ` |
 
 Fluxo do bot: `00101 nome → 00201 serviços → 00301 profissional → 00401 dia → 00501 horário → atendimento criado`.
 Ao concluir, a sessão fica com `etapa_atual = 'concluido'` e a próxima mensagem do cliente recomeça em 00201.
@@ -60,4 +61,8 @@ Horário de funcionamento: `barbearias.horario_funcionamento` (por dia da semana
 
 ## Alerta de erro
 
-Roteador, Agendador, Notificação de Falta, OAuth, sincronizações do Google e Criar agendas têm o *Error workflow* apontando para **Alerta de erro**. Ele grava a falha em `n8n_erros` (Supabase) e manda WhatsApp para `numero_alertas` pela instância `instancia_alertas` (nó *Monta alerta*). O *Enviar WhatsApp* fica de fora para não entrar em loop se a Evolution cair.
+Roteador, Agendador, Notificação de Falta, OAuth, sincronizações do Google e Criar agendas têm o *Error workflow* apontando para **Alerta de erro**. Ele grava a falha em `n8n_erros` (Supabase) e manda e-mail para `email_alertas` (nó *Monta alerta*) pela credencial SMTP da Hostinger (`contato@barbozap.com.br`). O *Enviar WhatsApp* fica de fora do alerta.
+
+## Conexão do WhatsApp pelo CRM
+
+Em **Configurações > WhatsApp do bot** o admin conecta o número lendo o QR Code. O CRM chama `POST /webhook/whatsapp-conexao` com o token do usuário logado e `{ acao: status | conectar | desconectar }`. O n8n confere o usuário no Supabase Auth, exige papel admin e usa `barbearias.whatsapp_barbearia` como nome da instância (nunca um valor vindo do navegador). Instâncias novas já nascem com o webhook do Roteador (`MESSAGES_UPSERT`).

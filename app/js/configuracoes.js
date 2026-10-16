@@ -64,7 +64,7 @@ async function carregarGeral() {
   const { data, error } = await supabaseClient
     .from("barbearias")
     .select(
-      "id, empresa, email, whatsapp, cliente, google_calendar_status, google_calendar_email, horario_funcionamento",
+      "id, empresa, email, whatsapp, whatsapp_barbearia, cliente, google_calendar_status, google_calendar_email, horario_funcionamento",
     )
     .eq("id", barbeariaId)
     .single();
@@ -146,11 +146,166 @@ async function configurarAparenciaEGoogle(barbearia) {
     atualizarStatusGoogle(barbearia);
     cardHorario.classList.remove("hidden");
     renderizarHorario(barbearia.horario_funcionamento);
+    iniciarCardWhatsapp(barbearia);
   } else {
     cardGoogle.classList.add("hidden");
     cardHorario.classList.add("hidden");
   }
 }
+
+// ---------------- ABA GERAL — WhatsApp do bot ----------------
+// O n8n (workflow "Conexão WhatsApp") confere se quem chama é admin e fala com a
+// Evolution API usando o whatsapp_barbearia como nome da instância. A chave da
+// Evolution nunca passa pelo navegador.
+const WHATSAPP_CONEXAO_URL = "https://cortecerto.app.n8n.cloud/webhook/whatsapp-conexao";
+const WHATSAPP_POLL_MS = 4000; // confere se o QR já foi lido
+const WHATSAPP_QR_RENOVA_MS = 35000; // o QR da Evolution expira em ~40s
+const WHATSAPP_QR_LIMITE_MS = 180000; // depois de 3 min sem ler, para e pede para tentar de novo
+let whatsappPoll = null;
+let whatsappRenova = null;
+let whatsappLimite = null;
+
+async function chamarConexaoWhatsapp(acao) {
+  const {
+    data: { session },
+  } = await supabaseClient.auth.getSession();
+  const resp = await fetch(WHATSAPP_CONEXAO_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ acao }),
+  });
+  const dados = await resp.json().catch(() => ({}));
+  if (!resp.ok || dados.erro) {
+    throw new Error(dados.erro || "Não foi possível falar com o WhatsApp agora.");
+  }
+  return dados;
+}
+
+function pararEsperaWhatsapp() {
+  clearInterval(whatsappPoll);
+  clearInterval(whatsappRenova);
+  clearTimeout(whatsappLimite);
+  whatsappPoll = whatsappRenova = whatsappLimite = null;
+}
+
+function mostrarEstadoWhatsapp(estado) {
+  const badge = document.getElementById("whatsapp-status-badge");
+  const conectarBtn = document.getElementById("whatsapp-conectar-btn");
+  const desconectarBtn = document.getElementById("whatsapp-desconectar-btn");
+  const conectado = estado === "open";
+  const aguardando = estado === "connecting" && whatsappPoll;
+
+  badge.textContent = conectado
+    ? "Conectado ✅"
+    : aguardando
+      ? "Aguardando leitura do QR Code…"
+      : "Desconectado";
+  badge.classList.toggle("conectado", conectado);
+  badge.classList.toggle("aguardando", Boolean(aguardando));
+  conectarBtn.classList.toggle("hidden", conectado || Boolean(aguardando));
+  desconectarBtn.classList.toggle("hidden", !conectado);
+  if (conectado || !aguardando) document.getElementById("whatsapp-qr").classList.add("hidden");
+}
+
+function mostrarErroWhatsapp(msg) {
+  const erroEl = document.getElementById("whatsapp-erro");
+  erroEl.textContent = msg || "";
+  erroEl.style.display = msg ? "block" : "none";
+}
+
+async function iniciarCardWhatsapp(barbearia) {
+  const card = document.getElementById("card-whatsapp");
+  card.classList.remove("hidden");
+  document.getElementById("whatsapp-numero").textContent = formatarTelefone(barbearia.whatsapp_barbearia);
+  try {
+    const { estado } = await chamarConexaoWhatsapp("status");
+    mostrarEstadoWhatsapp(estado);
+  } catch (err) {
+    console.error(err);
+    mostrarEstadoWhatsapp("close");
+    mostrarErroWhatsapp(err.message);
+  }
+}
+
+function formatarTelefone(numero) {
+  const d = String(numero || "").replace(/\D/g, "").replace(/^55/, "");
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return numero || "cadastrado";
+}
+
+async function pedirQrWhatsapp() {
+  const dados = await chamarConexaoWhatsapp("conectar");
+  if (dados.estado === "open") {
+    pararEsperaWhatsapp();
+    mostrarEstadoWhatsapp("open");
+    return;
+  }
+  if (dados.qr) {
+    document.getElementById("whatsapp-qr-img").src = dados.qr;
+    document.getElementById("whatsapp-qr").classList.remove("hidden");
+  }
+}
+
+document.getElementById("whatsapp-conectar-btn").addEventListener("click", async () => {
+  const btn = document.getElementById("whatsapp-conectar-btn");
+  mostrarErroWhatsapp("");
+  btn.disabled = true;
+  try {
+    pararEsperaWhatsapp();
+    // marca como "aguardando" antes do primeiro QR, para o botão sumir
+    whatsappPoll = setInterval(async () => {
+      try {
+        const { estado } = await chamarConexaoWhatsapp("status");
+        if (estado === "open") {
+          pararEsperaWhatsapp();
+          mostrarEstadoWhatsapp("open");
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }, WHATSAPP_POLL_MS);
+    whatsappRenova = setInterval(() => pedirQrWhatsapp().catch(console.error), WHATSAPP_QR_RENOVA_MS);
+    whatsappLimite = setTimeout(() => {
+      pararEsperaWhatsapp();
+      mostrarEstadoWhatsapp("close");
+      mostrarErroWhatsapp("O QR Code expirou. Clique em Conectar WhatsApp para gerar outro.");
+    }, WHATSAPP_QR_LIMITE_MS);
+    mostrarEstadoWhatsapp("connecting");
+    await pedirQrWhatsapp();
+  } catch (err) {
+    console.error(err);
+    pararEsperaWhatsapp();
+    mostrarEstadoWhatsapp("close");
+    mostrarErroWhatsapp(err.message);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("whatsapp-desconectar-btn").addEventListener("click", async () => {
+  const confirmado = await confirmarAcao(
+    "Desconectar o WhatsApp? O bot para de responder seus clientes até você conectar de novo.",
+    "Desconectar",
+    "danger",
+  );
+  if (!confirmado) return;
+  const btn = document.getElementById("whatsapp-desconectar-btn");
+  btn.disabled = true;
+  mostrarErroWhatsapp("");
+  try {
+    const { estado } = await chamarConexaoWhatsapp("desconectar");
+    mostrarEstadoWhatsapp(estado);
+  } catch (err) {
+    console.error(err);
+    mostrarErroWhatsapp(err.message);
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 // ---------------- ABA GERAL — Horário de funcionamento ----------------
 // Formato salvo em barbearias.horario_funcionamento:

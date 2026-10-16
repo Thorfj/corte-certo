@@ -80,6 +80,17 @@
             </a>
           </div>
         </div>
+
+        <div class="card form-card hidden" id="card-horario" style="margin-top:20px">
+          <p class="card-section-title">Horário de funcionamento</p>
+          <p class="text-secondary card-section-desc">O bot só oferece horários dentro desse período. Folgas, feriados e pausas continuam sendo marcados como bloqueios na Agenda.</p>
+          <form id="form-horario">
+            <div class="horario-lista" id="horario-lista"></div>
+            <p class="modal-error" id="h-erro"></p>
+            <p class="success-msg" id="h-sucesso">Horário salvo com sucesso.</p>
+            <button type="submit" class="btn btn-primary" id="h-salvar-btn">Salvar horário</button>
+          </form>
+        </div>
       </div>
 
       <!-- ABA USUÁRIOS -->
@@ -205,8 +216,10 @@
             </select>
           </div>
           <div class="field">
-            <label for="us-agenda">Agenda (Google Calendar)</label>
-            <input type="text" id="us-agenda" placeholder="agenda-nome">
+            <label for="us-agenda">Agenda (Google Agenda)</label>
+            <!-- Criada pelo n8n quando o Google está conectado; o CRM só mostra o status -->
+            <input type="text" id="us-agenda" readonly tabindex="-1" style="cursor:default; opacity:.8"
+              value="Será criada quando o Google Agenda estiver conectado">
           </div>
         </div>
         <!--

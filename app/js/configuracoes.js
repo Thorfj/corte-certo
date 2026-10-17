@@ -20,6 +20,8 @@ const CRIAR_USUARIO_URL =
 
 const ALTERAR_SENHA_URL =
   "https://jzqiqrymqbzullysukja.supabase.co/functions/v1/alterar-senha-usuario";
+const EXCLUIR_USUARIO_URL =
+  "https://jzqiqrymqbzullysukja.supabase.co/functions/v1/excluir-usuario";
 
 // A agenda de cada profissional é criada pelo n8n na conta Google da
 // barbearia; aqui só mostramos o status (o ID não é editável).
@@ -443,7 +445,9 @@ async function carregarUsuarios() {
     .from("profissionais")
     .select("id, nome, email, acesso, agendas")
     .eq("barbearia_id", barbeariaId)
+    .is("removido_em", null)
     .order("nome", { ascending: true });
+  const meuProf = await obterMeuProfissional();
 
   const body = document.getElementById("tabela-usuarios-body");
 
@@ -477,6 +481,10 @@ async function carregarUsuarios() {
           <i data-lucide="key" style="width:16px;height:16px"></i>
         </button>
         <i data-lucide="pencil" style="width:16px;height:16px"></i>
+        ${u.id === meuProf.id ? "" : `
+        <button class="icon-btn icon-btn-excluir" data-excluir="${u.id}" data-nome="${u.nome}" title="Excluir usuário">
+          <i data-lucide="trash-2" style="width:16px;height:16px"></i>
+        </button>`}
       </td>
     </tr>
   `,
@@ -498,6 +506,58 @@ async function carregarUsuarios() {
       abrirModalAlterarSenha(btn.dataset.trocarSenha, btn.dataset.nome);
     });
   });
+
+  body.querySelectorAll("[data-excluir]").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      excluirUsuario(btn.dataset.excluir, btn.dataset.nome);
+    });
+  });
+}
+
+function mostrarAvisoUsuarios(texto, ok = false) {
+  const aviso = document.getElementById("usuarios-aviso");
+  aviso.textContent = texto;
+  aviso.classList.toggle("ok", ok);
+  aviso.classList.remove("hidden");
+}
+
+async function excluirUsuario(profissionalId, nome) {
+  document.getElementById("usuarios-aviso").classList.add("hidden");
+
+  const confirmado = await confirmarAcao(
+    `Excluir ${nome}? Essa pessoa perde o acesso ao CRM e deixa de aparecer no WhatsApp e na agenda. ` +
+      "Os atendimentos que ela já fez continuam nos relatórios. Essa ação não pode ser desfeita.",
+    "Excluir usuário",
+    "danger",
+  );
+  if (!confirmado) return;
+
+  try {
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+
+    const resp = await fetch(EXCLUIR_USUARIO_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ profissional_id: profissionalId }),
+    });
+
+    const resultado = await resp.json();
+    if (!resp.ok || resultado.error) {
+      throw new Error(resultado.error || "Erro ao excluir usuário.");
+    }
+
+    mostrarAvisoUsuarios(`${nome} foi excluído.`, true);
+    await carregarUsuarios();
+  } catch (err) {
+    console.error(err);
+    mostrarAvisoUsuarios(err.message || "Erro ao excluir usuário.");
+  }
 }
 
 function abrirModalAlterarSenha(profissionalId, nome) {

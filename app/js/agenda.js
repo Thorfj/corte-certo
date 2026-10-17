@@ -141,6 +141,7 @@ async function carregarProfissionais() {
     .from("profissionais")
     .select("id, nome")
     .eq("barbearia_id", barbeariaId)
+    .is("removido_em", null)
     .order("nome", { ascending: true });
 
   const container = document.getElementById("prof-selector");

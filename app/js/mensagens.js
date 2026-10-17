@@ -777,8 +777,6 @@ document
       await carregarFluxo();
       await carregarFollowup();
       await carregarFinalizacao();
-      assinanteCache = null;
-      await atualizarCadeadoFollowup();
     }
   } catch (err) {
     console.error(err);

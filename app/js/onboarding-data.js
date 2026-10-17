@@ -147,6 +147,19 @@ const ONBOARDING_PASSOS = {
         "Em Usuários você cadastra os outros profissionais: cada um aparece como opção no bot. Em Pagamentos fica a sua assinatura.",
     },
   ],
+  "financeiro": [
+    {
+      selector: "#fin-kpis",
+      titulo: "O dinheiro da barbearia",
+      texto:
+        "Faturamento, o que já entrou, o fiado a receber e o que está previsto no período escolhido. Mais abaixo: por dia, por forma de pagamento, por serviço e por profissional.",
+    },
+    {
+      selector: "#fin-tabela-fiado",
+      titulo: "Fiado em aberto",
+      texto: "Quem ainda está devendo. Quando o cliente pagar, é só clicar em Marcar pago.",
+    },
+  ],
   "pagamentos": [
     {
       selector: ".pagamentos-grid",

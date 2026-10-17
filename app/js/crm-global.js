@@ -26,7 +26,11 @@
     { page: "contatos", icon: "users", label: "Contatos", restrito: false },
     { page: "servicos", icon: "scissors", label: "Serviços", restrito: true },
     { page: "mensagens", icon: "message-square", label: "Mensagens", restrito: true },
+    { page: "financeiro", icon: "wallet", label: "Financeiro", restrito: true },
     { page: "relatorios", icon: "pie-chart", label: "Relatórios", restrito: true },
+    // em desenvolvimento: aparecem com cadeado e abrem uma tela de "em breve"
+    { page: "landing-page", icon: "globe", label: "Landing page", restrito: true, emBreve: true },
+    { page: "assinaturas", icon: "repeat", label: "Assinaturas", restrito: true, emBreve: true },
     { page: "configuracoes", icon: "settings", label: "Configurações", restrito: true },
   ];
   const PAGINAS_RESTRITAS = NAV_ITEMS.filter((i) => i.restrito).map((i) => i.page);
@@ -36,7 +40,7 @@
     return itensVisiveis
       .map(
         (i) => `
-      <a class="nav-item" data-page="${i.page}" href="/app/${i.page}/"><i data-lucide="${i.icon}"></i> <span class="nav-label">${i.label}</span></a>
+      <a class="nav-item${i.emBreve ? " nav-em-breve" : ""}" data-page="${i.page}" href="/app/${i.page}/"${i.emBreve ? ' title="Em breve"' : ""}><i data-lucide="${i.icon}"></i> <span class="nav-label">${i.label}</span>${i.emBreve ? '<i data-lucide="lock" class="nav-cadeado"></i>' : ""}</a>
     `,
       )
       .join("");
@@ -99,6 +103,9 @@
       }
       .tema-btn-sidebar.active { background: var(--brand-light); color: var(--brand-dark); border-color: var(--brand); }
       .tema-btn-sidebar:hover { background: rgba(28,28,26,0.04); }
+      .nav-em-breve { opacity: 0.75; }
+      .nav-item .nav-cadeado { width: 13px !important; height: 13px; margin-left: auto; color: var(--text-muted); }
+      .sidebar.collapsed .nav-cadeado { display: none; }
     `;
     document.head.appendChild(style);
   }

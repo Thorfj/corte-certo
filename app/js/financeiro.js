@@ -7,12 +7,12 @@
    Regras:
      - realizado  = horário já passou e o cliente não faltou
      - recebido   = realizado e marcado como pago
-     - fiado      = realizado e ainda não pago
+     - pendente   = realizado e ainda não pago
      - previsto   = horário ainda não chegou (dentro do período)
      - faltas     = marcado "cliente não compareceu"
    Atendimentos antigos (antes do controle de pagamento) não têm
    pagamento informado: entram no faturamento, mas nem como pago nem
-   como fiado.
+   como pendentes.
    ============================================================ */
 
 if (typeof lucide !== "undefined") lucide.createIcons();
@@ -120,7 +120,7 @@ async function carregarFinanceiro() {
     erroEl.classList.remove("hidden");
   }
 
-  carregarFiadoEmAberto();
+  carregarPendentes();
 }
 
 // ---------------- Barbearia ----------------
@@ -130,7 +130,7 @@ function renderizarKpis(lista) {
 
   const faturamento = soma(realizados);
   const recebidos = realizados.filter((a) => a.pagamento === "pago");
-  const fiados = realizados.filter((a) => a.pagamento === "pendente");
+  const pendentes = realizados.filter((a) => a.pagamento === "pendente");
   const semInfo = realizados.filter((a) => !a.pagamento);
   const previstos = lista.filter((a) => a.situacao === "previsto");
   const faltas = lista.filter((a) => a.situacao === "falta");
@@ -146,7 +146,7 @@ function renderizarKpis(lista) {
   document.getElementById("fin-kpis").innerHTML = [
     kpi("Faturamento", moeda(faturamento), `${realizados.length} atendimento(s) realizado(s)`, "fin-destaque"),
     kpi("Recebido", moeda(soma(recebidos)), `${recebidos.length} pago(s)`),
-    kpi("Fiado a receber", moeda(soma(fiados)), `${fiados.length} sem pagamento`, fiados.length ? "fin-alerta" : ""),
+    kpi("A receber", moeda(soma(pendentes)), `${pendentes.length} sem pagamento`, pendentes.length ? "fin-alerta" : ""),
     kpi("Ticket médio", moeda(ticket), "por atendimento realizado"),
     kpi("Previsto", moeda(soma(previstos)), `${previstos.length} agendado(s) no período`),
     kpi("Perdido com faltas", moeda(soma(faltas)), `${faltas.length} falta(s)`),
@@ -154,7 +154,7 @@ function renderizarKpis(lista) {
 
   const nota = document.getElementById("fin-nota");
   if (semInfo.length) {
-    nota.textContent = `${semInfo.length} atendimento(s) (${moeda(soma(semInfo))}) são de antes do controle de pagamento: entram no faturamento, mas não aparecem como pagos nem como fiado.`;
+    nota.textContent = `${semInfo.length} atendimento(s) (${moeda(soma(semInfo))}) são de antes do controle de pagamento: entram no faturamento, mas não aparecem como pagos nem como pendentes.`;
     nota.classList.remove("hidden");
   } else {
     nota.classList.add("hidden");
@@ -253,13 +253,13 @@ function renderizarProfissionais(lista) {
     const chave = a.id_prof;
     const p = mapa.get(chave) || {
       nome: a.profissionais?.nome || "—",
-      realizados: 0, faturamento: 0, recebido: 0, fiado: 0, faltas: 0, notas: [],
+      realizados: 0, faturamento: 0, recebido: 0, aReceber: 0, faltas: 0, notas: [],
     };
     if (a.situacao === "realizado") {
       p.realizados += 1;
       p.faturamento += a.valor;
       if (a.pagamento === "pago") p.recebido += a.valor;
-      if (a.pagamento === "pendente") p.fiado += a.valor;
+      if (a.pagamento === "pendente") p.aReceber += a.valor;
       if (a.nps != null) p.notas.push(Number(a.nps));
     }
     if (a.situacao === "falta") p.faltas += 1;
@@ -286,7 +286,7 @@ function renderizarProfissionais(lista) {
         <td class="num">${p.realizados}</td>
         <td class="num">${moeda(p.faturamento)}</td>
         <td class="num">${moeda(p.recebido)}</td>
-        <td class="num${p.fiado ? " fin-texto-alerta" : ""}">${moeda(p.fiado)}</td>
+        <td class="num${p.aReceber ? " fin-texto-alerta" : ""}">${moeda(p.aReceber)}</td>
         <td class="num">${moeda(ticket)}</td>
         <td class="num">${p.faltas}</td>
         <td class="num">
@@ -298,9 +298,9 @@ function renderizarProfissionais(lista) {
     .join("");
 }
 
-// ---------------- Fiado em aberto (todos os períodos) ----------------
-async function carregarFiadoEmAberto() {
-  const body = document.getElementById("fin-fiado-body");
+// ---------------- Pagamentos pendentes (todos os períodos) ----------------
+async function carregarPendentes() {
+  const body = document.getElementById("fin-pendentes-body");
   try {
     const barbeariaId = await obterBarbeariaId();
     const { data, error } = await supabaseClient
@@ -313,14 +313,14 @@ async function carregarFiadoEmAberto() {
     if (error) throw error;
 
     const agora = new Date();
-    const fiados = (data || []).filter((a) => a.compareceu !== false && inicioDoAtendimento(a) <= agora);
+    const pendentes = (data || []).filter((a) => a.compareceu !== false && inicioDoAtendimento(a) <= agora);
 
-    if (!fiados.length) {
-      body.innerHTML = '<tr><td colspan="5" class="empty">Nenhum fiado em aberto. 👍</td></tr>';
+    if (!pendentes.length) {
+      body.innerHTML = '<tr><td colspan="5" class="empty">Nenhum pagamento pendente. 👍</td></tr>';
       return;
     }
 
-    body.innerHTML = fiados
+    body.innerHTML = pendentes
       .map(
         (a) => `
       <tr>
@@ -338,7 +338,7 @@ async function carregarFiadoEmAberto() {
     );
   } catch (err) {
     console.error(err);
-    body.innerHTML = '<tr><td colspan="5" class="empty">Erro ao carregar o fiado.</td></tr>';
+    body.innerHTML = '<tr><td colspan="5" class="empty">Erro ao carregar os pagamentos pendentes.</td></tr>';
   }
 }
 

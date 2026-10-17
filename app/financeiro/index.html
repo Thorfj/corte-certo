@@ -82,7 +82,7 @@
                 <th class="num">Atendimentos</th>
                 <th class="num">Faturamento</th>
                 <th class="num">Recebido</th>
-                <th class="num">Fiado</th>
+                <th class="num">A receber</th>
                 <th class="num">Ticket médio</th>
                 <th class="num">Faltas</th>
                 <th class="num">% do total</th>
@@ -96,11 +96,11 @@
         </div>
       </section>
 
-      <!-- Fiado em aberto -->
+      <!-- Pagamentos pendentes -->
       <section>
-        <p class="fin-secao-titulo">Fiado em aberto <span class="fin-secao-sub">(todos os períodos)</span></p>
+        <p class="fin-secao-titulo">Pagamentos pendentes <span class="fin-secao-sub">(todos os períodos)</span></p>
         <div class="card" style="padding:0">
-          <table class="table" id="fin-tabela-fiado">
+          <table class="table" id="fin-tabela-pendentes">
             <thead>
               <tr>
                 <th>Cliente</th>
@@ -110,7 +110,7 @@
                 <th></th>
               </tr>
             </thead>
-            <tbody id="fin-fiado-body">
+            <tbody id="fin-pendentes-body">
               <tr><td colspan="5" class="loading">Carregando...</td></tr>
             </tbody>
           </table>

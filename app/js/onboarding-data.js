@@ -152,11 +152,11 @@ const ONBOARDING_PASSOS = {
       selector: "#fin-kpis",
       titulo: "O dinheiro da barbearia",
       texto:
-        "Faturamento, o que já entrou, o fiado a receber e o que está previsto no período escolhido. Mais abaixo: por dia, por forma de pagamento, por serviço e por profissional.",
+        "Faturamento, o que já entrou, o que falta receber e o que está previsto no período escolhido. Mais abaixo: por dia, por forma de pagamento, por serviço e por profissional.",
     },
     {
-      selector: "#fin-tabela-fiado",
-      titulo: "Fiado em aberto",
+      selector: "#fin-tabela-pendentes",
+      titulo: "Pagamentos pendentes",
       texto: "Quem ainda está devendo. Quando o cliente pagar, é só clicar em Marcar pago.",
     },
   ],

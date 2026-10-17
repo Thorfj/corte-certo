@@ -1,4 +1,4 @@
--- Controle de pagamento do atendimento (pago x fiado).
+-- Controle de pagamento do atendimento (pago x pendente).
 -- Atendimentos antigos ficam com pagamento = null ("não informado");
 -- os novos nascem 'pendente' até alguém marcar como pago.
 alter table public.atendimentos add column if not exists pagamento text;

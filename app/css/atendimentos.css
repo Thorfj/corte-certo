@@ -161,16 +161,16 @@
   padding: 8px 0;
 }
 
-/* ---------- Pagamento (pago x fiado) ---------- */
+/* ---------- Pagamento (pago x pendente) ---------- */
 .metric-sub {
   margin: 2px 0 0;
   font-size: 12px;
   color: var(--text-secondary);
 }
-.metric-card.metric-fiado {
+.metric-card.metric-pendente {
   border-color: rgba(201, 122, 0, 0.35);
 }
-.metric-card.metric-fiado .metric-value {
+.metric-card.metric-pendente .metric-value {
   color: #a35f00;
 }
 .pagamento-tag {
@@ -187,13 +187,13 @@
   background: var(--brand-light);
   color: var(--brand-dark);
 }
-.pagamento-tag.fiado {
+.pagamento-tag.pendente {
   background: #fdf1d6;
   color: #8a5a00;
   border-color: rgba(201, 122, 0, 0.3);
   cursor: pointer;
 }
-.pagamento-tag.fiado:hover {
+.pagamento-tag.pendente:hover {
   background: #fbe6b8;
 }
 @media (max-width: 1100px) {

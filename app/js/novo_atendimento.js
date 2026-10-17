@@ -10,6 +10,25 @@ const modoEdicao = !!idAtend;
 
 let servicosCache = [];
 let clienteEncontradoId = null;
+let pagamentoAnterior = null;
+let pagoEmAnterior = null;
+
+// "Forma de pagamento" só faz sentido quando está pago
+function atualizarCampoForma() {
+  const pago = document.getElementById("pagamento-select").value === "pago";
+  document.getElementById("forma-field").style.visibility = pago ? "visible" : "hidden";
+}
+document.getElementById("pagamento-select").addEventListener("change", atualizarCampoForma);
+
+function dadosPagamento() {
+  const pago = document.getElementById("pagamento-select").value === "pago";
+  return {
+    pagamento: pago ? "pago" : "pendente",
+    forma_pagamento: pago ? document.getElementById("forma-select").value || null : null,
+    // mantém a data original se já estava pago
+    pago_em: pago ? (pagamentoAnterior === "pago" && pagoEmAnterior ? pagoEmAnterior : new Date().toISOString()) : null,
+  };
+}
 let idClienteAtual = null;
 
 // idProfAtual: na edição, mantém na lista o profissional do atendimento
@@ -231,7 +250,7 @@ document
       if (modoEdicao) {
         const { error: erroUpdate } = await supabaseClient
           .from("atendimentos")
-          .update({ id_prof: idProf, data_agend: dataAgend, horario, nps })
+          .update({ id_prof: idProf, data_agend: dataAgend, horario, nps, ...dadosPagamento() })
           .eq("id", idAtend);
         if (erroUpdate) throw erroUpdate;
 
@@ -249,6 +268,7 @@ document
             data_agend: dataAgend,
             horario,
             nps,
+            ...dadosPagamento(),
           })
           .select("id")
           .single();
@@ -352,7 +372,7 @@ async function carregarModoEdicao() {
     .from("atendimentos")
     .select(
       `
-      id, id_prof, id_cliente, data_agend, horario, nps,
+      id, id_prof, id_cliente, data_agend, horario, nps, pagamento, forma_pagamento, pago_em,
       clientes ( nome ),
       atendimento_servicos ( servico_id )
     `,
@@ -375,6 +395,11 @@ async function carregarModoEdicao() {
       `<p class="cliente-status encontrado">Cliente: ${data.clientes?.nome || "—"}</p>`,
     );
   idClienteAtual = data.id_cliente;
+  pagamentoAnterior = data.pagamento;
+  pagoEmAnterior = data.pago_em;
+  document.getElementById("pagamento-select").value = data.pagamento === "pago" ? "pago" : "pendente";
+  document.getElementById("forma-select").value = data.forma_pagamento || "";
+  atualizarCampoForma();
 
   document.getElementById("data-input").value = data.data_agend;
   document.getElementById("horario-input").value = data.horario

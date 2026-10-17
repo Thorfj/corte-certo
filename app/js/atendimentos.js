@@ -27,7 +27,7 @@ async function carregarAtendimentos(dataInicio, dataFim) {
     .from("atendimentos")
     .select(
       `
-  id, data_agend, horario, custo, duracao_atend, nps,
+  id, data_agend, horario, custo, duracao_atend, nps, compareceu, pagamento,
   clientes ( nome, telefone, status ),
   profissionais ( nome ),
   atendimento_servicos ( preco_cobrado, duracao_cobrada, servicos ( nome ) )
@@ -64,6 +64,33 @@ function formatarData(dataISO, horario) {
   return `${dia}/${mes} às ${horario ? horario.slice(0, 5) : ""}`;
 }
 
+// Já aconteceu (e o cliente veio): é aí que faz sentido cobrar
+function jaAconteceu(a) {
+  if (a.compareceu === false || !a.data_agend) return false;
+  const inicio = new Date(`${a.data_agend}T${(a.horario || "00:00").slice(0, 5)}:00`);
+  return inicio <= new Date();
+}
+
+function ehFiado(a) {
+  return jaAconteceu(a) && a.pagamento === "pendente";
+}
+
+async function marcarComoPago(atendId) {
+  const { error } = await supabaseClient
+    .from("atendimentos")
+    .update({ pagamento: "pago", pago_em: new Date().toISOString() })
+    .eq("id", atendId);
+  if (error) {
+    console.error(error);
+    alert("Não foi possível marcar como pago agora.");
+    return;
+  }
+  const atend = atendimentosCache.find((a) => a.id === atendId);
+  if (atend) atend.pagamento = "pago";
+  renderizarMetricas(atendimentosCache);
+  renderizarKanban(atendimentosCache);
+}
+
 function renderizarMetricas(lista) {
   const total = lista.length;
   const faturamento = lista.reduce(
@@ -84,6 +111,9 @@ function renderizarMetricas(lista) {
   const minutos = duracaoTotalMin % 60;
   const duracaoFormatada = duracaoTotalMin ? `${horas}h ${minutos}min` : "—";
 
+  const fiados = lista.filter(ehFiado);
+  const totalFiado = fiados.reduce((soma, a) => soma + (Number(a.custo) || 0), 0);
+
   document.getElementById("metrics-grid").innerHTML = `
 <div class="metric-card">
   <p class="metric-label">Total de atendimentos</p>
@@ -100,6 +130,11 @@ function renderizarMetricas(lista) {
 <div class="metric-card">
   <p class="metric-label">Tempo total ocupado</p>
   <p class="metric-value">${duracaoFormatada}</p>
+</div>
+<div class="metric-card${fiados.length ? " metric-fiado" : ""}">
+  <p class="metric-label">Fiado a receber</p>
+  <p class="metric-value">R$ ${totalFiado.toFixed(2)}</p>
+  <p class="metric-sub">${fiados.length ? `${fiados.length} atendimento(s) sem pagamento` : "Nada em aberto"}</p>
 </div>
 `;
 }
@@ -178,7 +213,22 @@ function renderizarKanban(atendimentos) {
     <p class="atendimento-detalhe">${servicos || "Sem serviço definido"} · ${atend.profissionais?.nome || ""}</p>
     <p class="atendimento-detalhe">${formatarData(atend.data_agend, atend.horario)}</p>
     ${telefoneLimpo ? `<p class="atendimento-detalhe"><a href="https://wa.me/${telefoneLimpo}" target="_blank" class="atendimento-telefone" rel="noopener">${telefone}</a></p>` : ""}
+    ${
+      jaAconteceu(atend) && atend.pagamento === "pago"
+        ? '<span class="pagamento-tag pago">✓ Pago</span>'
+        : ehFiado(atend)
+          ? '<button type="button" class="pagamento-tag fiado" title="Clique quando o cliente pagar">Fiado · marcar pago</button>'
+          : ""
+    }
   `;
+
+      const botaoFiado = card.querySelector(".pagamento-tag.fiado");
+      if (botaoFiado) {
+        botaoFiado.addEventListener("click", (e) => {
+          e.stopPropagation();
+          marcarComoPago(atend.id);
+        });
+      }
 
       const linkTelefone = card.querySelector(".atendimento-telefone");
       if (linkTelefone) {

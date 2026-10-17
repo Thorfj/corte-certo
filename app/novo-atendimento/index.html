@@ -75,6 +75,28 @@
             <p class="resumo-total" id="resumo-total"></p>
           </div>
 
+          <!-- Pagamento: pago ou fiado (o quadro de Atendimentos mostra o fiado em aberto) -->
+          <div class="field-row">
+            <div class="field">
+              <label for="pagamento-select">Pagamento</label>
+              <select id="pagamento-select">
+                <option value="pendente">Não pago (fiado)</option>
+                <option value="pago">Pago</option>
+              </select>
+            </div>
+            <div class="field" id="forma-field" style="visibility:hidden">
+              <label for="forma-select">Forma de pagamento</label>
+              <select id="forma-select">
+                <option value="">Não informar</option>
+                <option value="dinheiro">Dinheiro</option>
+                <option value="pix">Pix</option>
+                <option value="debito">Cartão de débito</option>
+                <option value="credito">Cartão de crédito</option>
+                <option value="outro">Outro</option>
+              </select>
+            </div>
+          </div>
+
           <p class="form-error" id="form-erro"></p>
 
           <div class="form-actions">

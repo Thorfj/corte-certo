@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Nova senha — Barbozap</title>
+  <link rel="stylesheet" href="/app/css/global.css">
+  <link rel="stylesheet" href="/app/css/login.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/app/js/supabase-config.js"></script>
+</head>
+<body>
+  <div class="card login-card">
+    <div class="login-logo">
+      <div class="logo-icon">BZ</div>
+      <span>Barbozap</span>
+    </div>
+
+    <p class="login-texto" id="nova-senha-aguarde">Validando o link...</p>
+
+    <form id="nova-senha-form" hidden>
+      <p class="login-texto">Crie uma senha nova para a sua conta.</p>
+      <div class="field">
+        <label for="senha">Nova senha</label>
+        <input type="password" id="senha" required minlength="6" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label for="senha-confirma">Repita a nova senha</label>
+        <input type="password" id="senha-confirma" required minlength="6" autocomplete="new-password">
+      </div>
+      <button type="submit" class="btn btn-primary login-btn" id="nova-senha-btn">Salvar nova senha</button>
+      <p class="login-error" id="nova-senha-error"></p>
+      <p class="login-ok" id="nova-senha-ok"></p>
+    </form>
+
+    <div id="link-invalido" hidden>
+      <p class="login-error" style="display:block">Esse link expirou ou já foi usado.</p>
+      <a href="/app/" class="login-link">Pedir um link novo</a>
+    </div>
+  </div>
+  <script src="/app/js/nova_senha.js"></script>
+</body>
+</html>

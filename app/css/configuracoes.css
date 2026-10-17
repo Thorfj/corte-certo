@@ -77,6 +77,32 @@
 .col-acoes {
   width: 40px;
   text-align: right;
+  white-space: nowrap;
+}
+.icon-btn-excluir:hover {
+  background: rgba(179, 38, 30, 0.08);
+  color: #b3261e;
+}
+.btn-danger {
+  background: #b3261e;
+  border-color: #b3261e;
+  color: #fff;
+}
+.btn-danger:hover {
+  background: #8f1e17;
+}
+.usuarios-aviso {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  line-height: 1.5;
+  background: #fbeae8;
+  color: #8f1e17;
+}
+.usuarios-aviso.ok {
+  background: var(--brand-light);
+  color: var(--brand-dark);
 }
 .empty,
 .loading {

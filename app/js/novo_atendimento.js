@@ -12,13 +12,18 @@ let servicosCache = [];
 let clienteEncontradoId = null;
 let idClienteAtual = null;
 
-async function carregarProfissionais() {
+// idProfAtual: na edição, mantém na lista o profissional do atendimento
+// mesmo que ele já tenha sido excluído (pra não trocar sem querer)
+async function carregarProfissionais(idProfAtual = null) {
   const barbeariaId = await obterBarbeariaId();
-  const { data, error } = await supabaseClient
+  const { data: todos, error } = await supabaseClient
     .from("profissionais")
-    .select("id, nome")
+    .select("id, nome, removido_em")
     .eq("barbearia_id", barbeariaId)
     .order("nome", { ascending: true });
+  const data = (todos || []).filter(
+    (p) => !p.removido_em || String(p.id) === String(idProfAtual),
+  );
 
   const select = document.getElementById("prof-select");
   if (error || !data) {
@@ -328,7 +333,7 @@ async function carregarModoEdicao() {
     : "";
   document.getElementById("nps-input").value = data.nps ?? "";
 
-  await carregarProfissionais();
+  await carregarProfissionais(data.id_prof);
   document.getElementById("prof-select").value = data.id_prof;
 
   const servicosSelecionados = (data.atendimento_servicos || []).map(

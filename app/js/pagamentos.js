@@ -229,6 +229,14 @@ async function chamarPagamento(corpo) {
   return data;
 }
 
+// Valor real da cobrança (vem do Asaas; no Sandbox pode ser o valor de teste)
+function mostrarValorPlano(valor) {
+  if (!valor) return;
+  const texto = "R$ " + Number(valor).toFixed(2).replace(".", ",");
+  document.querySelector(".pagar-valor").firstChild.textContent = texto + " ";
+  document.getElementById("cc-pagar-btn").textContent = "Pagar " + texto;
+}
+
 function mostrarErroPagar(mensagem) {
   const el = document.getElementById("pagar-erro");
   el.textContent = mensagem || "";
@@ -293,6 +301,7 @@ async function carregarPix() {
       mostrarPagamentoConfirmado();
       return;
     }
+    mostrarValorPlano(pix.valor);
     document.getElementById("pix-qr").src = "data:image/png;base64," + pix.qr_code;
     document.getElementById("pix-copia-cola").value = pix.copia_e_cola;
     carregando.classList.add("hidden");
@@ -410,7 +419,7 @@ document.getElementById("pagar-cartao").addEventListener("submit", async (e) => 
     mostrarErroPagar(err.message || "Pagamento não aprovado. Confira os dados ou use o Pix.");
   } finally {
     btn.disabled = false;
-    btn.textContent = "Pagar R$ 69,00";
+    btn.textContent = "Pagar " + document.querySelector(".pagar-valor").firstChild.textContent.trim();
   }
 });
 

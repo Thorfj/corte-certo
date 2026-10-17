@@ -9,10 +9,11 @@
 .blog-hero {
   padding-top: 64px;
   padding-bottom: 32px;
-  max-width: 640px;
 }
 .blog-hero h1 {
   font-size: 38px;
+  line-height: 1.2;
+  max-width: 640px;
   margin: 16px 0 14px;
 }
 .blog-hero .lead {

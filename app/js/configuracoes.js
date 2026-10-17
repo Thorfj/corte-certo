@@ -1112,7 +1112,7 @@ async function carregarStatusTeste() {
     if (status.fase === "configurando") {
       card.classList.add("trial-banner-info");
       card.innerHTML = `
-        <span>Configure suas informações, profissionais e serviços à vontade. Quando terminar, inicie seus 5 dias de teste grátis.</span>
+        <span>Configure suas informações, profissionais e serviços à vontade. Quando terminar, inicie seus 14 dias de teste grátis.</span>
         <button type="button" class="btn btn-primary" id="concluir-config-btn">Concluir configuração e iniciar teste</button>
       `;
       document
@@ -1144,7 +1144,7 @@ async function carregarStatusTeste() {
 
 async function concluirConfiguracaoTeste() {
   const confirmado = await confirmarAcao(
-    "A partir de agora você tem 5 dias de teste grátis. Essa ação não pode ser desfeita. Deseja continuar?",
+    "A partir de agora você tem 14 dias de teste grátis. Essa ação não pode ser desfeita. Deseja continuar?",
     "Iniciar teste grátis",
     "primary",
   );

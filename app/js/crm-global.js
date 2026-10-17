@@ -222,7 +222,7 @@
       <div class="trial-block-card">
         <p class="trial-block-title">Seu período de acesso terminou</p>
         <p class="trial-block-desc">Assine o plano do Barbozap pra continuar usando o CRM.</p>
-        <a class="btn btn-primary" href="/app/configuracoes/">Assinar agora</a>
+        <a class="btn btn-primary" href="/app/pagamentos/?pagar=1">Assinar agora</a>
       </div>
     `;
     document.body.appendChild(overlay);
@@ -231,7 +231,7 @@
   function criarBanner(texto, tipo) {
     const banner = document.createElement("div");
     banner.className = `trial-banner trial-banner-${tipo}`;
-    banner.innerHTML = `<span>${texto}</span> <a href="/app/configuracoes/">Assinar agora</a>`;
+    banner.innerHTML = `<span>${texto}</span> <a href="/app/pagamentos/?pagar=1">Assinar agora</a>`;
     const mainContent = document.querySelector(".main-content");
     if (mainContent) mainContent.prepend(banner);
   }
@@ -414,9 +414,9 @@
       carregarNomeBarbearia();
     }
 
-    // Não bloqueia a própria página de Configurações — é lá que o usuário
-    // vai clicar em "Assinar agora"/"Concluir configuração".
-    if (paginaAtual !== "configuracoes") {
+    // Não bloqueia Configurações ("Concluir configuração") nem Pagamentos
+    // (é lá que o usuário paga pra liberar o CRM de novo).
+    if (paginaAtual !== "configuracoes" && paginaAtual !== "pagamentos") {
       checarStatusTeste();
     }
 

@@ -16,7 +16,7 @@ let pagoEmAnterior = null;
 // "Forma de pagamento" só faz sentido quando está pago
 function atualizarCampoForma() {
   const pago = document.getElementById("pagamento-select").value === "pago";
-  document.getElementById("forma-field").style.visibility = pago ? "visible" : "hidden";
+  document.getElementById("forma-field").style.display = pago ? "" : "none";
 }
 document.getElementById("pagamento-select").addEventListener("change", atualizarCampoForma);
 

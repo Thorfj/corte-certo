@@ -1,0 +1,250 @@
+/* ============================================================
+   BARBOZAP — RESPONSIVO.CSS
+   Ajustes de tela pequena para todo o CRM. Carregado DEPOIS do CSS
+   de cada página (precisa vencer as regras delas).
+
+   Celular/tablet (até 900px): o menu lateral vira gaveta, aberta pelo
+   botão ☰ da barra do topo (montada pelo crm-global.js).
+   ============================================================ */
+
+/* Em qualquer largura: o conteúdo pode encolher sem empurrar a página */
+.main-content {
+  min-width: 0;
+}
+
+.mobile-topbar,
+.sidebar-backdrop {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  /* ---------- Menu em gaveta ---------- */
+  .app {
+    display: block;
+  }
+
+  .mobile-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    padding: 10px 16px;
+    background: var(--bg-page);
+    border-bottom: 1px solid var(--border);
+  }
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin-left: -8px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: none;
+    color: var(--text-primary);
+    font-size: 22px;
+    line-height: 1;
+  }
+  .mobile-menu-btn:hover {
+    background: rgba(28, 28, 26, 0.05);
+  }
+  .mobile-topbar-nome {
+    font-weight: 600;
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sidebar,
+  .sidebar.collapsed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(280px, 85vw);
+    padding: var(--space-lg) var(--space-md);
+    z-index: 500;
+    overflow-y: auto;
+    transform: translateX(-105%);
+    transition: transform 0.2s ease;
+  }
+  .sidebar.aberta {
+    transform: none;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.2);
+  }
+  /* "recolher menu" não faz sentido na gaveta */
+  .sidebar-collapse-btn {
+    display: none !important;
+  }
+  .sidebar.collapsed .logo-name,
+  .sidebar.collapsed .nav-label,
+  .sidebar.collapsed .sidebar-aparencia-label {
+    display: inline;
+  }
+  .sidebar.collapsed .nav-item,
+  .sidebar.collapsed .logo {
+    justify-content: flex-start;
+  }
+  .sidebar.collapsed .tema-toggle-sidebar {
+    flex-direction: row;
+  }
+
+  .sidebar-backdrop.visivel {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 450;
+    background: rgba(28, 28, 26, 0.4);
+  }
+
+  /* ---------- Conteúdo ---------- */
+  .main-content {
+    padding: 16px;
+  }
+  .page-header {
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .page-title {
+    font-size: 21px;
+  }
+  .card {
+    padding: 16px;
+  }
+  .trial-banner {
+    flex-wrap: wrap;
+    gap: 6px 12px;
+  }
+
+  /* abas roláveis em vez de quebrar a página */
+  .tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .tab-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* tabelas: rolam de lado dentro do cartão */
+  .card:has(table) {
+    overflow-x: auto;
+  }
+  .table {
+    min-width: 560px;
+  }
+
+  /* barras de filtro e busca */
+  .toolbar {
+    flex-wrap: wrap;
+  }
+  .toolbar input[type="text"],
+  .toolbar input[type="search"] {
+    width: 100%;
+  }
+
+  /* modais ocupam a tela com margem */
+  .modal,
+  .modal-pagar {
+    width: auto !important;
+    max-width: calc(100vw - 24px) !important;
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+  }
+
+  /* quadro de atendimentos: uma coluna por vez, deslizando de lado */
+  .kanban {
+    scroll-snap-type: x mandatory;
+  }
+  .kanban-column {
+    min-width: 46vw;
+    scroll-snap-align: start;
+  }
+
+  .onboarding-tooltip {
+    width: auto;
+    max-width: calc(100vw - 32px);
+  }
+
+  /* ---------- Agenda ---------- */
+  .semana-label {
+    min-width: 0;
+  }
+  .dia-view {
+    padding: 12px;
+  }
+  .dia-view .prof-subcolumns {
+    scroll-snap-type: x mandatory;
+  }
+  .dia-view .prof-subcolumn {
+    min-width: 72vw;
+    scroll-snap-align: start;
+  }
+  .mes-grid,
+  .mes-dias-nomes {
+    gap: 4px;
+  }
+  .mes-grid,
+  .mes-dias-nomes {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+  .mes-cell {
+    min-height: 64px;
+    padding: 4px;
+    min-width: 0;
+  }
+  /* no celular o dia mostra só um tracinho colorido por atendimento */
+  .mes-item-chip {
+    font-size: 0;
+    height: 6px;
+    padding: 0;
+    border-left: none;
+    background: var(--prof-cor, var(--brand));
+  }
+
+  /* ---------- Login ---------- */
+  .login-card {
+    width: auto;
+    max-width: calc(100vw - 32px);
+  }
+}
+
+@media (max-width: 640px) {
+  /* no celular, uma coluna do quadro por vez */
+  .kanban-column {
+    min-width: 82vw;
+  }
+  /* indicadores (Atendimentos, Relatórios, Pagamentos) em 2 colunas */
+  .metrics-grid,
+  .pg-indicadores {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .metric-value,
+  .pg-indicador-valor {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 560px) {
+  /* campos lado a lado viram um embaixo do outro */
+  .field-row {
+    flex-direction: column;
+    gap: 0;
+  }
+  .field-row .field {
+    width: 100%;
+  }
+  .page-header .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}

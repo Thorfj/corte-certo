@@ -494,6 +494,43 @@
     }, 400);
   }
 
+  // ---------------- Menu no celular (gaveta) ----------------
+  // Até 900px o menu lateral fica escondido; a barra do topo tem o botão ☰
+  // que abre a gaveta por cima do conteúdo (CSS em responsivo.css).
+  function montarMenuCelular(sidebar) {
+    const main = document.querySelector(".main-content");
+    if (!main || document.querySelector(".mobile-topbar")) return;
+
+    const topbar = document.createElement("div");
+    topbar.className = "mobile-topbar";
+    topbar.innerHTML = `
+      <button type="button" class="mobile-menu-btn" aria-label="Abrir menu">☰</button>
+      <span class="mobile-topbar-nome">Barbozap</span>
+    `;
+    main.parentNode.insertBefore(topbar, main);
+
+    const fundo = document.createElement("div");
+    fundo.className = "sidebar-backdrop";
+    document.body.appendChild(fundo);
+
+    const abrir = () => {
+      sidebar.classList.add("aberta");
+      fundo.classList.add("visivel");
+    };
+    const fechar = () => {
+      sidebar.classList.remove("aberta");
+      fundo.classList.remove("visivel");
+    };
+    topbar.querySelector(".mobile-menu-btn").addEventListener("click", abrir);
+    fundo.addEventListener("click", fechar);
+    sidebar.addEventListener("click", (e) => {
+      if (e.target.closest("a.nav-item")) fechar();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") fechar();
+    });
+  }
+
   async function iniciar() {
     const sidebarMount = document.getElementById("crm-sidebar");
     if (!sidebarMount) return; // página sem sidebar (ex: login.html)
@@ -522,6 +559,7 @@
     injetarEstilosPapel();
     sidebarMount.classList.add("sidebar");
     sidebarMount.innerHTML = montarSidebarHtml(acesso);
+    montarMenuCelular(sidebarMount);
     aplicarEstadoSidebar();
     marcarItemAtivo();
     wireLogout();

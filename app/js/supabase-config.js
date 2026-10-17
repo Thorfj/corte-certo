@@ -61,9 +61,11 @@ async function carregarNomeBarbearia() {
       .select("empresa")
       .eq("id", barbeariaId)
       .single();
-    const logoNameEl = document.querySelector(".logo-name");
-    if (data?.empresa && logoNameEl) {
-      logoNameEl.textContent = data.empresa;
+    // menu lateral e barra do topo no celular
+    if (data?.empresa) {
+      document.querySelectorAll(".logo-name, .mobile-topbar-nome").forEach((el) => {
+        el.textContent = data.empresa;
+      });
     }
   } catch (err) {
     console.error("Erro ao carregar nome da barbearia:", err);

@@ -7,6 +7,7 @@ if (typeof lucide !== "undefined") {
 let profissionalAtualCache = null;
 let cobrancasCache = [];
 let cnpjAtualCache = null;
+let barbeariaCache = null;
 
 async function obterProfissionalAtual() {
   if (profissionalAtualCache) return profissionalAtualCache;
@@ -52,7 +53,7 @@ async function carregarAssinatura() {
   const { data, error } = await supabaseClient
     .from("barbearias")
     .select(
-      "id, cnpj, status_assinatura, subscription_status, asaas_customer_id, asaas_subscription_id, proximo_vencimento, criado_em",
+      "id, cnpj, email, whatsapp, status_assinatura, subscription_status, asaas_customer_id, asaas_subscription_id, proximo_vencimento, criado_em",
     )
     .eq("id", barbeariaId)
     .single();
@@ -63,6 +64,7 @@ async function carregarAssinatura() {
   }
 
   cnpjAtualCache = data.cnpj || null;
+  barbeariaCache = data;
 
   // Card: situação financeira
   const info = SITUACAO_LABELS[data.status_assinatura] || {
@@ -100,16 +102,19 @@ async function carregarAssinatura() {
 
   const conectarBtn = document.getElementById("pg-conectar-btn");
   const conectadoMsg = document.getElementById("pg-conectado-msg");
+  const emDia = data.status_assinatura === "pagante";
 
-  if (data.asaas_subscription_id) {
-    conectarBtn.classList.add("hidden");
-    conectadoMsg.classList.remove("hidden");
-  } else {
-    conectadoMsg.classList.add("hidden");
+  conectadoMsg.classList.toggle("hidden", !emDia);
+  conectarBtn.classList.add("hidden");
+  if (!emDia) {
     try {
       const profissional = await obterProfissionalAtual();
       if (profissional.acesso === "admin") {
+        conectarBtn.innerHTML = data.asaas_subscription_id
+          ? '<i data-lucide="credit-card" style="width:16px;height:16px"></i> Pagar agora'
+          : '<i data-lucide="credit-card" style="width:16px;height:16px"></i> Assinar agora';
         conectarBtn.classList.remove("hidden");
+        if (typeof lucide !== "undefined") lucide.createIcons();
       }
     } catch (err) {
       console.error("Erro ao checar permissão de admin:", err);
@@ -173,21 +178,19 @@ async function conectarAsaas() {
   const btn = document.getElementById("pg-conectar-btn");
   const textoOriginal = btn.innerHTML;
   btn.style.pointerEvents = "none";
-  btn.textContent = "Conectando...";
+  btn.textContent = "Preparando...";
 
   try {
-    const { data, error } = await supabaseClient.functions.invoke(
-      "criar-assinatura-asaas",
-      { body: {} },
-    );
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error);
-
-    await carregarAssinatura();
-
-    if (data?.checkout_url) {
-      window.open(data.checkout_url, "_blank", "noopener");
+    if (!barbeariaCache?.asaas_subscription_id) {
+      const { data, error } = await supabaseClient.functions.invoke(
+        "criar-assinatura-asaas",
+        { body: {} },
+      );
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      await carregarAssinatura();
     }
+    abrirModalPagamento();
   } catch (err) {
     console.error(err);
     mostrarErro(
@@ -199,6 +202,217 @@ async function conectarAsaas() {
     if (typeof lucide !== "undefined") lucide.createIcons();
   }
 }
+
+// ---------------- Modal de pagamento (Pix / cartão) ----------------
+// Fala com a Edge Function pagar-assinatura; quem confirma o pagamento é o
+// webhook do Asaas, então a tela só fica conferindo o status da barbearia.
+let pagamentoPoll = null;
+let pixCarregado = false;
+
+async function chamarPagamento(corpo) {
+  const { data, error } = await supabaseClient.functions.invoke(
+    "pagar-assinatura",
+    { body: corpo },
+  );
+  if (error) {
+    // erro 400 do Asaas vem no corpo da resposta
+    let mensagem = "Não foi possível falar com o Asaas agora.";
+    try {
+      const detalhe = await error.context?.json();
+      if (detalhe?.error) mensagem = detalhe.error;
+    } catch {
+      // mantém a mensagem padrão
+    }
+    throw new Error(mensagem);
+  }
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
+
+function mostrarErroPagar(mensagem) {
+  const el = document.getElementById("pagar-erro");
+  el.textContent = mensagem || "";
+  el.style.display = mensagem ? "block" : "none";
+}
+
+function trocarAba(aba) {
+  document.querySelectorAll(".pagar-aba").forEach((b) =>
+    b.classList.toggle("active", b.dataset.aba === aba),
+  );
+  document.getElementById("pagar-pix").classList.toggle("hidden", aba !== "pix");
+  document.getElementById("pagar-cartao").classList.toggle("hidden", aba !== "cartao");
+  mostrarErroPagar("");
+  if (aba === "pix" && !pixCarregado) carregarPix();
+}
+
+function mostrarPagamentoConfirmado() {
+  pararConferencia();
+  document.getElementById("pagar-abas").classList.add("hidden");
+  document.getElementById("pagar-pix").classList.add("hidden");
+  document.getElementById("pagar-cartao").classList.add("hidden");
+  document.getElementById("pagar-sucesso").classList.remove("hidden");
+  mostrarErroPagar("");
+  carregarAssinatura();
+  carregarCobrancas();
+}
+
+function pararConferencia() {
+  clearInterval(pagamentoPoll);
+  pagamentoPoll = null;
+}
+
+// Confere a cada 4s se o webhook já marcou a barbearia como paga
+function conferirPagamento() {
+  pararConferencia();
+  pagamentoPoll = setInterval(async () => {
+    if (document.getElementById("modal-pagar").classList.contains("hidden")) {
+      pararConferencia();
+      carregarAssinatura();
+      carregarCobrancas();
+      return;
+    }
+    const { data } = await supabaseClient
+      .from("barbearias")
+      .select("status_assinatura")
+      .eq("id", barbeariaCache.id)
+      .single();
+    if (data?.status_assinatura === "pagante") mostrarPagamentoConfirmado();
+  }, 4000);
+}
+
+async function carregarPix() {
+  const carregando = document.getElementById("pix-carregando");
+  const conteudo = document.getElementById("pix-conteudo");
+  carregando.textContent = "Gerando o Pix...";
+  carregando.classList.remove("hidden");
+  conteudo.classList.add("hidden");
+
+  try {
+    const pix = await chamarPagamento({ acao: "pix" });
+    if (pix.ja_pago) {
+      mostrarPagamentoConfirmado();
+      return;
+    }
+    document.getElementById("pix-qr").src = "data:image/png;base64," + pix.qr_code;
+    document.getElementById("pix-copia-cola").value = pix.copia_e_cola;
+    carregando.classList.add("hidden");
+    conteudo.classList.remove("hidden");
+    pixCarregado = true;
+  } catch (err) {
+    console.error(err);
+    carregando.textContent = "Não foi possível gerar o Pix agora.";
+    mostrarErroPagar(err.message);
+  }
+}
+
+function abrirModalPagamento() {
+  pixCarregado = false;
+  mostrarErroPagar("");
+  document.getElementById("pagar-abas").classList.remove("hidden");
+  document.getElementById("pagar-sucesso").classList.add("hidden");
+
+  // dados do titular já preenchidos com os da barbearia
+  const b = barbeariaCache || {};
+  const preencher = (id, valor) => {
+    const el = document.getElementById(id);
+    if (!el.value && valor) el.value = valor;
+  };
+  preencher("cc-documento", b.cnpj);
+  preencher("cc-email", b.email);
+  preencher("cc-telefone", String(b.whatsapp || "").replace(/^55/, ""));
+
+  document.getElementById("modal-pagar").classList.remove("hidden");
+  trocarAba("pix");
+  conferirPagamento();
+}
+
+document.querySelectorAll(".pagar-aba").forEach((b) =>
+  b.addEventListener("click", () => trocarAba(b.dataset.aba)),
+);
+
+document.getElementById("pix-copiar-btn").addEventListener("click", async () => {
+  const input = document.getElementById("pix-copia-cola");
+  const btn = document.getElementById("pix-copiar-btn");
+  try {
+    await navigator.clipboard.writeText(input.value);
+  } catch {
+    input.select();
+    document.execCommand("copy");
+  }
+  btn.textContent = "Copiado!";
+  setTimeout(() => (btn.textContent = "Copiar"), 2000);
+});
+
+// máscaras simples dos campos do cartão
+document.getElementById("cc-numero").addEventListener("input", (e) => {
+  e.target.value = e.target.value.replace(/\D/g, "").slice(0, 19).replace(/(\d{4})(?=\d)/g, "$1 ");
+});
+document.getElementById("cc-validade").addEventListener("input", (e) => {
+  const d = e.target.value.replace(/\D/g, "").slice(0, 4);
+  e.target.value = d.length > 2 ? d.slice(0, 2) + "/" + d.slice(2) : d;
+});
+["cc-cvv", "cc-documento", "cc-telefone"].forEach((id) =>
+  document.getElementById(id).addEventListener("input", (e) => {
+    e.target.value = e.target.value.replace(/\D/g, "");
+  }),
+);
+document.getElementById("cc-cep").addEventListener("input", (e) => {
+  const d = e.target.value.replace(/\D/g, "").slice(0, 8);
+  e.target.value = d.length > 5 ? d.slice(0, 5) + "-" + d.slice(5) : d;
+});
+
+document.getElementById("pagar-cartao").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  mostrarErroPagar("");
+
+  const valor = (id) => document.getElementById(id).value.trim();
+  const numero = valor("cc-numero").replace(/\D/g, "");
+  const [mes, ano] = valor("cc-validade").split("/");
+  const documento = valor("cc-documento").replace(/\D/g, "");
+
+  if (numero.length < 13) return mostrarErroPagar("Confira o número do cartão.");
+  if (!valor("cc-nome")) return mostrarErroPagar("Informe o nome impresso no cartão.");
+  if (!mes || !ano || Number(mes) < 1 || Number(mes) > 12) return mostrarErroPagar("Validade no formato MM/AA.");
+  if (valor("cc-cvv").length < 3) return mostrarErroPagar("Confira o CVV.");
+  if (documento.length !== 11 && documento.length !== 14) return mostrarErroPagar("CPF (11 dígitos) ou CNPJ (14 dígitos) do titular.");
+  if (valor("cc-cep").replace(/\D/g, "").length !== 8) return mostrarErroPagar("Confira o CEP.");
+  if (!valor("cc-numero-end")) return mostrarErroPagar("Informe o número do endereço.");
+  if (valor("cc-telefone").length < 10) return mostrarErroPagar("Telefone com DDD.");
+  if (!valor("cc-email").includes("@")) return mostrarErroPagar("Confira o e-mail.");
+
+  const btn = document.getElementById("cc-pagar-btn");
+  btn.disabled = true;
+  btn.textContent = "Processando...";
+
+  try {
+    const resultado = await chamarPagamento({
+      acao: "cartao",
+      cartao: { nome: valor("cc-nome"), numero, mes, ano, cvv: valor("cc-cvv") },
+      titular: {
+        nome: valor("cc-nome"),
+        cpfCnpj: documento,
+        cep: valor("cc-cep"),
+        numeroEndereco: valor("cc-numero-end"),
+        telefone: valor("cc-telefone"),
+        email: valor("cc-email"),
+      },
+    });
+    // limpa os dados do cartão da tela
+    ["cc-numero", "cc-validade", "cc-cvv"].forEach((id) => (document.getElementById(id).value = ""));
+
+    if (resultado.ja_pago || ["CONFIRMED", "RECEIVED"].includes(resultado.status)) {
+      mostrarPagamentoConfirmado();
+    } else {
+      mostrarErroPagar("Pagamento enviado. Aguardando a confirmação do cartão...");
+    }
+  } catch (err) {
+    console.error(err);
+    mostrarErroPagar(err.message || "Pagamento não aprovado. Confira os dados ou use o Pix.");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Pagar R$ 69,00";
+  }
+});
 
 function mostrarErro(mensagem) {
   const erroEl = document.getElementById("pg-erro");
@@ -327,6 +541,12 @@ function renderizarIndicadores(lista) {
       await carregarNomeBarbearia();
       await carregarAssinatura();
       await carregarCobrancas();
+      if (
+        new URLSearchParams(window.location.search).get("pagar") &&
+        barbeariaCache?.status_assinatura !== "pagante"
+      ) {
+        document.getElementById("pg-conectar-btn").click();
+      }
     }
   } catch (err) {
     console.error(err);

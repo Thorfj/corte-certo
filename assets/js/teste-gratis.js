@@ -355,7 +355,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const googleBtn = document.getElementById("tgGoogleBtn");
   const errorBoxGoogle = document.getElementById("tgErrorGoogle");
 
-  googleBtn.addEventListener("click", async () => {
+  googleBtn?.addEventListener("click", async () => {
     hideError(errorBoxGoogle);
     const client = getSupabaseClient();
     if (!client) {
@@ -377,7 +377,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ou entra no modo "completar cadastro"
   (async () => {
     const params = new URLSearchParams(window.location.search + window.location.hash.replace(/^#/, "&"));
-    if (params.get("error_description")) {
+    if (errorBoxGoogle && params.get("error_description")) {
       showError(errorBoxGoogle, "O login com o Google não foi concluído. Tente novamente ou use o e-mail.");
     }
 
@@ -401,7 +401,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const meta = session.user.user_metadata || {};
     contaLogada = { email: session.user.email };
 
-    document.getElementById("tgGoogleBloco").hidden = true;
+    const blocoGoogle = document.getElementById("tgGoogleBloco");
+    if (blocoGoogle) blocoGoogle.hidden = true;
     document.getElementById("tgCompletarEmail").textContent = session.user.email;
     document.getElementById("tgCompletar").hidden = false;
 

@@ -873,14 +873,14 @@ async function carregarAssinatura() {
   const conectarBtn = document.getElementById("pg-conectar-btn");
   const conectadoMsg = document.getElementById("pg-conectado-msg");
 
-  if (data.asaas_subscription_id) {
-    conectarBtn.classList.add("hidden");
-    conectadoMsg.classList.remove("hidden");
-  } else {
-    conectadoMsg.classList.add("hidden");
+  const emDia = data.status_assinatura === "pagante";
+  conectadoMsg.classList.toggle("hidden", !emDia);
+  conectarBtn.classList.add("hidden");
+  if (!emDia) {
     try {
       const profissional = await obterProfissionalAtual();
       if (profissional.acesso === "admin") {
+        conectarBtn.textContent = data.asaas_subscription_id ? "Pagar agora" : "Assinar agora";
         conectarBtn.classList.remove("hidden");
       }
     } catch (err) {
@@ -889,16 +889,11 @@ async function carregarAssinatura() {
   }
 }
 
+// O pagamento (Pix ou cartão, sem sair do CRM) fica na página Pagamentos
 document
   .getElementById("pg-conectar-btn")
-  .addEventListener("click", async () => {
-    if (!cnpjAtualCache) {
-      document.getElementById("cnpj-input").value = "";
-      document.getElementById("cnpj-erro").style.display = "none";
-      document.getElementById("modal-cnpj").classList.remove("hidden");
-      return;
-    }
-    await conectarAsaas();
+  .addEventListener("click", () => {
+    window.location.href = "/app/pagamentos/?pagar=1";
   });
 
 document.getElementById("form-cnpj").addEventListener("submit", async (e) => {

@@ -105,6 +105,102 @@
       </form>
     </div>
   </div>
+  <!-- Modal: pagamento da assinatura sem sair do CRM (Pix ou cartão) -->
+  <div class="modal-overlay hidden" id="modal-pagar">
+    <div class="modal modal-pagar">
+      <div class="modal-header">
+        <p class="modal-title">Assinar o Barbozap</p>
+        <button class="modal-close" data-close="modal-pagar">&times;</button>
+      </div>
+
+      <p class="pagar-valor">R$ 69,00 <span>/mês · plano único</span></p>
+
+      <div class="pagar-abas" id="pagar-abas">
+        <button type="button" class="pagar-aba active" data-aba="pix">
+          <i data-lucide="qr-code" style="width:15px;height:15px"></i> Pix
+        </button>
+        <button type="button" class="pagar-aba" data-aba="cartao">
+          <i data-lucide="credit-card" style="width:15px;height:15px"></i> Cartão de crédito
+        </button>
+      </div>
+
+      <!-- PIX -->
+      <div class="pagar-painel" id="pagar-pix">
+        <p class="pagar-carregando" id="pix-carregando">Gerando o Pix...</p>
+        <div class="pix-conteudo hidden" id="pix-conteudo">
+          <img class="pix-qr" id="pix-qr" alt="QR Code do Pix">
+          <p class="pagar-dica">Abra o app do seu banco, escolha <strong>Pix → Ler QR Code</strong> ou use o código abaixo.</p>
+          <div class="pix-copia">
+            <input type="text" id="pix-copia-cola" readonly>
+            <button type="button" class="btn" id="pix-copiar-btn">Copiar</button>
+          </div>
+          <p class="pagar-aguardando"><span class="pagar-ponto"></span> Esperando o pagamento. Esta tela atualiza sozinha.</p>
+        </div>
+      </div>
+
+      <!-- CARTÃO -->
+      <form class="pagar-painel hidden" id="pagar-cartao" novalidate>
+        <div class="field">
+          <label for="cc-numero">Número do cartão</label>
+          <input type="text" id="cc-numero" inputmode="numeric" autocomplete="cc-number" placeholder="0000 0000 0000 0000" required>
+        </div>
+        <div class="field">
+          <label for="cc-nome">Nome impresso no cartão</label>
+          <input type="text" id="cc-nome" autocomplete="cc-name" required>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="cc-validade">Validade</label>
+            <input type="text" id="cc-validade" inputmode="numeric" autocomplete="cc-exp" placeholder="MM/AA" maxlength="5" required>
+          </div>
+          <div class="field">
+            <label for="cc-cvv">CVV</label>
+            <input type="text" id="cc-cvv" inputmode="numeric" autocomplete="cc-csc" placeholder="123" maxlength="4" required>
+          </div>
+        </div>
+
+        <p class="pagar-subtitulo">Dados do titular do cartão</p>
+        <div class="field">
+          <label for="cc-documento">CPF ou CNPJ</label>
+          <input type="text" id="cc-documento" inputmode="numeric" required>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="cc-cep">CEP</label>
+            <input type="text" id="cc-cep" inputmode="numeric" autocomplete="postal-code" maxlength="9" required>
+          </div>
+          <div class="field">
+            <label for="cc-numero-end">Nº do endereço</label>
+            <input type="text" id="cc-numero-end" required>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="cc-telefone">Telefone</label>
+            <input type="text" id="cc-telefone" inputmode="numeric" autocomplete="tel" required>
+          </div>
+          <div class="field">
+            <label for="cc-email">E-mail</label>
+            <input type="email" id="cc-email" autocomplete="email" required>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary pagar-btn" id="cc-pagar-btn">Pagar R$ 69,00</button>
+        <p class="pagar-dica pagar-seguro"><i data-lucide="lock" style="width:13px;height:13px"></i> Pagamento processado pelo Asaas. As próximas mensalidades são cobradas neste cartão.</p>
+      </form>
+
+      <!-- CONFIRMADO -->
+      <div class="pagar-sucesso hidden" id="pagar-sucesso">
+        <div class="pagar-sucesso-icone">✓</div>
+        <p class="pagar-sucesso-titulo">Pagamento confirmado!</p>
+        <p class="pagar-dica">Sua assinatura está ativa. Obrigado por usar o Barbozap 💈</p>
+        <button type="button" class="btn btn-primary" data-close="modal-pagar">Fechar</button>
+      </div>
+
+      <p class="modal-error" id="pagar-erro"></p>
+    </div>
+  </div>
+
   <script src="/app/js/pagamentos.js"></script>
 </body>
 

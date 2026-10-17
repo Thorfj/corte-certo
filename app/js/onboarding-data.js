@@ -120,11 +120,11 @@ const ONBOARDING_PASSOS = {
       selector: '.nav-item[data-page="configuracoes"]',
       titulo: "Configurações",
       texto:
-        "O painel de controle da sua barbearia: dados gerais, usuários e faturas.",
+        "O painel de controle da sua barbearia: dados gerais, usuários e pagamentos.",
     },
     {
       selector: ".tabs",
-      titulo: "Geral, Usuários e Faturas",
+      titulo: "Geral, Usuários e Pagamentos",
       texto:
         "Em Usuários você cadastra os outros profissionais que vão usar o CRM.",
     },

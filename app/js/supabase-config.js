@@ -21,6 +21,19 @@ async function checarSessao() {
     window.location.href = "/app/?voltar=" + encodeURIComponent(voltar);
     return null;
   }
+
+  // Login sem barbearia (ex.: entrou com o Google sem nunca ter se cadastrado):
+  // manda completar o cadastro em vez de abrir um CRM vazio
+  const { data: prof } = await supabaseClient
+    .from("profissionais")
+    .select("id, barbearia_id, acesso")
+    .eq("auth_user_id", session.user.id)
+    .maybeSingle();
+  if (!prof) {
+    window.location.href = "/teste-gratis/";
+    return null;
+  }
+  meuProfissionalCache = prof;
   return session;
 }
 

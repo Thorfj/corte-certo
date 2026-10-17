@@ -60,6 +60,10 @@ document.addEventListener("DOMContentLoaded", () => {
   let step1Data = null;
   let whatsappBarbearia = null;
 
+  // Já tem login (voltou do Google ou a conta existe sem barbearia):
+  // pula a checagem de e-mail e a senha, só completa os dados da barbearia
+  let contaLogada = null;
+
   let supabase = null;
   function getSupabaseClient() {
     if (supabase) return supabase;
@@ -110,7 +114,9 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const emailValue = document.getElementById("email").value.trim();
+    const emailValue = contaLogada
+      ? contaLogada.email
+      : document.getElementById("email").value.trim();
 
     const client = getSupabaseClient();
     if (!client) {
@@ -125,9 +131,9 @@ document.addEventListener("DOMContentLoaded", () => {
     step1Submit.textContent = "Verificando...";
 
     try {
-      const { data: disponivel, error } = await client.rpc("email_disponivel", {
-        p_email: emailValue,
-      });
+      const { data: disponivel, error } = contaLogada
+        ? { data: true, error: null }
+        : await client.rpc("email_disponivel", { p_email: emailValue });
 
       if (error) throw error;
 
@@ -218,6 +224,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       whatsappBarbearia = whatsappBarbeariaInput.value;
+
+      if (contaLogada) {
+        await finalizarCadastro(errorBox2, step2Form);
+        return;
+      }
+
       irParaStep(3);
       senhaInput.focus();
     } catch (err) {
@@ -228,7 +240,7 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     } finally {
       step2Submit.disabled = false;
-      step2Submit.textContent = "Continuar";
+      step2Submit.textContent = contaLogada ? "Criar minha barbearia" : "Continuar";
     }
   });
 
@@ -294,33 +306,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // 3) com sessão ativa, finaliza o cadastro (insere barbearia + profissional)
-      const { data, error } = await client.rpc("finalizar_cadastro_barbearia", {
-        p_empresa: step1Data.empresa,
-        p_nome: step1Data.nome,
-        p_whatsapp: step1Data.whatsapp,
-        p_email: step1Data.email,
-        p_whatsapp_barbearia: whatsappBarbearia,
-      });
-
-      if (error) throw error;
-
-      if (!data.ok) {
-        showError(
-          errorBox3,
-          data.reason === "duplicado"
-            ? `Esse WhatsApp acabou de ser cadastrado por outra conta. ` +
-                `<a href="${SUPORTE_WHATSAPP_URL}" target="_blank">Fale com o suporte</a>.`
-            : "Não conseguimos concluir seu cadastro agora. Tente novamente.",
-        );
-        return;
-      }
-
-      // 4) sucesso — já está logado (o signUp criou a sessão), redireciona pro CRM
-      step3Form.hidden = true;
-      success.hidden = false;
-      setTimeout(() => {
-        window.location.href = CRM_ATENDIMENTOS_URL;
-      }, 1200);
+      await finalizarCadastro(errorBox3, step3Form);
     } catch (err) {
       console.error(err);
       showError(
@@ -332,4 +318,105 @@ document.addEventListener("DOMContentLoaded", () => {
       step3Submit.textContent = "Criar conta e acessar";
     }
   });
+
+  // Insere barbearia + profissional (precisa de sessão) e vai pro CRM
+  async function finalizarCadastro(errorBox, formAtual) {
+    const client = getSupabaseClient();
+    const { data, error } = await client.rpc("finalizar_cadastro_barbearia", {
+      p_empresa: step1Data.empresa,
+      p_nome: step1Data.nome,
+      p_whatsapp: step1Data.whatsapp,
+      p_email: step1Data.email,
+      p_whatsapp_barbearia: whatsappBarbearia,
+    });
+
+    if (error) throw error;
+
+    if (!data.ok && data.reason !== "ja_cadastrado") {
+      showError(
+        errorBox,
+        data.reason === "duplicado"
+          ? `Esse WhatsApp acabou de ser cadastrado por outra conta. ` +
+              `<a href="${SUPORTE_WHATSAPP_URL}" target="_blank">Fale com o suporte</a>.`
+          : "Não conseguimos concluir seu cadastro agora. Tente novamente.",
+      );
+      return;
+    }
+
+    // sucesso (ou a conta já tinha barbearia) — já está logado, vai pro CRM
+    formAtual.hidden = true;
+    success.hidden = false;
+    setTimeout(() => {
+      window.location.href = CRM_ATENDIMENTOS_URL;
+    }, 1200);
+  }
+
+  // ---------- CADASTRO COM GOOGLE ----------
+  const googleBtn = document.getElementById("tgGoogleBtn");
+  const errorBoxGoogle = document.getElementById("tgErrorGoogle");
+
+  googleBtn.addEventListener("click", async () => {
+    hideError(errorBoxGoogle);
+    const client = getSupabaseClient();
+    if (!client) {
+      showError(errorBoxGoogle, "Não foi possível conectar ao servidor agora. Tente novamente.");
+      return;
+    }
+    googleBtn.disabled = true;
+    const { error } = await client.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin + "/teste-gratis/" },
+    });
+    if (error) {
+      googleBtn.disabled = false;
+      showError(errorBoxGoogle, "Não foi possível abrir o login do Google agora. Tente novamente ou use o e-mail.");
+    }
+  });
+
+  // Ao abrir a página: se já existe login, ou vai pro CRM (já tem barbearia)
+  // ou entra no modo "completar cadastro"
+  (async () => {
+    const params = new URLSearchParams(window.location.search + window.location.hash.replace(/^#/, "&"));
+    if (params.get("error_description")) {
+      showError(errorBoxGoogle, "O login com o Google não foi concluído. Tente novamente ou use o e-mail.");
+    }
+
+    const client = getSupabaseClient();
+    if (!client) return;
+    const {
+      data: { session },
+    } = await client.auth.getSession();
+    if (!session) return;
+
+    const { data: prof } = await client
+      .from("profissionais")
+      .select("id")
+      .eq("auth_user_id", session.user.id)
+      .maybeSingle();
+    if (prof) {
+      window.location.href = CRM_ATENDIMENTOS_URL;
+      return;
+    }
+
+    const meta = session.user.user_metadata || {};
+    contaLogada = { email: session.user.email };
+
+    document.getElementById("tgGoogleBloco").hidden = true;
+    document.getElementById("tgCompletarEmail").textContent = session.user.email;
+    document.getElementById("tgCompletar").hidden = false;
+
+    const campoEmail = document.getElementById("tgCampoEmail");
+    campoEmail.style.display = "none";
+    document.getElementById("email").required = false;
+    document.getElementById("email").value = session.user.email;
+
+    const responsavel = document.getElementById("responsavel");
+    if (!responsavel.value) responsavel.value = meta.full_name || meta.name || "";
+
+    // sem senha nesse caminho: só 2 passos
+    dotStep3.style.display = "none";
+    const linhas = document.querySelectorAll(".tg-step-line");
+    if (linhas[1]) linhas[1].style.display = "none";
+    step2Submit.textContent = "Criar minha barbearia";
+  })();
 });

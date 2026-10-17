@@ -71,7 +71,7 @@ function jaAconteceu(a) {
   return inicio <= new Date();
 }
 
-function ehFiado(a) {
+function ehPendente(a) {
   return jaAconteceu(a) && a.pagamento === "pendente";
 }
 
@@ -111,8 +111,8 @@ function renderizarMetricas(lista) {
   const minutos = duracaoTotalMin % 60;
   const duracaoFormatada = duracaoTotalMin ? `${horas}h ${minutos}min` : "—";
 
-  const fiados = lista.filter(ehFiado);
-  const totalFiado = fiados.reduce((soma, a) => soma + (Number(a.custo) || 0), 0);
+  const pendentes = lista.filter(ehPendente);
+  const totalPendente = pendentes.reduce((soma, a) => soma + (Number(a.custo) || 0), 0);
 
   document.getElementById("metrics-grid").innerHTML = `
 <div class="metric-card">
@@ -131,10 +131,10 @@ function renderizarMetricas(lista) {
   <p class="metric-label">Tempo total ocupado</p>
   <p class="metric-value">${duracaoFormatada}</p>
 </div>
-<div class="metric-card${fiados.length ? " metric-fiado" : ""}">
-  <p class="metric-label">Fiado a receber</p>
-  <p class="metric-value">R$ ${totalFiado.toFixed(2)}</p>
-  <p class="metric-sub">${fiados.length ? `${fiados.length} atendimento(s) sem pagamento` : "Nada em aberto"}</p>
+<div class="metric-card${pendentes.length ? " metric-pendente" : ""}">
+  <p class="metric-label">A receber</p>
+  <p class="metric-value">R$ ${totalPendente.toFixed(2)}</p>
+  <p class="metric-sub">${pendentes.length ? `${pendentes.length} atendimento(s) sem pagamento` : "Nada em aberto"}</p>
 </div>
 `;
 }
@@ -216,15 +216,15 @@ function renderizarKanban(atendimentos) {
     ${
       jaAconteceu(atend) && atend.pagamento === "pago"
         ? '<span class="pagamento-tag pago">✓ Pago</span>'
-        : ehFiado(atend)
-          ? '<button type="button" class="pagamento-tag fiado" title="Clique quando o cliente pagar">Fiado · marcar pago</button>'
+        : ehPendente(atend)
+          ? '<button type="button" class="pagamento-tag pendente" title="Clique quando o cliente pagar">Pendente · marcar pago</button>'
           : ""
     }
   `;
 
-      const botaoFiado = card.querySelector(".pagamento-tag.fiado");
-      if (botaoFiado) {
-        botaoFiado.addEventListener("click", (e) => {
+      const botaoPendente = card.querySelector(".pagamento-tag.pendente");
+      if (botaoPendente) {
+        botaoPendente.addEventListener("click", (e) => {
           e.stopPropagation();
           marcarComoPago(atend.id);
         });

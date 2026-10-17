@@ -46,7 +46,8 @@ const esqueciForm = document.getElementById("esqueci-form");
 
 function mostrarEsqueci(mostrar) {
   loginForm.hidden = mostrar;
-  document.getElementById("login-google").hidden = mostrar;
+  const blocoGoogle = document.getElementById("login-google");
+  if (blocoGoogle) blocoGoogle.hidden = mostrar;
   esqueciForm.hidden = !mostrar;
   if (mostrar) {
     document.getElementById("email-recuperar").value =
@@ -91,7 +92,7 @@ esqueciForm.addEventListener("submit", async (e) => {
 });
 
 // ---------------- Entrar com Google ----------------
-document.getElementById("google-btn").addEventListener("click", async () => {
+document.getElementById("google-btn")?.addEventListener("click", async () => {
   const btn = document.getElementById("google-btn");
   const errorEl = document.getElementById("google-error");
   errorEl.style.display = "none";
@@ -110,7 +111,10 @@ document.getElementById("google-btn").addEventListener("click", async () => {
   }
 });
 
-if (new URLSearchParams(window.location.hash.replace(/^#/, "")).get("error_description")) {
+if (
+  document.getElementById("google-error") &&
+  new URLSearchParams(window.location.hash.replace(/^#/, "")).get("error_description")
+) {
   const errorEl = document.getElementById("google-error");
   errorEl.textContent = "O login com o Google não foi concluído. Tente de novo.";
   errorEl.style.display = "block";

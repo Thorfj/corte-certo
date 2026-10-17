@@ -15,21 +15,27 @@
 const ONBOARDING_PASSOS = {
   "atendimentos": [
     {
+      selector: ".primeiros-passos",
+      titulo: "Comece por aqui",
+      texto:
+        "Esta lista mostra o que falta para o bot começar a atender. Ela se marca sozinha conforme você configura.",
+    },
+    {
       selector: '.nav-item[data-page="atendimentos"]',
       titulo: "Atendimentos",
-      texto: "Aqui ficam todos os seus agendamentos organizados",
+      texto: "Aqui ficam todos os seus clientes e agendamentos, organizados por etapa.",
+    },
+    {
+      selector: "#kanban",
+      titulo: "As colunas do quadro",
+      texto:
+        "<strong>Falar com humano</strong>: o cliente pediu para falar com alguém da equipe, responda pelo WhatsApp. <strong>Em atendimento</strong>: está conversando com o bot. <strong>Agendado</strong>: tem horário marcado. <strong>Follow-up</strong>: já foi atendido e vai receber o lembrete de voltar.",
     },
     {
       selector: "#novo-atendimento-btn",
       titulo: "Criar um atendimento manual",
       texto:
-        "Use este botão pra agendar sem passar pelo WhatsApp: útil pra encaixes ou clientes que ligaram.",
-    },
-    {
-      selector: "#kanban",
-      titulo: "O quadro de atendimentos",
-      texto:
-        "Clique em qualquer cartão pra abrir e editar os detalhes daquele atendimento.",
+        "Use este botão para agendar sem passar pelo WhatsApp: útil para encaixes ou clientes que ligaram.",
     },
   ],
   "agenda": [
@@ -117,16 +123,36 @@ const ONBOARDING_PASSOS = {
   ],
   "configuracoes": [
     {
-      selector: '.nav-item[data-page="configuracoes"]',
-      titulo: "Configurações",
+      selector: "#card-whatsapp",
+      titulo: "WhatsApp do bot",
       texto:
-        "O painel de controle da sua barbearia: dados gerais, usuários e pagamentos.",
+        "Conecte aqui o número da barbearia, lendo o QR Code como no WhatsApp Web. É por ele que o bot conversa com seus clientes.",
+    },
+    {
+      selector: "#card-horario",
+      titulo: "Horário de funcionamento",
+      texto:
+        "Marque os dias e horários em que a barbearia abre. O bot só oferece horários dentro deles. Folgas e feriados ficam na Agenda, em Bloqueios.",
+    },
+    {
+      selector: "#card-google",
+      titulo: "Google Agenda (opcional)",
+      texto:
+        "Conecte a conta Google da barbearia e cada profissional ganha uma agenda com os horários marcados.",
     },
     {
       selector: ".tabs",
-      titulo: "Geral, Usuários e Pagamentos",
+      titulo: "Usuários e Pagamentos",
       texto:
-        "Em Usuários você cadastra os outros profissionais que vão usar o CRM.",
+        "Em Usuários você cadastra os outros profissionais: cada um aparece como opção no bot. Em Pagamentos fica a sua assinatura.",
+    },
+  ],
+  "pagamentos": [
+    {
+      selector: ".pagamentos-grid",
+      titulo: "Sua assinatura",
+      texto:
+        "Aqui você acompanha o plano e paga por Pix ou cartão sem sair do CRM. No cartão, as próximas mensalidades são cobradas automaticamente.",
     },
   ],
 };

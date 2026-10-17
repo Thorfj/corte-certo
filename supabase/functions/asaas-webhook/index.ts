@@ -312,7 +312,24 @@ async function processarAssinatura(
     eventType.includes("INACTIVATED") ||
     eventType.includes("EXPIRED")
   ) {
-    statusAssinatura = "cancelada";
+    // Só mexe se for a assinatura atual da barbearia (ou se ela já foi
+    // limpa pelo cancelar-assinatura). Se a barbearia já assinou de novo,
+    // o aviso da assinatura antiga não pode cancelar a nova.
+    const { error: cancelError } = await supabase
+      .from("barbearias")
+      .update({
+        status_assinatura: "cancelada",
+        subscription_status: "INACTIVE",
+        asaas_subscription_id: null,
+        cliente: false,
+      })
+      .eq("id", barbeariaId)
+      .or(`asaas_subscription_id.eq.${subscription.id},asaas_subscription_id.is.null`);
+
+    if (cancelError) {
+      throw cancelError;
+    }
+    return;
   } else if (eventType === "SUBSCRIPTION_CREATED") {
     statusAssinatura = "pendente";
   }

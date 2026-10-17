@@ -250,6 +250,127 @@
     );
   }
 
+  // ---------------- Primeiros passos (Atendimentos, só admin) ----------------
+  // Checklist que se marca sozinho conforme o dono configura a barbearia.
+  // Some quando os passos obrigatórios estão feitos (ou quando a pessoa fecha).
+  const WHATSAPP_STATUS_URL = "https://cortecerto.app.n8n.cloud/webhook/whatsapp-conexao";
+  const HORARIO_PADRAO_JSON = JSON.stringify({
+    0: null, 1: ["09:00", "19:00"], 2: ["09:00", "19:00"], 3: ["09:00", "19:00"],
+    4: ["09:00", "19:00"], 5: ["09:00", "19:00"], 6: ["09:00", "19:00"],
+  });
+
+  function lerLocal(chave) {
+    try {
+      return localStorage.getItem(chave);
+    } catch {
+      return null;
+    }
+  }
+
+  async function whatsappConectado() {
+    try {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      const resp = await fetch(WHATSAPP_STATUS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ acao: "status" }),
+      });
+      const dados = await resp.json().catch(() => ({}));
+      return dados.estado === "open";
+    } catch {
+      return false;
+    }
+  }
+
+  async function montarPrimeirosPassos(acesso) {
+    const paginaAtual = window.location.pathname.split("/").filter(Boolean).pop();
+    if (paginaAtual !== "atendimentos" || acesso !== "admin") return;
+
+    let barbeariaId;
+    try {
+      barbeariaId = await obterBarbeariaId();
+    } catch {
+      return;
+    }
+    const chaveOculto = `barbozap:primeirosPassosOcultos:${barbeariaId}`;
+    if (lerLocal(chaveOculto) === "1") return;
+
+    const [barbRes, servRes, profRes, whatsapp] = await Promise.all([
+      supabaseClient
+        .from("barbearias")
+        .select("status_fluxo, horario_funcionamento, google_calendar_status")
+        .eq("id", barbeariaId)
+        .single(),
+      supabaseClient.from("servicos").select("id", { count: "exact", head: true }).eq("barbearia_id", barbeariaId),
+      supabaseClient
+        .from("profissionais")
+        .select("id", { count: "exact", head: true })
+        .eq("barbearia_id", barbeariaId)
+        .is("removido_em", null),
+      whatsappConectado(),
+    ]);
+    const b = barbRes.data || {};
+
+    const horarioFeito =
+      lerLocal(`barbozap:horarioConferido:${barbeariaId}`) === "1" ||
+      (b.horario_funcionamento && JSON.stringify(b.horario_funcionamento) !== HORARIO_PADRAO_JSON);
+
+    const passos = [
+      { feito: whatsapp, titulo: "Conectar o WhatsApp da barbearia", dica: "Leia o QR Code com o celular do número da barbearia.", link: "/app/configuracoes/#card-whatsapp" },
+      { feito: horarioFeito, titulo: "Conferir o horário de funcionamento", dica: "O bot só oferece horários dentro dele.", link: "/app/configuracoes/#card-horario" },
+      { feito: (servRes.count || 0) > 0, titulo: "Cadastrar os serviços", dica: "Nome, preço, duração e de quanto em quanto tempo o cliente volta.", link: "/app/servicos/" },
+      { feito: (profRes.count || 0) > 1, opcional: true, titulo: "Cadastrar a equipe", dica: "Se mais alguém atende, cadastre em Usuários. Se é só você, pode pular.", link: "/app/configuracoes/?aba=usuarios" },
+      { feito: b.google_calendar_status === "conectado", opcional: true, titulo: "Conectar o Google Agenda", dica: "Os horários aparecem no Google Agenda de cada profissional.", link: "/app/configuracoes/#card-google" },
+      { feito: b.status_fluxo === "Sim", titulo: "Ligar o bot", dica: "Em Mensagens, ative o fluxo. Seus 14 dias grátis começam aqui.", link: "/app/mensagens/" },
+    ];
+
+    const obrigatorios = passos.filter((p) => !p.opcional);
+    if (obrigatorios.every((p) => p.feito)) return;
+    const feitos = passos.filter((p) => p.feito).length;
+
+    const card = document.createElement("section");
+    card.className = "primeiros-passos card";
+    card.innerHTML = `
+      <div class="pp-topo">
+        <div>
+          <p class="pp-titulo">Primeiros passos</p>
+          <p class="pp-sub">${feitos} de ${passos.length} concluídos · deixe o bot pronto para atender</p>
+        </div>
+        <button type="button" class="pp-fechar" title="Esconder">&times;</button>
+      </div>
+      <div class="pp-barra"><span style="width:${Math.round((feitos / passos.length) * 100)}%"></span></div>
+      <ol class="pp-lista">
+        ${passos
+          .map(
+            (p) => `
+          <li class="pp-item${p.feito ? " feito" : ""}">
+            <span class="pp-check">${p.feito ? "✓" : ""}</span>
+            <div class="pp-texto">
+              <p class="pp-item-titulo">${p.titulo}${p.opcional ? ' <span class="pp-opcional">opcional</span>' : ""}</p>
+              ${p.feito ? "" : `<p class="pp-item-dica">${p.dica}</p>`}
+            </div>
+            ${p.feito ? "" : `<a class="btn btn-sm" href="${p.link}">Fazer</a>`}
+          </li>`,
+          )
+          .join("")}
+      </ol>
+    `;
+    card.querySelector(".pp-fechar").addEventListener("click", () => {
+      try {
+        localStorage.setItem(chaveOculto, "1");
+      } catch {
+        // sem localStorage: só esconde nesta visita
+      }
+      card.remove();
+    });
+
+    const header = document.querySelector(".main-content .page-header");
+    if (header) header.after(card);
+    else document.querySelector(".main-content")?.prepend(card);
+  }
+
   // ---------------- Onboarding (tour guiado) ----------------
   // Só roda durante o período de teste (configurando ou teste_ativo) e só
   // uma vez por página, por navegador (localStorage).
@@ -273,12 +394,17 @@
         .forEach((el) => el.remove());
     }
 
-    function mostrarPasso() {
+    function mostrarPasso(tentativa = 0) {
       limparPasso();
       const passo = passos[indice];
       const alvo = document.querySelector(passo.selector);
 
       if (!elementoVisivel(alvo)) {
+        // alguns cartões só aparecem depois que os dados carregam: espera um pouco
+        if (tentativa < 8) {
+          setTimeout(() => mostrarPasso(tentativa + 1), 300);
+          return;
+        }
         avancar();
         return;
       }
@@ -421,6 +547,7 @@
     }
 
     iniciarOnboardingSePreciso();
+    montarPrimeirosPassos(acesso);
   }
 
   document.addEventListener("DOMContentLoaded", iniciar);

@@ -5,34 +5,6 @@ if (typeof lucide !== "undefined") {
 }
 
 // ---------------- TABS ----------------
-let assinanteCache = null; // null = ainda não checou, true/false depois
-
-async function ehAssinante() {
-  if (assinanteCache !== null) return assinanteCache;
-  try {
-    const barbeariaId = await obterBarbeariaId();
-    const { data } = await supabaseClient
-      .from("barbearias")
-      .select("cliente")
-      .eq("id", barbeariaId)
-      .single();
-    assinanteCache = !!data?.cliente;
-  } catch (err) {
-    console.error("Erro ao checar assinatura:", err);
-    assinanteCache = true; // em dúvida, não bloqueia a UI por erro de rede
-  }
-  return assinanteCache;
-}
-
-async function atualizarCadeadoFollowup() {
-  const lockIcon = document.getElementById("followup-lock");
-  if (!(await ehAssinante())) {
-    lockIcon.classList.remove("hidden");
-  } else {
-    lockIcon.classList.add("hidden");
-  }
-}
-
 document.querySelectorAll(".tab-btn").forEach((btn) => {
   btn.addEventListener("click", async () => {
     document
@@ -43,15 +15,8 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
       .forEach((p) => p.classList.remove("active"));
     btn.classList.add("active");
     document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
-
-    if (btn.dataset.tab === "followup") {
-      const banner = document.getElementById("followup-trial-banner");
-      banner.classList.toggle("hidden", await ehAssinante());
-    }
   });
 });
-
-atualizarCadeadoFollowup();
 
 function confirmarAcao(mensagem, textoBotao = "Confirmar", estilo = "danger") {
   return new Promise((resolve) => {
@@ -784,13 +749,6 @@ document
 
     try {
       const barbeariaId = await obterBarbeariaId();
-
-      if (novoStatus === "Sim" && !(await ehAssinante())) {
-        avisarUsuario(
-          "O fluxo de atendimento vai ligar normalmente, mas o follow-up não vai funcionar até você assinar o plano.",
-          "Follow-up indisponível no teste grátis",
-        );
-      }
 
       const { error } = await supabaseClient
         .from("barbearias")

@@ -33,6 +33,8 @@ Ao concluir, a sessão fica com `etapa_atual = 'concluido'` e a próxima mensage
 Antes de chamar a etapa, o Roteador (nó *Verifica NPS, cancelar e remarcar*) trata:
 
 - **Nota de NPS**: resposta `1` a `5` (mesma escala do CRM) ao pedido enviado pelo Agendador grava `atendimentos.nps`; a média do cliente (`clientes.media_nps`) é recalculada pelo trigger `trg_media_nps`.
+- **Fluxo ligado = mensagens automáticas**: Roteador, Agendador (lembretes, NPS, follow-up) e Notificação de Falta só agem em barbearias com `status_fluxo = 'Sim'`. O fluxo é desligado sozinho quando o teste grátis acaba sem assinatura (pg_cron `desligar-fluxo-testes-vencidos`); com ele desligado, o follow-up fica pausado sem avançar o ciclo. Ligar o fluxo pela primeira vez inicia os 14 dias de teste. O follow-up funciona também no teste.
+- **Status do cliente**: o banco move para `follow-up` quem ficou `agendado` com o horário vencido (pg_cron `processar-atendimentos-passados`, a cada 15 min). O CRM faz o mesmo na hora ao salvar um atendimento.
 - **Cancelar** (`cancelar`, `desmarcar`): mostra o próximo horário e pede *SIM*/*NÃO* (`etapa_atual = 'cancelar_confirma'`, `id_atend_alvo` = atendimento). Com *SIM* o atendimento é apagado (o evento sai do Google Calendar pelo webhook).
 - **Remarcar** (`remarcar`, `reagendar`, `mudar o horário`): volta para 00401 com os mesmos serviços e profissional e `id_atend_alvo` preenchido; na 00501 o horário escolhido **atualiza** o atendimento existente em vez de criar outro.
 

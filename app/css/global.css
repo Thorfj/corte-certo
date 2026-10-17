@@ -574,3 +574,111 @@ button {
   color: var(--text-secondary);
   text-decoration: underline;
 }
+
+/* ------------------------------------------------------------
+   PRIMEIROS PASSOS (checklist em Atendimentos, só admin)
+   ------------------------------------------------------------ */
+.primeiros-passos {
+  margin-bottom: 20px;
+  padding: 18px 20px;
+}
+.pp-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.pp-titulo {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.pp-sub {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.pp-fechar {
+  border: none;
+  background: none;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0 4px;
+}
+.pp-fechar:hover {
+  color: var(--text-primary);
+}
+.pp-barra {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+  margin: 14px 0 6px;
+  overflow: hidden;
+}
+.pp-barra span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
+}
+.pp-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pp-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.pp-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.pp-check {
+  flex: 0 0 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+.pp-item.feito .pp-check {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--text-on-brand);
+}
+.pp-texto {
+  flex: 1;
+  min-width: 0;
+}
+.pp-item-titulo {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+.pp-item.feito .pp-item-titulo {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+.pp-item-dica {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+.pp-opcional {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  padding: 1px 7px;
+  margin-left: 4px;
+}

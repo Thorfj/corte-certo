@@ -380,3 +380,7 @@
   background: rgba(186, 117, 23, 0.12);
   color: #8a5a12;
 }
+.cartao-destaque {
+  box-shadow: 0 0 0 3px var(--brand-light), var(--shadow-card);
+  transition: box-shadow 0.3s ease;
+}

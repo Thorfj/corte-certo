@@ -106,6 +106,16 @@ async function carregarAssinatura() {
 
   conectadoMsg.classList.toggle("hidden", !emDia);
   conectarBtn.classList.add("hidden");
+  document.getElementById("pg-cancelar-btn").classList.add("hidden");
+  if (emDia && data.asaas_subscription_id) {
+    obterProfissionalAtual()
+      .then((p) => {
+        if (p.acesso === "admin") {
+          document.getElementById("pg-cancelar-btn").classList.remove("hidden");
+        }
+      })
+      .catch(() => {});
+  }
   if (!emDia) {
     try {
       const profissional = await obterProfissionalAtual();
@@ -420,6 +430,38 @@ document.getElementById("pagar-cartao").addEventListener("submit", async (e) => 
   } finally {
     btn.disabled = false;
     btn.textContent = "Pagar " + document.querySelector(".pagar-valor").firstChild.textContent.trim();
+  }
+});
+
+// ---------------- Cancelar assinatura ----------------
+document.getElementById("pg-cancelar-btn").addEventListener("click", () => {
+  document.getElementById("cancelar-erro").style.display = "none";
+  document.getElementById("modal-cancelar").classList.remove("hidden");
+});
+
+document.getElementById("cancelar-confirmar-btn").addEventListener("click", async () => {
+  const btn = document.getElementById("cancelar-confirmar-btn");
+  const erroEl = document.getElementById("cancelar-erro");
+  btn.disabled = true;
+  btn.textContent = "Cancelando...";
+  try {
+    // Cancela no Asaas (para de cobrar) e marca como cancelada no Barbozap
+    const { data, error } = await supabaseClient.functions.invoke(
+      "cancelar-assinatura",
+      { body: {} },
+    );
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    document.getElementById("modal-cancelar").classList.add("hidden");
+    await carregarAssinatura();
+    await carregarCobrancas();
+  } catch (err) {
+    console.error(err);
+    erroEl.textContent = "Não foi possível cancelar agora. Tente novamente em instantes.";
+    erroEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Cancelar assinatura";
   }
 });
 

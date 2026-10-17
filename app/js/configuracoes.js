@@ -60,6 +60,20 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
   });
 });
 
+// Links dos "Primeiros passos": ?aba=usuarios abre a aba; #card-... rola até o cartão
+(() => {
+  const aba = new URLSearchParams(window.location.search).get("aba");
+  if (aba) document.querySelector(`.tab-btn[data-tab="${aba}"]`)?.click();
+})();
+
+function irParaCartaoDoLink() {
+  const alvo = window.location.hash && document.querySelector(window.location.hash);
+  if (!alvo || alvo.classList.contains("hidden")) return;
+  alvo.scrollIntoView({ behavior: "smooth", block: "start" });
+  alvo.classList.add("cartao-destaque");
+  setTimeout(() => alvo.classList.remove("cartao-destaque"), 2500);
+}
+
 // ---------------- ABA GERAL ----------------
 async function carregarGeral() {
   const barbeariaId = await obterBarbeariaId();
@@ -149,6 +163,7 @@ async function configurarAparenciaEGoogle(barbearia) {
     cardHorario.classList.remove("hidden");
     renderizarHorario(barbearia.horario_funcionamento);
     iniciarCardWhatsapp(barbearia);
+    irParaCartaoDoLink();
   } else {
     cardGoogle.classList.add("hidden");
     cardHorario.classList.add("hidden");
@@ -382,6 +397,11 @@ document.getElementById("form-horario").addEventListener("submit", async (e) => 
       .eq("id", barbeariaId);
     if (error) throw error;
     if (barbeariaCache) barbeariaCache.horario_funcionamento = horario;
+    try {
+      localStorage.setItem(`barbozap:horarioConferido:${barbeariaId}`, "1");
+    } catch {
+      // só serve pro checklist de Primeiros passos
+    }
     sucessoEl.style.display = "block";
     setTimeout(() => {
       sucessoEl.style.display = "none";
@@ -1127,25 +1147,27 @@ document
   .getElementById("cancelar-plano-btn")
   .addEventListener("click", async () => {
     const confirmado = await confirmarAcao(
-      "Tem certeza que deseja cancelar a assinatura? O fluxo de mensagens será desativado.",
+      "Tem certeza que deseja cancelar a assinatura? As cobranças mensais param e o bot do WhatsApp é desligado. Você pode assinar de novo quando quiser.",
       "Cancelar assinatura",
       "danger",
     );
     if (!confirmado) return;
 
     try {
-      const barbeariaId = await obterBarbeariaId();
-      const { error } = await supabaseClient
-        .from("barbearias")
-        .update({ cliente: false })
-        .eq("id", barbeariaId);
+      // Cancela no Asaas (para de cobrar) e marca como cancelada no Barbozap
+      const { data, error } = await supabaseClient.functions.invoke(
+        "cancelar-assinatura",
+        { body: {} },
+      );
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       barbeariaCache.cliente = false;
       atualizarStatusPlano(barbeariaCache);
+      await carregarAssinatura();
     } catch (err) {
       console.error(err);
-      alert("Erro ao cancelar assinatura. Você precisa ter papel de admin.");
+      alert("Não foi possível cancelar a assinatura agora. Tente novamente em instantes.");
     }
   });
 

@@ -89,42 +89,67 @@ function atualizarResumo() {
     : "";
 }
 
+// Mesma regra do banco (normalizar_telefone): só dígitos e, se for número
+// brasileiro sem DDI (10 ou 11 dígitos), ganha o 55 na frente
+function normalizarTelefone(valor) {
+  const digitos = String(valor || "").replace(/\D/g, "");
+  if (!digitos) return "";
+  return digitos.length === 10 || digitos.length === 11 ? "55" + digitos : digitos;
+}
+
+// Procura o cliente pelo telefone; se não existir, mostra o campo de nome.
+// Devolve true quando encontra.
+async function buscarCliente() {
+  const telefone = normalizarTelefone(
+    document.getElementById("telefone-input").value,
+  );
+  const statusEl = document.getElementById("cliente-status");
+  const nomeField = document.getElementById("nome-novo-cliente-field");
+
+  clienteEncontradoId = null;
+  if (!telefone) {
+    statusEl.textContent = "";
+    nomeField.style.display = "none";
+    return false;
+  }
+
+  const barbeariaId = await obterBarbeariaId();
+  const { data, error } = await supabaseClient
+    .from("clientes")
+    .select("id, nome")
+    .eq("barbearia_id", barbeariaId)
+    .eq("telefone", telefone)
+    .maybeSingle();
+
+  if (error) {
+    statusEl.textContent = "Erro ao buscar cliente.";
+    statusEl.className = "cliente-status";
+    return false;
+  }
+
+  if (data) {
+    clienteEncontradoId = data.id;
+    statusEl.textContent = `Cliente encontrado: ${data.nome || "(sem nome)"}`;
+    statusEl.className = "cliente-status encontrado";
+    nomeField.style.display = "none";
+    return true;
+  }
+
+  statusEl.textContent =
+    "Cliente novo: preencha o nome abaixo para cadastrar.";
+  statusEl.className = "cliente-status novo";
+  nomeField.style.display = "block";
+  return false;
+}
+
 document
   .getElementById("buscar-cliente-btn")
-  .addEventListener("click", async () => {
-    const telefone = document.getElementById("telefone-input").value.trim();
-    const statusEl = document.getElementById("cliente-status");
-    const nomeField = document.getElementById("nome-novo-cliente-field");
+  .addEventListener("click", buscarCliente);
 
-    if (!telefone) return;
-
-    const barbeariaId = await obterBarbeariaId();
-    const { data, error } = await supabaseClient
-      .from("clientes")
-      .select("id, nome")
-      .eq("barbearia_id", barbeariaId)
-      .eq("telefone", telefone)
-      .maybeSingle();
-
-    if (error) {
-      statusEl.textContent = "Erro ao buscar cliente.";
-      statusEl.className = "cliente-status";
-      return;
-    }
-
-    if (data) {
-      clienteEncontradoId = data.id;
-      statusEl.textContent = `Cliente encontrado: ${data.nome}`;
-      statusEl.className = "cliente-status encontrado";
-      nomeField.style.display = "none";
-    } else {
-      clienteEncontradoId = null;
-      statusEl.textContent =
-        "Cliente não encontrado: cadastre o nome abaixo para criar um novo contato.";
-      statusEl.className = "cliente-status novo";
-      nomeField.style.display = "block";
-    }
-  });
+// Busca sozinho ao sair do campo de telefone (não precisa clicar em Buscar)
+document
+  .getElementById("telefone-input")
+  .addEventListener("change", buscarCliente);
 
 document
   .getElementById("form-atendimento")
@@ -164,10 +189,26 @@ document
       let idCliente = clienteEncontradoId;
 
       if (!modoEdicao && !idCliente) {
-        const telefone = document.getElementById("telefone-input").value.trim();
+        const telefone = normalizarTelefone(
+          document.getElementById("telefone-input").value,
+        );
+        if (!telefone) {
+          throw new Error("Informe o telefone do cliente.");
+        }
+        // garante a busca mesmo se a pessoa não saiu do campo de telefone
+        if (await buscarCliente()) {
+          idCliente = clienteEncontradoId;
+        }
+      }
+
+      if (!modoEdicao && !idCliente) {
+        const telefone = normalizarTelefone(
+          document.getElementById("telefone-input").value,
+        );
         const nome = document.getElementById("nome-novo-cliente").value.trim();
-        if (!telefone || !nome) {
-          throw new Error("Informe o telefone e o nome do novo cliente.");
+        if (!nome) {
+          document.getElementById("nome-novo-cliente").focus();
+          throw new Error("Cliente novo: preencha o nome do cliente.");
         }
         const { data: novoCliente, error: erroCliente } = await supabaseClient
           .from("clientes")
@@ -231,6 +272,14 @@ document
         .from("atendimento_servicos")
         .insert(linhasServicos);
       if (erroServicos) throw erroServicos;
+
+      // Atendimento no futuro deixa o cliente "agendado"; lançado com data e
+      // horário que já passaram, o cliente vai direto para o follow-up
+      const { error: erroStatus } = await supabaseClient.rpc(
+        "recalcular_status_cliente",
+        { p_cliente: modoEdicao ? idClienteAtual : idCliente },
+      );
+      if (erroStatus) console.error("Erro ao atualizar status do cliente:", erroStatus);
 
       window.location.href = "/app/atendimentos/";
     } catch (err) {

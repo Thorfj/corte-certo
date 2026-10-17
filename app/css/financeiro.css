@@ -1,0 +1,270 @@
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+/* ---------- Período ---------- */
+.fin-periodo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.fin-atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.fin-atalho {
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-family: var(--font-sans);
+}
+.fin-atalho:hover {
+  color: var(--text-primary);
+}
+.fin-atalho.active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--text-on-brand);
+}
+.fin-datas {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.field-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.field-inline label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.field-inline input {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+/* ---------- Seções ---------- */
+section {
+  margin-bottom: 28px;
+}
+.fin-secao-titulo {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+.fin-secao-sub {
+  font-weight: 400;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* ---------- Indicadores ---------- */
+.fin-kpis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.metric-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+.metric-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0 0 4px;
+}
+.metric-value {
+  font-size: 21px;
+  font-weight: 600;
+  margin: 0;
+}
+.metric-sub {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.metric-card.fin-destaque {
+  background: var(--brand-light);
+  border-color: transparent;
+}
+.metric-card.fin-destaque .metric-value {
+  color: var(--brand-dark);
+}
+.metric-card.fin-alerta {
+  border-color: rgba(201, 122, 0, 0.35);
+}
+.metric-card.fin-alerta .metric-value,
+.fin-texto-alerta {
+  color: #a35f00;
+}
+.fin-nota {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  margin: 0 0 12px;
+}
+
+/* ---------- Cartões ---------- */
+.fin-grade {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+.fin-card-largo {
+  grid-column: 1 / -1;
+}
+.fin-card {
+  padding: 18px 20px;
+  min-width: 0;
+}
+.fin-card-titulo {
+  font-size: 13.5px;
+  font-weight: 600;
+  margin: 0 0 14px;
+}
+.fin-vazio {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* gráfico de barras por dia */
+.fin-barras {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 160px;
+  overflow-x: auto;
+}
+.fin-barra-col {
+  flex: 1 0 14px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+}
+.fin-barra {
+  width: 100%;
+  max-width: 28px;
+  border-radius: 4px 4px 0 0;
+  background: var(--brand);
+}
+.fin-barra-col:hover .fin-barra {
+  background: var(--brand-dark);
+}
+.fin-barra-dia {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* listas com barra horizontal (formas de pagamento, serviços) */
+.fin-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.fin-lista-topo {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13.5px;
+  margin-bottom: 5px;
+}
+.fin-lista-topo small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.fin-lista-barra,
+.fin-pct {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+  overflow: hidden;
+}
+.fin-lista-barra span,
+.fin-pct span {
+  display: block;
+  height: 100%;
+  background: var(--brand);
+  border-radius: inherit;
+}
+
+/* tabelas */
+.table th.num,
+.table td.num {
+  text-align: right;
+  white-space: nowrap;
+}
+.fin-pct {
+  display: inline-block;
+  width: 48px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+.fin-tel {
+  font-size: 12px;
+  color: var(--brand);
+}
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 12.5px;
+}
+.fin-erro {
+  color: #b3261e;
+  font-size: 13px;
+}
+.empty,
+.loading {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 20px !important;
+}
+
+@media (max-width: 1200px) {
+  .fin-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .fin-grade {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .fin-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .metric-value {
+    font-size: 18px;
+  }
+  .fin-periodo {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

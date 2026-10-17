@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assinaturas — Barbozap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/app/css/global.css">
+  <link rel="stylesheet" href="/app/css/responsivo.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/app/js/supabase-config.js"></script>
+  <script src="/app/js/onboarding-data.js"></script>
+  <script src="/app/js/crm-global.js"></script>
+</head>
+
+<body>
+  <div class="app">
+    <div id="crm-sidebar"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1 class="page-title" style="margin:0">Assinaturas</h1>
+      </div>
+
+      <!-- Funcionalidade em desenvolvimento -->
+      <div class="card card-centered">
+        <div class="icon-circle"><i data-lucide="lock" style="width:24px;height:24px"></i></div>
+        <p class="card-title">Em breve</p>
+        <p class="card-body">Planos mensais para os seus clientes (ex.: cortes ilimitados no mês), com cobrança automática. Estamos preparando essa novidade.</p>
+      </div>
+    </main>
+  </div>
+  <script>
+    (async () => {
+      const session = await checarSessao();
+      if (session) {
+        await aplicarTemaUsuario();
+        await carregarNomeBarbearia();
+      }
+    })();
+  </script>
+</body>
+
+</html>

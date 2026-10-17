@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Financeiro — Barbozap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/app/css/global.css">
+  <link rel="stylesheet" href="/app/css/financeiro.css">
+  <link rel="stylesheet" href="/app/css/responsivo.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/app/js/supabase-config.js"></script>
+  <script src="/app/js/onboarding-data.js"></script>
+  <script src="/app/js/crm-global.js"></script>
+</head>
+
+<body>
+  <div class="app">
+    <div id="crm-sidebar"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1 class="page-title" style="margin:0">Financeiro</h1>
+      </div>
+
+      <!-- Período -->
+      <div class="fin-periodo" id="fin-periodo">
+        <div class="fin-atalhos">
+          <button type="button" class="fin-atalho" data-periodo="hoje">Hoje</button>
+          <button type="button" class="fin-atalho" data-periodo="7dias">Últimos 7 dias</button>
+          <button type="button" class="fin-atalho active" data-periodo="mes">Este mês</button>
+          <button type="button" class="fin-atalho" data-periodo="mes-passado">Mês passado</button>
+        </div>
+        <div class="fin-datas">
+          <div class="field-inline">
+            <label for="fin-inicio">De</label>
+            <input type="date" id="fin-inicio">
+          </div>
+          <div class="field-inline">
+            <label for="fin-fim">Até</label>
+            <input type="date" id="fin-fim">
+          </div>
+          <button type="button" class="btn" id="fin-filtrar-btn">Aplicar</button>
+        </div>
+      </div>
+
+      <!-- Barbearia -->
+      <section>
+        <p class="fin-secao-titulo">Barbearia</p>
+        <div class="fin-kpis" id="fin-kpis"></div>
+        <p class="fin-nota hidden" id="fin-nota"></p>
+
+        <div class="fin-grade">
+          <div class="card fin-card fin-card-largo">
+            <p class="fin-card-titulo">Faturamento por dia</p>
+            <div class="fin-grafico" id="fin-grafico"></div>
+          </div>
+
+          <div class="card fin-card">
+            <p class="fin-card-titulo">Recebido por forma de pagamento</p>
+            <div id="fin-formas"></div>
+          </div>
+
+          <div class="card fin-card">
+            <p class="fin-card-titulo">Faturamento por serviço</p>
+            <div id="fin-servicos"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Por profissional -->
+      <section>
+        <p class="fin-secao-titulo">Por profissional</p>
+        <div class="card" style="padding:0">
+          <table class="table" id="fin-tabela-prof">
+            <thead>
+              <tr>
+                <th>Profissional</th>
+                <th class="num">Atendimentos</th>
+                <th class="num">Faturamento</th>
+                <th class="num">Recebido</th>
+                <th class="num">Fiado</th>
+                <th class="num">Ticket médio</th>
+                <th class="num">Faltas</th>
+                <th class="num">% do total</th>
+                <th class="num">Nota</th>
+              </tr>
+            </thead>
+            <tbody id="fin-prof-body">
+              <tr><td colspan="9" class="loading">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Fiado em aberto -->
+      <section>
+        <p class="fin-secao-titulo">Fiado em aberto <span class="fin-secao-sub">(todos os períodos)</span></p>
+        <div class="card" style="padding:0">
+          <table class="table" id="fin-tabela-fiado">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Data</th>
+                <th>Profissional</th>
+                <th class="num">Valor</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="fin-fiado-body">
+              <tr><td colspan="5" class="loading">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <p class="fin-erro hidden" id="fin-erro"></p>
+    </main>
+  </div>
+  <script src="/app/js/financeiro.js"></script>
+</body>
+
+</html>

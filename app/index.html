@@ -29,6 +29,20 @@
       </div>
       <button type="submit" class="btn btn-primary login-btn" id="login-btn">Entrar</button>
       <p class="login-error" id="login-error"></p>
+      <button type="button" class="login-link" id="link-esqueci">Esqueci minha senha</button>
+    </form>
+
+    <!-- Recuperação de senha: manda o link por e-mail -->
+    <form id="esqueci-form" hidden>
+      <p class="login-texto">Digite o e-mail da sua conta. Vamos te mandar um link para criar uma senha nova.</p>
+      <div class="field">
+        <label for="email-recuperar">E-mail</label>
+        <input type="email" id="email-recuperar" required autocomplete="email">
+      </div>
+      <button type="submit" class="btn btn-primary login-btn" id="recuperar-btn">Enviar link</button>
+      <p class="login-error" id="recuperar-error"></p>
+      <p class="login-ok" id="recuperar-ok"></p>
+      <button type="button" class="login-link" id="link-voltar">← Voltar para o login</button>
     </form>
   </div>
   <script src="/app/js/login.js"></script>

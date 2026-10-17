@@ -39,3 +39,52 @@ function destinoPosLogin() {
   if (voltar && voltar.startsWith("/app/") && !voltar.startsWith("//")) return voltar;
   return "/app/atendimentos/";
 }
+
+// ---------------- Esqueci minha senha ----------------
+const loginForm = document.getElementById("login-form");
+const esqueciForm = document.getElementById("esqueci-form");
+
+function mostrarEsqueci(mostrar) {
+  loginForm.hidden = mostrar;
+  esqueciForm.hidden = !mostrar;
+  if (mostrar) {
+    document.getElementById("email-recuperar").value =
+      document.getElementById("email").value.trim();
+  }
+}
+
+document.getElementById("link-esqueci").addEventListener("click", () => mostrarEsqueci(true));
+document.getElementById("link-voltar").addEventListener("click", () => mostrarEsqueci(false));
+
+esqueciForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const email = document.getElementById("email-recuperar").value.trim();
+  const btn = document.getElementById("recuperar-btn");
+  const errorEl = document.getElementById("recuperar-error");
+  const okEl = document.getElementById("recuperar-ok");
+
+  errorEl.style.display = "none";
+  okEl.style.display = "none";
+  btn.disabled = true;
+  btn.textContent = "Enviando...";
+
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + "/app/nova-senha/",
+  });
+
+  btn.disabled = false;
+  btn.textContent = "Enviar link";
+
+  if (error) {
+    errorEl.textContent = error.status === 429
+      ? "Muitas tentativas. Espere alguns minutos e tente de novo."
+      : "Não foi possível enviar o link agora. Tente novamente.";
+    errorEl.style.display = "block";
+    return;
+  }
+
+  // Mesma resposta exista ou não a conta, pra não revelar quais e-mails são clientes
+  okEl.textContent = "Pronto! Se esse e-mail tiver conta no Barbozap, o link chega em instantes. Confira também o spam.";
+  okEl.style.display = "block";
+});

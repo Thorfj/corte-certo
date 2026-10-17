@@ -46,6 +46,7 @@ const esqueciForm = document.getElementById("esqueci-form");
 
 function mostrarEsqueci(mostrar) {
   loginForm.hidden = mostrar;
+  document.getElementById("login-google").hidden = mostrar;
   esqueciForm.hidden = !mostrar;
   if (mostrar) {
     document.getElementById("email-recuperar").value =
@@ -88,3 +89,29 @@ esqueciForm.addEventListener("submit", async (e) => {
   okEl.textContent = "Pronto! Se esse e-mail tiver conta no Barbozap, o link chega em instantes. Confira também o spam.";
   okEl.style.display = "block";
 });
+
+// ---------------- Entrar com Google ----------------
+document.getElementById("google-btn").addEventListener("click", async () => {
+  const btn = document.getElementById("google-btn");
+  const errorEl = document.getElementById("google-error");
+  errorEl.style.display = "none";
+  btn.disabled = true;
+
+  // volta pra esta mesma tela (com o ?voltar=), que já redireciona quem tem sessão
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: window.location.origin + "/app/" + window.location.search },
+  });
+
+  if (error) {
+    btn.disabled = false;
+    errorEl.textContent = "Não foi possível abrir o login do Google agora. Tente de novo ou use e-mail e senha.";
+    errorEl.style.display = "block";
+  }
+});
+
+if (new URLSearchParams(window.location.hash.replace(/^#/, "")).get("error_description")) {
+  const errorEl = document.getElementById("google-error");
+  errorEl.textContent = "O login com o Google não foi concluído. Tente de novo.";
+  errorEl.style.display = "block";
+}

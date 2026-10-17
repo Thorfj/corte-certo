@@ -43,12 +43,6 @@ async function asaas(apiUrl: string, apiKey: string, caminho: string, opcoes: Re
 
 const soDigitos = (v: unknown) => String(v ?? "").replace(/\D/g, "");
 
-// Valor do plano: secret VALOR_PLANO (ex.: 5 pra testar no Sandbox); sem ele, R$ 69
-const valorPlano = () => {
-  const v = Number(String(Deno.env.get("VALOR_PLANO") ?? "").replace(",", "."));
-  return Number.isFinite(v) && v > 0 ? v : 69;
-};
-
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Método não permitido" }, 405);
@@ -91,15 +85,6 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // Mantém a assinatura no valor atual do plano (e as cobranças em aberto junto)
-    const assinatura = await asaas(API_URL, API_KEY, `/subscriptions/${sub}`);
-    if (Number(assinatura.value) !== valorPlano()) {
-      await asaas(API_URL, API_KEY, `/subscriptions/${sub}`, {
-        method: "PUT",
-        body: JSON.stringify({ value: valorPlano(), updatePendingPayments: true }),
-      });
-    }
-
     // Cobrança em aberto mais antiga da assinatura (vencida primeiro, depois a pendente)
     let cobranca: Record<string, any> | null = null;
     for (const status of ["OVERDUE", "PENDING"]) {

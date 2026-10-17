@@ -9,22 +9,15 @@
      - ASAAS_API_KEY: chave da conta (Sandbox é uma conta separada).
      - ASAAS_API_URL: produção por padrão (https://api.asaas.com/v3);
        no Sandbox, https://api-sandbox.asaas.com/v3.
-     - VALOR_PLANO: opcional, valor mensal em reais (padrão 69). Serve
-       pra testar no Sandbox com valor baixo (mínimo do Asaas: R$ 5).
    billingType "UNDEFINED": o cliente escolhe Pix ou cartão na hora de
    pagar (o CRM paga pela Edge Function pagar-assinatura).
    ============================================================ */
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const VALOR_PADRAO = 69.0;
+const VALOR_PLANO = 69.0;
 const CICLO_PLANO = "MONTHLY";
 const DESCRICAO_PLANO = "Barbozap — plano mensal";
-
-const valorPlano = () => {
-  const v = Number(String(Deno.env.get("VALOR_PLANO") ?? "").replace(",", "."));
-  return Number.isFinite(v) && v > 0 ? v : VALOR_PADRAO;
-};
 
 // CORS — sem isso, o navegador bloqueia a chamada no preflight (OPTIONS)
 // antes mesmo do POST acontecer.
@@ -194,7 +187,7 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         customer: customerId,
         billingType: "UNDEFINED",
-        value: valorPlano(),
+        value: VALOR_PLANO,
         cycle: CICLO_PLANO,
         description: DESCRICAO_PLANO,
         nextDueDate: dataVencimentoISO,

@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function cardHTML(post) {
     return `
       <a href="${postUrl(post.slug)}" class="post-card" data-category="${post.category}">
-        <div class="post-cover-${post.category}"><span>${post.categoryLabel}</span></div>
+        <div class="post-cover cat-${post.category}"><span>${post.categoryLabel}</span></div>
         <div class="post-body">
           <span class="post-meta">${post.date} · ${post.readTime}</span>
           <h3>${post.title}</h3>
@@ -65,6 +65,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const show = filter === "todos" || card.dataset.category === filter;
         card.style.display = show ? "" : "none";
       });
+
+      // Sem o destaque visível, a seção dele não deixa um vão vazio
+      const secaoDestaque = featuredMount && featuredMount.closest(".blog-featured");
+      const destaque = featuredMount && featuredMount.querySelector("[data-category]");
+      if (secaoDestaque) {
+        secaoDestaque.style.display =
+          destaque && destaque.style.display !== "none" ? "" : "none";
+      }
     });
   });
 });

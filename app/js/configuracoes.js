@@ -1127,25 +1127,27 @@ document
   .getElementById("cancelar-plano-btn")
   .addEventListener("click", async () => {
     const confirmado = await confirmarAcao(
-      "Tem certeza que deseja cancelar a assinatura? O fluxo de mensagens será desativado.",
+      "Tem certeza que deseja cancelar a assinatura? As cobranças mensais param e o bot do WhatsApp é desligado. Você pode assinar de novo quando quiser.",
       "Cancelar assinatura",
       "danger",
     );
     if (!confirmado) return;
 
     try {
-      const barbeariaId = await obterBarbeariaId();
-      const { error } = await supabaseClient
-        .from("barbearias")
-        .update({ cliente: false })
-        .eq("id", barbeariaId);
+      // Cancela no Asaas (para de cobrar) e marca como cancelada no Barbozap
+      const { data, error } = await supabaseClient.functions.invoke(
+        "cancelar-assinatura",
+        { body: {} },
+      );
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       barbeariaCache.cliente = false;
       atualizarStatusPlano(barbeariaCache);
+      await carregarAssinatura();
     } catch (err) {
       console.error(err);
-      alert("Erro ao cancelar assinatura. Você precisa ter papel de admin.");
+      alert("Não foi possível cancelar a assinatura agora. Tente novamente em instantes.");
     }
   });
 

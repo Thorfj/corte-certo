@@ -50,8 +50,9 @@
             <i data-lucide="credit-card" style="width:16px;height:16px"></i> Assinar agora
           </a>
           <p class="pg-conectado-msg hidden" id="pg-conectado-msg">
-            <i data-lucide="check-circle" style="width:15px;height:15px"></i> Assinatura configurada
+            <i data-lucide="check-circle" style="width:15px;height:15px"></i> Assinatura em dia
           </p>
+          <button type="button" class="pg-cancelar-link hidden" id="pg-cancelar-btn">Cancelar assinatura</button>
         </div>
       </div>
 
@@ -105,6 +106,22 @@
       </form>
     </div>
   </div>
+  <!-- Modal: confirmar cancelamento -->
+  <div class="modal-overlay hidden" id="modal-cancelar">
+    <div class="modal">
+      <div class="modal-header">
+        <p class="modal-title">Cancelar assinatura?</p>
+        <button class="modal-close" data-close="modal-cancelar">&times;</button>
+      </div>
+      <p class="pagar-dica">As cobranças mensais param e o bot do WhatsApp é desligado. Seus dados continuam guardados e você pode assinar de novo quando quiser.</p>
+      <p class="modal-error" id="cancelar-erro"></p>
+      <div class="modal-footer">
+        <button type="button" class="btn" data-close="modal-cancelar">Voltar</button>
+        <button type="button" class="btn btn-danger" id="cancelar-confirmar-btn">Cancelar assinatura</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal: pagamento da assinatura sem sair do CRM (Pix ou cartão) -->
   <div class="modal-overlay hidden" id="modal-pagar">
     <div class="modal modal-pagar">

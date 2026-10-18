@@ -10,6 +10,17 @@
 
 const BLOG_POSTS = [
   {
+    slug: "cliente-que-sumiu",
+    title: "O cliente que sumiu: como trazer de volta quem não voltou mais",
+    excerpt:
+      "Ele cortava todo mês e, de repente, parou. Na maioria das vezes não foi briga, foi esquecimento. Veja como chamar esse cliente de volta sem parecer chato.",
+    category: "atendimento",
+    categoryLabel: "Atendimento",
+    date: "18 out 2026",
+    readTime: "3 min",
+    featured: false,
+  },
+  {
     slug: "reduzir-faltas-barbearia",
     title: "5 jeitos simples de reduzir as faltas na sua barbearia",
     excerpt:

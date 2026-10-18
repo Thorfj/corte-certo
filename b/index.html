@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Agende seu horário — Barbozap</title>
+  <meta name="description" content="Veja os serviços e agende seu horário.">
+  <meta name="theme-color" content="#17493c">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/global.css">
+  <link rel="stylesheet" href="/assets/css/landing.css">
+</head>
+
+<body>
+  <!-- Página pública de cada barbearia: barbozap.com.br/b/<link>.
+       O 404.html manda /b/<link> pra cá como /b/?s=<link>; o landing.js
+       devolve o endereço bonito na barra. -->
+  <main class="lp" id="lp">
+    <div class="lp-carregando" id="lp-carregando">Carregando...</div>
+
+    <div class="lp-conteudo hidden" id="lp-conteudo">
+      <div class="lp-topo">
+        <div class="lp-avatar" id="lp-avatar"></div>
+        <h1 class="lp-nome" id="lp-nome"></h1>
+        <p class="lp-descricao" id="lp-descricao"></p>
+        <div class="lp-chips" id="lp-chips"></div>
+      </div>
+
+      <section class="lp-secao">
+        <h2 class="lp-secao-titulo">Serviços</h2>
+        <ul class="lp-servicos" id="lp-servicos"></ul>
+      </section>
+
+      <section class="lp-secao">
+        <h2 class="lp-secao-titulo">Horário de funcionamento</h2>
+        <ul class="lp-horarios" id="lp-horarios"></ul>
+      </section>
+
+      <section class="lp-secao hidden" id="lp-secao-endereco">
+        <h2 class="lp-secao-titulo">Onde estamos</h2>
+        <p class="lp-endereco" id="lp-endereco"></p>
+        <a class="lp-link" id="lp-mapa" target="_blank" rel="noopener">Abrir no mapa →</a>
+      </section>
+
+      <p class="lp-rodape">
+        Agendamento por <a href="/">Barbozap</a>
+      </p>
+    </div>
+
+    <div class="lp-vazio hidden" id="lp-vazio">
+      <h1>Página não encontrada</h1>
+      <p>Esse link de barbearia não existe ou ainda não foi publicado.</p>
+      <a href="/" class="btn-ghost">Conhecer o Barbozap</a>
+    </div>
+  </main>
+
+  <!-- Botão fixo de agendar (no celular fica sempre à mão) -->
+  <div class="lp-cta hidden" id="lp-cta">
+    <a class="btn-primary lp-cta-btn" id="lp-agendar" target="_blank" rel="noopener">Agendar horário</a>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/assets/js/landing.js"></script>
+</body>
+
+</html>

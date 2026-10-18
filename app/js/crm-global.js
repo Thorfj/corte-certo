@@ -28,9 +28,7 @@
     { page: "mensagens", icon: "message-square", label: "Mensagens", restrito: true },
     { page: "financeiro", icon: "wallet", label: "Financeiro", restrito: true },
     { page: "relatorios", icon: "pie-chart", label: "Relatórios", restrito: true },
-    // em desenvolvimento: aparecem com cadeado e abrem uma tela de "em breve"
     { page: "landing-page", icon: "globe", label: "Landing page", restrito: true },
-    { page: "assinaturas", icon: "repeat", label: "Assinaturas", restrito: true, emBreve: true },
     { page: "configuracoes", icon: "settings", label: "Configurações", restrito: true },
   ];
   const PAGINAS_RESTRITAS = NAV_ITEMS.filter((i) => i.restrito).map((i) => i.page);

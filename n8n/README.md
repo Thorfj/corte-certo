@@ -30,6 +30,11 @@ Eles foram migrados dos JSONs do Google Drive, corrigidos para rodar no n8n Clou
 Fluxo do bot: `00101 nome → 00201 serviços → 00301 profissional → 00401 dia → 00501 horário → atendimento criado`.
 Ao concluir, a sessão fica com `etapa_atual = 'concluido'` e a próxima mensagem do cliente recomeça em 00201.
 
+- **Saudação**: quando o bot já sabe o nome, o menu de serviços (00201) começa com "Prazer, Ana! 😊" (acabou de informar na 00101) ou "Oi, Ana! 👋 Que bom te ver de novo." (cliente que volta).
+- **Horários (00501)**: a lista não tem número de opção (o "13" confundia: opção 13 ou 13h?). Mostra os horários por período (*Manhã*, *Tarde*, *Noite*) e o cliente responde com o horário: entende `13`, `13h`, `13:30`, `13h30`, `1330`, `às 13`, `meio-dia`, `9 e meia`; `2` vira 14:00. Horário pedido que não está livre recebe "Esse horário não está livre".
+- **Desconectar o WhatsApp** (Conexão WhatsApp): faz logout e **apaga a instância** na Evolution (o logout às vezes falha e a instância ficava como "open"); o próximo "Conectar" recria a instância já com o webhook.
+- **Cliente novo com duas mensagens juntas**: o nó *Cria cliente* do Roteador tem saída de erro sem ligação; a segunda execução só para, sem erro de duplicidade.
+
 Antes de chamar a etapa, o Roteador (nó *Verifica NPS, cancelar e remarcar*) trata:
 
 - **Nota de NPS**: resposta `1` a `5` (mesma escala do CRM) ao pedido enviado pelo Agendador grava `atendimentos.nps`; a média do cliente (`clientes.media_nps`) é recalculada pelo trigger `trg_media_nps`.

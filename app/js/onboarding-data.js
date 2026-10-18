@@ -160,6 +160,20 @@ const ONBOARDING_PASSOS = {
       texto: "Quem ainda está devendo. Quando o cliente pagar, é só clicar em Marcar pago.",
     },
   ],
+  "landing-page": [
+    {
+      selector: "#lpc-slug",
+      titulo: "O link da sua barbearia",
+      texto:
+        "Escolha o endereço da sua página. Ela mostra seus serviços, preços e horários, com um botão para o cliente agendar.",
+    },
+    {
+      selector: "#lpc-divulgar",
+      titulo: "Divulgue",
+      texto:
+        "Depois de publicar, copie o link para a bio do Instagram e baixe o QR Code para imprimir e colar na barbearia.",
+    },
+  ],
   "pagamentos": [
     {
       selector: ".pagamentos-grid",

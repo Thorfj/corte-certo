@@ -29,7 +29,7 @@
     { page: "financeiro", icon: "wallet", label: "Financeiro", restrito: true },
     { page: "relatorios", icon: "pie-chart", label: "Relatórios", restrito: true },
     // em desenvolvimento: aparecem com cadeado e abrem uma tela de "em breve"
-    { page: "landing-page", icon: "globe", label: "Landing page", restrito: true, emBreve: true },
+    { page: "landing-page", icon: "globe", label: "Landing page", restrito: true },
     { page: "assinaturas", icon: "repeat", label: "Assinaturas", restrito: true, emBreve: true },
     { page: "configuracoes", icon: "settings", label: "Configurações", restrito: true },
   ];

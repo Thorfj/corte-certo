@@ -8,9 +8,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/app/css/global.css">
+  <link rel="stylesheet" href="/app/css/configuracoes.css">
+  <link rel="stylesheet" href="/app/css/landing-page.css">
   <link rel="stylesheet" href="/app/css/responsivo.css">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="/app/js/supabase-config.js"></script>
   <script src="/app/js/onboarding-data.js"></script>
   <script src="/app/js/crm-global.js"></script>
@@ -25,23 +28,77 @@
         <h1 class="page-title" style="margin:0">Landing page</h1>
       </div>
 
-      <!-- Funcionalidade em desenvolvimento -->
-      <div class="card card-centered">
-        <div class="icon-circle"><i data-lucide="lock" style="width:24px;height:24px"></i></div>
-        <p class="card-title">Em breve</p>
-        <p class="card-body">Uma página da sua barbearia na internet, com serviços, preços, fotos e o botão para agendar pelo WhatsApp. Estamos preparando essa novidade.</p>
+      <div class="lpc-grade">
+        <!-- Formulário -->
+        <div class="card form-card lpc-form-card">
+          <form id="lpc-form">
+            <p class="card-section-title">Sua página na internet</p>
+            <p class="card-section-desc">Um link só da sua barbearia, com serviços, preços, horários e o botão de agendar. Coloque no Instagram, no Google e mande pros clientes.</p>
+
+            <div class="field">
+              <label for="lpc-slug">Endereço da página</label>
+              <div class="lpc-slug-campo">
+                <span class="lpc-slug-prefixo">barbozap.com.br/b/</span>
+                <input type="text" id="lpc-slug" maxlength="40" autocomplete="off" spellcheck="false" required>
+              </div>
+              <p class="field-hint" id="lpc-slug-hint">Só letras minúsculas, números e hífen. Ex.: barbearia-do-joao</p>
+            </div>
+
+            <div class="field">
+              <label for="lpc-descricao">Frase de apresentação</label>
+              <textarea id="lpc-descricao" maxlength="300" rows="3" placeholder="Ex.: Corte, barba e sobrancelha no centro da cidade. Atendimento com hora marcada."></textarea>
+              <p class="field-hint"><span id="lpc-descricao-cont">0</span>/300</p>
+            </div>
+
+            <div class="field">
+              <label for="lpc-endereco">Endereço da barbearia</label>
+              <input type="text" id="lpc-endereco" maxlength="200" placeholder="Rua, número, bairro, cidade">
+              <p class="field-hint">Aparece com um botão para abrir no mapa.</p>
+            </div>
+
+            <div class="field">
+              <label for="lpc-instagram">Instagram</label>
+              <input type="text" id="lpc-instagram" maxlength="60" placeholder="@suabarbearia">
+            </div>
+
+            <label class="lpc-publicar">
+              <input type="checkbox" id="lpc-publicada">
+              <span>
+                <strong>Página publicada</strong>
+                <small>Desligado, o link mostra "página não encontrada".</small>
+              </span>
+            </label>
+
+            <p class="lpc-aviso" id="lpc-aviso-bot"></p>
+
+            <p class="modal-error" id="lpc-erro"></p>
+            <p class="success-msg" id="lpc-sucesso">Página salva.</p>
+            <button type="submit" class="btn btn-primary" id="lpc-salvar-btn">Salvar</button>
+          </form>
+        </div>
+
+        <!-- Divulgar -->
+        <div class="card lpc-divulgar" id="lpc-divulgar">
+          <p class="card-section-title">Divulgar</p>
+          <div id="lpc-divulgar-vazio">
+            <p class="card-section-desc">Salve a página com "Página publicada" ligado para ganhar o link e o QR Code.</p>
+          </div>
+          <div id="lpc-divulgar-ok" style="display:none">
+            <a class="lpc-link" id="lpc-link" href="#" target="_blank" rel="noopener"></a>
+            <div class="lpc-acoes">
+              <button type="button" class="btn" id="lpc-copiar-btn"><i data-lucide="copy"></i> Copiar link</button>
+              <a class="btn" id="lpc-abrir-btn" href="#" target="_blank" rel="noopener"><i data-lucide="external-link"></i> Abrir página</a>
+            </div>
+            <div class="lpc-qr" id="lpc-qr"></div>
+            <button type="button" class="btn" id="lpc-baixar-qr-btn"><i data-lucide="download"></i> Baixar QR Code</button>
+            <p class="field-hint">Imprima e cole no espelho ou no balcão: o cliente aponta a câmera e cai direto na sua página.</p>
+          </div>
+          <p class="lpc-nota">Os serviços e preços vêm da aba <a href="/app/servicos/">Serviços</a>, e os horários de <a href="/app/configuracoes/">Configurações</a>.</p>
+        </div>
       </div>
     </main>
   </div>
-  <script>
-    (async () => {
-      const session = await checarSessao();
-      if (session) {
-        await aplicarTemaUsuario();
-        await carregarNomeBarbearia();
-      }
-    })();
-  </script>
+  <script src="/app/js/landing-page.js"></script>
 </body>
 
 </html>

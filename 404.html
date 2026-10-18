@@ -5,6 +5,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex">
+  <script>
+    // Página pública da barbearia: /b/<link> não existe como arquivo no
+    // GitHub Pages, então cai aqui e é levada pra /b/?s=<link>
+    (function () {
+      var m = location.pathname.match(/^\/b\/([a-z0-9-]{3,40})\/?$/i);
+      if (m) location.replace("/b/?s=" + m[1].toLowerCase());
+    })();
+  </script>
   <title>Página não encontrada — Barbozap</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

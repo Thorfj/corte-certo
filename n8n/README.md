@@ -33,6 +33,7 @@ Ao concluir, a sessão fica com `etapa_atual = 'concluido'` e a próxima mensage
 - **Saudação**: quando o bot já sabe o nome, o menu de serviços (00201) começa com "Prazer, Ana! 😊" (acabou de informar na 00101) ou "Oi, Ana! 👋 Que bom te ver de novo." (cliente que volta).
 - **Horários (00501)**: a lista não tem número de opção (o "13" confundia: opção 13 ou 13h?). Mostra os horários por período (*Manhã*, *Tarde*, *Noite*) e o cliente responde com o horário: entende `13`, `13h`, `13:30`, `13h30`, `1330`, `às 13`, `meio-dia`, `9 e meia`; `2` vira 14:00. Horário pedido que não está livre recebe "Esse horário não está livre".
 - **Desconectar o WhatsApp** (Conexão WhatsApp): faz logout e **apaga a instância** na Evolution (o logout às vezes falha e a instância ficava como "open"); o próximo "Conectar" recria a instância já com o webhook.
+- **Quem atende clientes**: `profissionais.atende_clientes` (CRM > Configurações > Usuários). Com `false`, a pessoa não aparece na 00301, não entra no cálculo de horários da 00501 e não ganha agenda no Google (Criar agendas).
 - **Cliente novo com duas mensagens juntas**: o nó *Cria cliente* do Roteador tem saída de erro sem ligação; a segunda execução só para, sem erro de duplicidade.
 
 Antes de chamar a etapa, o Roteador (nó *Verifica NPS, cancelar e remarcar*) trata:

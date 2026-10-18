@@ -32,16 +32,18 @@ function dadosPagamento() {
 let idClienteAtual = null;
 
 // idProfAtual: na edição, mantém na lista o profissional do atendimento
-// mesmo que ele já tenha sido excluído (pra não trocar sem querer)
+// mesmo que ele já tenha sido excluído ou não atenda mais (pra não trocar sem querer)
 async function carregarProfissionais(idProfAtual = null) {
   const barbeariaId = await obterBarbeariaId();
   const { data: todos, error } = await supabaseClient
     .from("profissionais")
-    .select("id, nome, removido_em")
+    .select("id, nome, removido_em, atende_clientes")
     .eq("barbearia_id", barbeariaId)
     .order("nome", { ascending: true });
   const data = (todos || []).filter(
-    (p) => !p.removido_em || String(p.id) === String(idProfAtual),
+    (p) =>
+      (!p.removido_em && p.atende_clientes !== false) ||
+      String(p.id) === String(idProfAtual),
   );
 
   const select = document.getElementById("prof-select");

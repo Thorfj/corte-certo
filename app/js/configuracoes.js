@@ -463,7 +463,7 @@ async function carregarUsuarios() {
   const barbeariaId = await obterBarbeariaId();
   const { data, error } = await supabaseClient
     .from("profissionais")
-    .select("id, nome, email, acesso, agendas")
+    .select("id, nome, email, acesso, agendas, atende_clientes")
     .eq("barbearia_id", barbeariaId)
     .is("removido_em", null)
     .order("nome", { ascending: true });
@@ -473,13 +473,13 @@ async function carregarUsuarios() {
 
   if (error) {
     body.innerHTML =
-      '<tr><td colspan="5" class="empty">Erro ao carregar usuários.</td></tr>';
+      '<tr><td colspan="6" class="empty">Erro ao carregar usuários.</td></tr>';
     return;
   }
 
   if (!data || data.length === 0) {
     body.innerHTML =
-      '<tr><td colspan="5" class="empty">Nenhum usuário cadastrado.</td></tr>';
+      '<tr><td colspan="6" class="empty">Nenhum usuário cadastrado.</td></tr>';
     return;
   }
 
@@ -495,6 +495,7 @@ async function carregarUsuarios() {
       <td>${u.nome}</td>
       <td>${u.email}</td>
       <td><span class="badge">${rotulos[u.acesso] || u.acesso}</span></td>
+      <td>${u.atende_clientes ? "Sim" : '<span class="texto-mudo">Não</span>'}</td>
       <td>${u.agendas ? "✅ Criada automaticamente" : "—"}</td>
       <td class="col-acoes">
         <button class="icon-btn" data-trocar-senha="${u.id}" data-nome="${u.nome}" title="Alterar senha">
@@ -512,6 +513,11 @@ async function carregarUsuarios() {
     .join("");
 
   if (typeof lucide !== "undefined") lucide.createIcons();
+
+  // sem ninguém atendendo, o bot não tem profissional para oferecer
+  document
+    .getElementById("usuarios-aviso-atende")
+    .classList.toggle("hidden", data.some((u) => u.atende_clientes));
 
   body.querySelectorAll("[data-editar]").forEach((tr) => {
     tr.addEventListener("click", () => {
@@ -658,6 +664,7 @@ function abrirModalUsuario(usuario) {
     document.getElementById("us-email").value = usuario.email;
     document.getElementById("us-acesso").value = usuario.acesso;
     document.getElementById("us-agenda").value = textoAgenda(usuario.agendas);
+    document.getElementById("us-atende").checked = usuario.atende_clientes !== false;
     senhaField.style.display = "none";
     senhaInput.required = false;
   } else {
@@ -753,6 +760,7 @@ document
     const email = document.getElementById("us-email").value.trim();
     const acesso = document.getElementById("us-acesso").value;
     const senha = document.getElementById("us-senha").value;
+    const atendeClientes = document.getElementById("us-atende").checked;
     const erroEl = document.getElementById("us-erro");
     const salvarBtn = document.getElementById("us-salvar-btn");
 
@@ -773,7 +781,7 @@ document
         // já deve restringir pra mesma barbearia)
         const { error } = await supabaseClient
           .from("profissionais")
-          .update({ nome, email, acesso })
+          .update({ nome, email, acesso, atende_clientes: atendeClientes })
           .eq("id", id);
         if (error) throw error;
       } else {
@@ -797,6 +805,17 @@ document
         const resultado = await resp.json();
         if (!resp.ok || resultado.error) {
           throw new Error(resultado.error || "Erro ao criar usuário.");
+        }
+
+        // a Edge Function cria todo mundo como "atende clientes"
+        if (!atendeClientes) {
+          const barbeariaId = await obterBarbeariaId();
+          const { error } = await supabaseClient
+            .from("profissionais")
+            .update({ atende_clientes: false })
+            .eq("barbearia_id", barbeariaId)
+            .eq("email", email);
+          if (error) throw error;
         }
       }
 

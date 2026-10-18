@@ -124,6 +124,7 @@
           </button>
         </div>
         <p class="usuarios-aviso hidden" id="usuarios-aviso"></p>
+        <p class="usuarios-aviso hidden" id="usuarios-aviso-atende">Ninguém está marcado como "Atende clientes". O bot não consegue agendar até pelo menos uma pessoa atender: clique no usuário e marque a opção.</p>
         <div class="card" style="padding:0">
           <table class="table" id="tabela-usuarios">
             <thead>
@@ -131,6 +132,7 @@
                 <th>Nome</th>
                 <th>E-mail</th>
                 <th>Papel</th>
+                <th>Atende clientes</th>
                 <th>Agenda</th>
                 <th class="col-acoes"></th>
               </tr>
@@ -245,6 +247,13 @@
               value="Será criada quando o Google Agenda estiver conectado">
           </div>
         </div>
+        <label class="us-atende">
+          <input type="checkbox" id="us-atende" checked>
+          <span>
+            <strong>Atende clientes</strong>
+            <small>Aparece como opção no WhatsApp, na agenda e na landing page. Desmarque para quem só administra (ex.: dono que não corta, recepção).</small>
+          </span>
+        </label>
         <!--
           Campo de "User UID (Supabase Auth)" removido — a criação de
           usuário agora passa pela Edge Function `criar-usuario`, que

@@ -139,7 +139,7 @@ async function carregarProfissionais() {
 
   const { data, error } = await supabaseClient
     .from("profissionais")
-    .select("id, nome")
+    .select("id, nome, atende_clientes")
     .eq("barbearia_id", barbeariaId)
     .is("removido_em", null)
     .order("nome", { ascending: true });
@@ -154,10 +154,11 @@ async function carregarProfissionais() {
 
   // papel "usuario" só enxerga a própria agenda — nem mostra os
   // outros profissionais como opção de filtro
+  // quem não atende clientes (ex.: dono que só administra) não ganha coluna
   const listaExibida =
     meuProf.acesso === "usuario"
       ? data.filter((p) => p.id === meuProf.id)
-      : data;
+      : data.filter((p) => p.atende_clientes !== false);
 
   profissionaisCache = listaExibida;
   profSelecionados = new Set(listaExibida.map((p) => p.id));
@@ -180,7 +181,7 @@ async function carregarProfissionais() {
     return;
   }
 
-  container.innerHTML = data
+  container.innerHTML = listaExibida
     .map(
       (p) => `
       <button type="button" class="prof-chip active" data-id="${p.id}">

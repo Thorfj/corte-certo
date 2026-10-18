@@ -384,3 +384,35 @@
   box-shadow: 0 0 0 3px var(--brand-light), var(--shadow-card);
   transition: box-shadow 0.3s ease;
 }
+
+/* Usuários: "Atende clientes" */
+.us-atende {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+}
+.us-atende input {
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--brand);
+  flex-shrink: 0;
+}
+.us-atende strong {
+  display: block;
+  font-size: 14px;
+}
+.us-atende small {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.texto-mudo {
+  color: var(--text-muted);
+}

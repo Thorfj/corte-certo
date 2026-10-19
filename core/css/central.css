@@ -178,7 +178,7 @@ button {
 }
 .kanban-column {
   flex: 1;
-  min-width: 230px;
+  min-width: 200px;
   background: rgba(28, 28, 26, 0.02);
   border-radius: var(--radius-md);
   padding: 12px;
@@ -192,19 +192,24 @@ button {
   --col-accent: #6b7280;
 }
 .kanban-column[data-status="contato_feito"] {
-  --col-accent: #3e6e8e;
-}
-.kanban-column[data-status="demo_agendada"] {
   --col-accent: #c99a3d;
 }
-.kanban-column[data-status="proposta_enviada"] {
-  --col-accent: var(--brand);
+.kanban-column[data-status="respondeu"] {
+  --col-accent: #3e6e8e;
+}
+.kanban-column[data-status="demo_agendada"],
+.kanban-column[data-status="teste_gratis"] {
+  --col-accent: #6f5aa8;
 }
 .kanban-column[data-status="fechado_ganho"] {
-  --col-accent: #17493c;
+  --col-accent: var(--brand);
 }
 .kanban-column[data-status="perdido"] {
-  --col-accent: #b3261e;
+  --col-accent: #a3a196;
+}
+.kanban-cards {
+  max-height: 68vh;
+  overflow-y: auto;
 }
 
 .kanban-column-header {
@@ -329,6 +334,9 @@ button {
   font-family: var(--font-sans);
   font-size: 14px;
   resize: vertical;
+}
+.field select {
+  background: var(--bg-card);
 }
 .field-row {
   display: flex;
@@ -491,19 +499,246 @@ button {
   background: #6b7280;
 }
 .status-badge[data-status="contato_feito"] {
+  background: #b5862c;
+}
+.status-badge[data-status="respondeu"] {
   background: #3e6e8e;
 }
-.status-badge[data-status="demo_agendada"] {
-  background: #c99a3d;
-}
-.status-badge[data-status="proposta_enviada"] {
-  background: var(--brand);
+.status-badge[data-status="demo_agendada"],
+.status-badge[data-status="teste_gratis"] {
+  background: #6f5aa8;
 }
 .status-badge[data-status="fechado_ganho"] {
-  background: #17493c;
+  background: var(--brand);
 }
 .status-badge[data-status="perdido"] {
-  background: #b3261e;
+  background: #a3a196;
+}
+
+/* ---------- lista de leads ---------- */
+.toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.toolbar-input {
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-card);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  color: var(--text-primary);
+}
+#fBusca {
+  flex: 1;
+  min-width: 220px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-card);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.chip span {
+  background: rgba(28, 28, 26, 0.08);
+  border-radius: var(--radius-pill);
+  padding: 1px 7px;
+  font-size: 11.5px;
+}
+.chip.active {
+  background: var(--brand-dark);
+  border-color: var(--brand-dark);
+  color: #fff;
+}
+.chip.active span {
+  background: rgba(255, 255, 255, 0.2);
+}
+.toolbar-info {
+  font-size: 12.5px;
+  margin: 0 0 10px;
+}
+
+.table-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+}
+.leads-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.leads-table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  font-weight: 500;
+}
+.leads-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.leads-table tbody tr[data-id] {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.leads-table tbody tr[data-id]:hover {
+  background: rgba(28, 28, 26, 0.03);
+}
+.leads-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.lt-nome {
+  display: block;
+  font-weight: 500;
+}
+.lt-sub {
+  display: block;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.nowrap {
+  white-space: nowrap;
+}
+.tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  color: var(--text-secondary);
+  background: rgba(28, 28, 26, 0.06);
+}
+.atrasado {
+  color: #b3261e;
+  font-weight: 500;
+}
+
+/* ---------- modal do lead ---------- */
+.modal.modal-lg {
+  width: 640px;
+}
+.field-uf {
+  flex: 0 0 72px !important;
+}
+.field-dias {
+  flex: 0 0 120px !important;
+}
+.input-with-link {
+  display: flex;
+  gap: 8px;
+}
+.input-with-link input {
+  flex: 1;
+}
+.modal-section {
+  border-top: 1px solid var(--border);
+  margin-top: 20px;
+  padding-top: 18px;
+}
+.modal-section-top {
+  border-top: none;
+  margin: 0 0 20px;
+  padding: 16px;
+  background: var(--brand-light);
+  border-radius: var(--radius-md);
+}
+.modal-section-top .field textarea,
+.modal-section-top .field select {
+  background: var(--bg-card);
+}
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+.hint {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  margin: -6px 0 12px;
+}
+.send-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.nota-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.nota-row input {
+  flex: 1;
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+}
+.historico {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+}
+.historico li {
+  display: flex;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+.historico li:last-child {
+  border-bottom: none;
+}
+.hist-data {
+  flex-shrink: 0;
+  width: 92px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* ---------- mensagens ---------- */
+.msg-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px 14px;
+  margin-bottom: 14px;
+}
+.msg-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+}
+.msg-card-footer .hint {
+  margin: 0;
+}
+#tab-mensagens code {
+  background: rgba(28, 28, 26, 0.06);
+  padding: 1px 5px;
+  border-radius: 5px;
+  font-size: 12.5px;
 }
 
 /* ---------- acesso negado ---------- */
@@ -561,6 +796,10 @@ button {
   }
   .metrics-grid {
     grid-template-columns: 1fr;
+  }
+  .field-uf,
+  .field-dias {
+    flex: 1 !important;
   }
   .extracao-table {
     display: block;

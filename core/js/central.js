@@ -172,6 +172,7 @@ function initTabs() {
         .forEach((p) => p.classList.remove("active"));
       document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
       if (btn.dataset.tab === "relatorios") carregarRelatorios();
+      if (btn.dataset.tab === "whatsapp") atualizarStatusWhatsapp();
     });
   });
 }
@@ -859,6 +860,163 @@ function initModal() {
   });
 }
 
+// ---------- WhatsApp da prospecção ----------
+// Fala com o n8n (workflow "Barbozap - WhatsApp da prospecção"), que confere se o
+// usuário é da equipe interna e usa sempre a instância "prospeccao" da Evolution,
+// sem webhook. A chave da Evolution nunca passa pelo navegador.
+const WHATSAPP_URL = "https://cortecerto.app.n8n.cloud/webhook/whatsapp-prospeccao";
+const WHATSAPP_POLL_MS = 4000; // confere se o QR já foi lido
+const WHATSAPP_QR_RENOVA_MS = 35000; // o QR da Evolution expira em ~40s
+const WHATSAPP_QR_LIMITE_MS = 180000; // depois de 3 min sem ler, para e pede para tentar de novo
+let waPoll = null;
+let waRenova = null;
+let waLimite = null;
+
+async function chamarWhatsapp(acao) {
+  const {
+    data: { session },
+  } = await supabaseCentral.auth.getSession();
+  const resp = await fetch(WHATSAPP_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session?.access_token || ""}`,
+    },
+    body: JSON.stringify({ acao }),
+  });
+  const dados = await resp.json().catch(() => ({}));
+  if (!resp.ok || dados.erro) {
+    throw new Error(dados.erro || "Não foi possível falar com o WhatsApp agora.");
+  }
+  return dados;
+}
+
+function pararEsperaWhatsapp() {
+  clearInterval(waPoll);
+  clearInterval(waRenova);
+  clearTimeout(waLimite);
+  waPoll = waRenova = waLimite = null;
+}
+
+function mostrarErroWhatsapp(msg) {
+  const el = document.getElementById("waErro");
+  el.textContent = msg || "";
+  el.classList.toggle("show", Boolean(msg));
+}
+
+function mostrarEstadoWhatsapp(dados) {
+  const estado = dados.estado;
+  const conectado = estado === "open";
+  const aguardando = estado === "connecting" && Boolean(waPoll);
+  const badge = document.getElementById("waBadge");
+  badge.textContent = conectado
+    ? "Conectado"
+    : aguardando
+      ? "Aguardando leitura do QR Code…"
+      : "Desconectado";
+  badge.dataset.estado = conectado ? "open" : aguardando ? "connecting" : "close";
+
+  const numeroEl = document.getElementById("waNumero");
+  const numero = conectado && dados.numero ? formatarTelefone(dados.numero) : "";
+  numeroEl.textContent = numero ? [numero, dados.nome].filter(Boolean).join(" · ") : "";
+  numeroEl.classList.toggle("hidden", !numero);
+
+  document.getElementById("waConectarBtn").classList.toggle("hidden", conectado || aguardando);
+  document.getElementById("waSafraBtn").classList.toggle("hidden", !conectado);
+  // dá para desconectar conectado ou no meio da leitura (cancela o QR)
+  const desconectarBtn = document.getElementById("waDesconectarBtn");
+  desconectarBtn.classList.toggle("hidden", !conectado && !aguardando);
+  desconectarBtn.textContent = aguardando ? "Cancelar" : "Desconectar";
+  if (!aguardando) document.getElementById("waQr").classList.add("hidden");
+}
+
+async function atualizarStatusWhatsapp() {
+  if (waPoll) return; // já está esperando a leitura do QR
+  mostrarErroWhatsapp("");
+  try {
+    mostrarEstadoWhatsapp(await chamarWhatsapp("status"));
+  } catch (err) {
+    console.error(err);
+    mostrarEstadoWhatsapp({ estado: "close" });
+    mostrarErroWhatsapp(err.message);
+  }
+}
+
+async function pedirQrWhatsapp() {
+  const dados = await chamarWhatsapp("conectar");
+  if (dados.estado === "open") {
+    pararEsperaWhatsapp();
+    await atualizarStatusWhatsapp();
+    return;
+  }
+  if (dados.qr) {
+    document.getElementById("waQrImg").src = dados.qr;
+    document.getElementById("waQr").classList.remove("hidden");
+  }
+}
+
+function initWhatsapp() {
+  const conectarBtn = document.getElementById("waConectarBtn");
+  const desconectarBtn = document.getElementById("waDesconectarBtn");
+
+  conectarBtn.addEventListener("click", async () => {
+    mostrarErroWhatsapp("");
+    conectarBtn.disabled = true;
+    try {
+      pararEsperaWhatsapp();
+      // marca como "aguardando" antes do primeiro QR, para o botão sumir
+      waPoll = setInterval(async () => {
+        try {
+          const dados = await chamarWhatsapp("status");
+          if (dados.estado === "open") {
+            pararEsperaWhatsapp();
+            mostrarEstadoWhatsapp(dados);
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }, WHATSAPP_POLL_MS);
+      waRenova = setInterval(() => pedirQrWhatsapp().catch(console.error), WHATSAPP_QR_RENOVA_MS);
+      waLimite = setTimeout(() => {
+        pararEsperaWhatsapp();
+        mostrarEstadoWhatsapp({ estado: "close" });
+        mostrarErroWhatsapp("O QR Code expirou. Clique em Conectar WhatsApp para gerar outro.");
+      }, WHATSAPP_QR_LIMITE_MS);
+      mostrarEstadoWhatsapp({ estado: "connecting" });
+      await pedirQrWhatsapp();
+    } catch (err) {
+      console.error(err);
+      pararEsperaWhatsapp();
+      mostrarEstadoWhatsapp({ estado: "close" });
+      mostrarErroWhatsapp(err.message);
+    } finally {
+      conectarBtn.disabled = false;
+    }
+  });
+
+  desconectarBtn.addEventListener("click", async () => {
+    const cancelandoQr = Boolean(waPoll);
+    if (
+      !cancelandoQr &&
+      !confirm(
+        "Desconectar o WhatsApp da prospecção? As safras não conseguem enviar até você conectar de novo.",
+      )
+    )
+      return;
+    desconectarBtn.disabled = true;
+    mostrarErroWhatsapp("");
+    pararEsperaWhatsapp();
+    try {
+      mostrarEstadoWhatsapp(await chamarWhatsapp("desconectar"));
+    } catch (err) {
+      console.error(err);
+      mostrarErroWhatsapp(err.message);
+    } finally {
+      desconectarBtn.disabled = false;
+    }
+  });
+}
+
 // ---------- relatórios de SaaS ----------
 let relatoriosCarregados = false;
 
@@ -945,6 +1103,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initTabs();
   initFiltros();
   initModal();
+  initWhatsapp();
 
   try {
     const ok = await checarAcesso();

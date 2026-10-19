@@ -27,6 +27,7 @@ Eles foram migrados dos JSONs do Google Drive, corrigidos para rodar no n8n Clou
 | Alerta de erro | Error Trigger (é o *Error workflow* dos workflows com gatilho) | `LO9MFNlWYRaCsKz8` |
 | Conexão WhatsApp | Webhook `POST /webhook/whatsapp-conexao` (CRM > Configurações) | `2ch6yXqWnITsEyBJ` |
 | Safra de prospecção | Formulário `/form/safra-prospeccao` (login do n8n) | `w7S7TVhqwdZs4xrU` |
+| WhatsApp da prospecção | Webhook `POST /webhook/whatsapp-prospeccao` (Central Interna > WhatsApp) | `PeWxnjnK1sr15em3` |
 
 Fluxo do bot: `00101 nome → 00201 serviços → 00301 profissional → 00401 dia → 00501 horário → atendimento criado`.
 Ao concluir, a sessão fica com `etapa_atual = 'concluido'` e a próxima mensagem do cliente recomeça em 00201.
@@ -88,4 +89,6 @@ Formulário manual em `https://cortecerto.app.n8n.cloud/form/safra-prospeccao` (
 - Resultado de cada lead: RPC `registrar_lead_safra` (atualiza o lead, etapa só avança, e grava `lead_atividades`).
 - Entre envios: 3 a 7 minutos. No fim: `safras_prospeccao` vira `concluida` e chega um e-mail com o resumo.
 - Se a execução parar no meio, os leads restantes ficam com o próximo passo "Na fila do n8n".
-- Use uma instância da Evolution separada (padrão no formulário: `prospeccao`), criada pelo manager e sem webhook; nunca a de uma barbearia.
+- A instância é a `prospeccao` (padrão no formulário). Conecte pela aba **WhatsApp** da Central Interna: o workflow
+  *WhatsApp da prospecção* só aceita usuários da `equipe_interna`, usa sempre essa instância e a deixa **sem webhook**
+  (o Roteador do bot nunca recebe as respostas dos prospects). Nunca use a instância de uma barbearia.

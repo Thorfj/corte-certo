@@ -28,6 +28,7 @@
       <button class="tab-btn active" data-tab="leads">Leads</button>
       <button class="tab-btn" data-tab="funil">Funil</button>
       <button class="tab-btn" data-tab="mensagens">Mensagens</button>
+      <button class="tab-btn" data-tab="whatsapp">WhatsApp</button>
       <button class="tab-btn" data-tab="relatorios">Relatórios de SaaS</button>
     </div>
 
@@ -80,6 +81,50 @@
       </p>
       <div id="mensagensLista">
         <div class="loading">Carregando mensagens...</div>
+      </div>
+    </div>
+
+    <!-- ===================== ABA: WHATSAPP DA PROSPECÇÃO ===================== -->
+    <div class="tab-panel" id="tab-whatsapp">
+      <div class="wa-card">
+        <div class="wa-head">
+          <div>
+            <p class="section-title">WhatsApp da prospecção</p>
+            <p class="text-secondary wa-sub">
+              Número usado pelas safras do n8n. Fica separado do bot das barbearias: as respostas dos
+              prospects chegam só no celular, e o bot não responde a elas.
+            </p>
+          </div>
+          <span class="wa-badge" id="waBadge">Verificando…</span>
+        </div>
+
+        <p class="wa-numero hidden" id="waNumero"></p>
+
+        <div class="wa-qr hidden" id="waQr">
+          <img id="waQrImg" alt="QR Code para conectar o WhatsApp">
+          <ol>
+            <li>Abra o WhatsApp no celular do número de prospecção.</li>
+            <li>Toque em <strong>Aparelhos conectados</strong> e depois em <strong>Conectar um aparelho</strong>.</li>
+            <li>Aponte a câmera para este QR Code. Ele se renova sozinho.</li>
+          </ol>
+        </div>
+
+        <p class="modal-error" id="waErro"></p>
+
+        <div class="wa-acoes">
+          <button type="button" class="btn btn-primary" id="waConectarBtn">Conectar WhatsApp</button>
+          <a class="btn btn-primary hidden" id="waSafraBtn" href="https://cortecerto.app.n8n.cloud/form/safra-prospeccao" target="_blank" rel="noopener">Disparar uma safra</a>
+          <button type="button" class="btn btn-danger hidden" id="waDesconectarBtn">Desconectar</button>
+        </div>
+      </div>
+
+      <div class="report-block wa-dicas">
+        <p class="report-title">Antes de conectar</p>
+        <ul>
+          <li>Use um chip só para prospecção, nunca o seu número pessoal ou o de uma barbearia.</li>
+          <li>Prefira o WhatsApp Business, com nome, foto e descrição do BarboZap.</li>
+          <li>Número novo: use alguns dias normalmente antes da primeira safra e comece com 10 a 15 mensagens por dia.</li>
+        </ul>
       </div>
     </div>
 

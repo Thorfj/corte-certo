@@ -106,6 +106,8 @@ button {
 .tabs {
   display: flex;
   gap: 20px;
+  overflow-x: auto;
+  white-space: nowrap;
   border-bottom: 1px solid var(--border);
   margin-bottom: 24px;
 }
@@ -739,6 +741,87 @@ button {
   padding: 1px 5px;
   border-radius: 5px;
   font-size: 12.5px;
+}
+
+/* ---------- whatsapp da prospecção ---------- */
+.wa-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  margin-bottom: 20px;
+}
+.wa-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.wa-head .section-title {
+  margin-bottom: 4px;
+}
+.wa-sub {
+  font-size: 13.5px;
+  margin: 0;
+  max-width: 560px;
+  line-height: 1.5;
+}
+.wa-badge {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 12.5px;
+  font-weight: 500;
+  background: rgba(28, 28, 26, 0.06);
+  color: var(--text-secondary);
+}
+.wa-badge[data-estado="open"] {
+  background: var(--brand-light);
+  color: var(--brand-dark);
+}
+.wa-badge[data-estado="connecting"] {
+  background: #fdf1d8;
+  color: #8a6418;
+}
+.wa-numero {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 16px 0 0;
+}
+.wa-qr {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.wa-qr img {
+  width: 240px;
+  height: 240px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+.wa-qr ol {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 1.7;
+  max-width: 340px;
+}
+.wa-acoes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.wa-dicas ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--text-secondary);
 }
 
 /* ---------- acesso negado ---------- */

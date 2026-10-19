@@ -26,6 +26,7 @@ Eles foram migrados dos JSONs do Google Drive, corrigidos para rodar no n8n Clou
 | Criar agendas dos profissionais | sub-workflow + Webhook `POST /webhook/profissional-criado` | `ztT9jpz4sfvsyMJ9` |
 | Alerta de erro | Error Trigger (é o *Error workflow* dos workflows com gatilho) | `LO9MFNlWYRaCsKz8` |
 | Conexão WhatsApp | Webhook `POST /webhook/whatsapp-conexao` (CRM > Configurações) | `2ch6yXqWnITsEyBJ` |
+| Safra de prospecção | Formulário `/form/safra-prospeccao` (login do n8n) | `w7S7TVhqwdZs4xrU` |
 
 Fluxo do bot: `00101 nome → 00201 serviços → 00301 profissional → 00401 dia → 00501 horário → atendimento criado`.
 Ao concluir, a sessão fica com `etapa_atual = 'concluido'` e a próxima mensagem do cliente recomeça em 00201.
@@ -74,3 +75,17 @@ Roteador, Agendador, Notificação de Falta, OAuth, sincronizações do Google e
 ## Conexão do WhatsApp pelo CRM
 
 Em **Configurações > WhatsApp do bot** o admin conecta o número lendo o QR Code. O CRM chama `POST /webhook/whatsapp-conexao` com o token do usuário logado e `{ acao: status | conectar | desconectar }`. O n8n confere o usuário no Supabase Auth, exige papel admin e usa `barbearias.whatsapp_barbearia` como nome da instância (nunca um valor vindo do navegador). Instâncias novas já nascem com o webhook do Roteador (`MESSAGES_UPSERT`).
+
+## Safra de prospecção (Central Interna)
+
+Formulário manual em `https://cortecerto.app.n8n.cloud/form/safra-prospeccao` (exige login no n8n). Escolhe a safra
+(**Primeiro contato**: leads `novo_lead`, celulares primeiro; **Follow-ups do dia**: `contato_feito` com
+"Follow-up dia 3/7" vencido), mostra a prévia de cada mensagem e só envia depois de **Enviar agora**.
+
+- Roteiros: tabela `mensagens_prospeccao` (aba Mensagens da Central). Primeiro contato reveza as versões A/B/C.
+- Antes de cada envio: relê a etapa do lead (pula se mudou), checa o número em `/chat/whatsappNumbers` e, se o lead
+  já teve contato, procura respostas em `/chat/findMessages` (se respondeu, vira Respondeu e o follow-up não sai).
+- Resultado de cada lead: RPC `registrar_lead_safra` (atualiza o lead, etapa só avança, e grava `lead_atividades`).
+- Entre envios: 3 a 7 minutos. No fim: `safras_prospeccao` vira `concluida` e chega um e-mail com o resumo.
+- Se a execução parar no meio, os leads restantes ficam com o próximo passo "Na fila do n8n".
+- Use uma instância da Evolution separada (padrão no formulário: `prospeccao`), criada pelo manager e sem webhook; nunca a de uma barbearia.

@@ -178,6 +178,7 @@ function initTabs() {
         .forEach((p) => p.classList.remove("active"));
       document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
       if (btn.dataset.tab === "relatorios") carregarRelatorios();
+      if (btn.dataset.tab === "comercial") carregarComercial();
       if (btn.dataset.tab === "whatsapp") {
         atualizarStatusWhatsapp();
         carregarSafras();
@@ -1285,6 +1286,274 @@ function initWhatsapp() {
   });
 }
 
+// ---------- performance comercial ----------
+// Tudo calculado no navegador a partir de leads, lead_atividades e safras_prospeccao.
+let comAtividades = null; // cache do histórico; "Atualizar" busca de novo
+let comSafras = null;
+
+function pct(parte, todo) {
+  return todo ? Math.round((parte / todo) * 100) : 0;
+}
+
+// etapa mais avançada a que o lead já chegou (Perdido não conta como avanço)
+function etapaMaxima(lead, historico) {
+  let max = lead.status === "perdido" ? 0 : stageIndex(lead.status);
+  (historico || []).forEach((a) => {
+    if (a.tipo === "status" && a.status_para !== "perdido") {
+      max = Math.max(max, stageIndex(a.status_para));
+    }
+  });
+  if (max < 1 && lead.ultimo_contato) max = 1; // já recebeu mensagem
+  return max;
+}
+
+function inicioDaSemana(data) {
+  const d = new Date(data);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // segunda-feira
+  return d;
+}
+
+function barrasHorizontais(linhas, vazio) {
+  if (!linhas.some((l) => l.valor > 0)) return `<div class="loading">${esc(vazio)}</div>`;
+  const max = Math.max(...linhas.map((l) => l.valor), 1);
+  return linhas
+    .map(
+      (l) => `
+    <div class="bar-row" title="${esc(l.rotulo)}: ${l.valor}${l.extra ? " (" + esc(l.extra) + ")" : ""}">
+      <div class="bar-row-head"><span>${esc(l.rotulo)}</span><span>${l.valor}${l.extra ? ` <small class="text-secondary">${esc(l.extra)}</small>` : ""}</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${l.valor ? Math.max((l.valor / max) * 100, 2) : 0}%"></div></div>
+    </div>`,
+    )
+    .join("");
+}
+
+function colunasSemanais(semanas, vazio) {
+  if (!semanas.some((s) => s.total > 0)) return `<div class="loading">${esc(vazio)}</div>`;
+  const max = Math.max(...semanas.map((s) => s.total), 1);
+  return semanas
+    .map(
+      (s) => `
+    <div class="chart-bar-col" title="Semana de ${esc(s.rotulo)}: ${s.total}">
+      <span class="chart-bar-value">${s.total || ""}</span>
+      <div class="chart-bar" style="height:${s.total ? Math.max((s.total / max) * 100, 4) : 0}%"></div>
+      <span class="chart-bar-label">${esc(s.rotulo)}</span>
+    </div>`,
+    )
+    .join("");
+}
+
+function tabela(cabecalho, linhas, vazio) {
+  if (!linhas.length) return `<div class="loading">${esc(vazio)}</div>`;
+  return `<table class="leads-table com-tabela"><thead><tr>${cabecalho
+    .map((c, i) => `<th${i ? ' class="num"' : ""}>${esc(c)}</th>`)
+    .join("")}</tr></thead><tbody>${linhas
+    .map((l) => `<tr>${l.map((c, i) => `<td${i ? ' class="num"' : ""}>${c}</td>`).join("")}</tr>`)
+    .join("")}</tbody></table>`;
+}
+
+async function carregarComercial(forcar = false) {
+  if (forcar || !comAtividades) {
+    document.getElementById("comKpis").innerHTML = '<div class="loading">Carregando...</div>';
+    const [atv, saf] = await Promise.all([
+      supabaseCentral
+        .from("lead_atividades")
+        .select("lead_id, tipo, descricao, status_de, status_para, criado_em")
+        .order("criado_em", { ascending: true })
+        .limit(20000),
+      supabaseCentral
+        .from("safras_prospeccao")
+        .select("id, criado_em, status, total, resumo")
+        .order("id", { ascending: false })
+        .limit(500),
+    ]);
+    if (atv.error || saf.error) {
+      console.error(atv.error || saf.error);
+      document.getElementById("comKpis").innerHTML =
+        '<div class="loading">Erro ao carregar os dados do relatório.</div>';
+      return;
+    }
+    comAtividades = atv.data || [];
+    comSafras = saf.data || [];
+  }
+  renderizarComercial();
+}
+
+function renderizarComercial() {
+  const dias = Number(document.getElementById("comPeriodo").value);
+  const desde = dias ? Date.now() - dias * 864e5 : 0;
+  const noPeriodo = (iso) => new Date(iso).getTime() >= desde;
+
+  const porLead = new Map();
+  comAtividades.forEach((a) => {
+    if (!porLead.has(a.lead_id)) porLead.set(a.lead_id, []);
+    porLead.get(a.lead_id).push(a);
+  });
+  const atvPeriodo = comAtividades.filter((a) => noPeriodo(a.criado_em));
+  const mensagens = atvPeriodo.filter((a) => a.tipo === "mensagem");
+  const chegouEm = (etapa) =>
+    new Set(atvPeriodo.filter((a) => a.tipo === "status" && a.status_para === etapa).map((a) => a.lead_id));
+
+  // ---- KPIs do período ----
+  const contatados = new Set(mensagens.map((a) => a.lead_id));
+  const responderam = chegouEm("respondeu");
+  const demos = chegouEm("demo_agendada");
+  const testes = chegouEm("teste_gratis");
+  const clientes = chegouEm("fechado_ganho");
+  const kpi = (rotulo, valor, sub) =>
+    `<div class="metric-card"><p class="metric-label">${esc(rotulo)}</p><p class="metric-value">${valor}</p>${
+      sub ? `<p class="metric-sub">${esc(sub)}</p>` : ""
+    }</div>`;
+  document.getElementById("comKpis").innerHTML = [
+    kpi("Mensagens enviadas", mensagens.length, `${contatados.size} ${contatados.size === 1 ? "lead" : "leads"}`),
+    kpi("Responderam", responderam.size, contatados.size ? `${pct(responderam.size, contatados.size)}% dos contatados` : ""),
+    kpi("Demos", demos.size, ""),
+    kpi("Testes grátis", testes.size, ""),
+    kpi("Novos clientes", clientes.size, contatados.size ? `${pct(clientes.size, contatados.size)}% dos contatados` : ""),
+    kpi("Para hoje", leadsCache.filter(leadParaHoje).length, "próximos passos vencidos"),
+  ].join("");
+
+  // ---- funil acumulado (desde o início) ----
+  const maximos = leadsCache.map((l) => etapaMaxima(l, porLead.get(l.id)));
+  const etapasFunil = STAGES.slice(0, 6); // Novo ... Cliente
+  let anterior = null;
+  document.getElementById("comFunil").innerHTML = barrasHorizontais(
+    etapasFunil.map((st, i) => {
+      const valor = i === 0 ? leadsCache.length : maximos.filter((m) => m >= i).length;
+      const extra = anterior ? `${pct(valor, anterior)}%` : "";
+      anterior = valor;
+      return { rotulo: i === 0 ? "Na base" : st.label, valor, extra };
+    }),
+    "Nenhum lead cadastrado.",
+  );
+
+  // ---- etapa atual ----
+  document.getElementById("comEtapas").innerHTML = barrasHorizontais(
+    STAGES.map((st) => ({
+      rotulo: st.label,
+      valor: leadsCache.filter((l) => l.status === st.status).length,
+    })),
+    "Nenhum lead cadastrado.",
+  );
+
+  // ---- semanas (fixo: últimas 8) ----
+  const semanas = [];
+  const segunda = inicioDaSemana(new Date());
+  for (let i = 7; i >= 0; i--) {
+    const ini = new Date(segunda);
+    ini.setDate(ini.getDate() - i * 7);
+    semanas.push({ ini: ini.getTime(), rotulo: ini.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) });
+  }
+  const contaSemanas = (lista) =>
+    semanas.map((s, i) => {
+      const fim = i < semanas.length - 1 ? semanas[i + 1].ini : Infinity;
+      return { ...s, total: lista.filter((a) => { const t = new Date(a.criado_em).getTime(); return t >= s.ini && t < fim; }).length };
+    });
+  document.getElementById("comSemanaMsgs").innerHTML = colunasSemanais(
+    contaSemanas(comAtividades.filter((a) => a.tipo === "mensagem")),
+    "Nenhuma mensagem nas últimas 8 semanas.",
+  );
+  document.getElementById("comSemanaResp").innerHTML = colunasSemanais(
+    contaSemanas(comAtividades.filter((a) => a.tipo === "status" && a.status_para === "respondeu")),
+    "Nenhuma resposta nas últimas 8 semanas.",
+  );
+
+  // ---- roteiros ----
+  const respondeuEm = new Map(); // lead -> data da primeira vez em Respondeu
+  comAtividades.forEach((a) => {
+    if (a.tipo === "status" && a.status_para === "respondeu" && !respondeuEm.has(a.lead_id)) {
+      respondeuEm.set(a.lead_id, new Date(a.criado_em).getTime());
+    }
+  });
+  const porRoteiro = new Map();
+  mensagens.forEach((a) => {
+    const nome = String(a.descricao || "Mensagem livre").replace(/\s*·\s*safra n8n #\d+$/, "");
+    if (!porRoteiro.has(nome)) porRoteiro.set(nome, { envios: 0, leads: new Set(), responderam: new Set() });
+    const r = porRoteiro.get(nome);
+    r.envios += 1;
+    r.leads.add(a.lead_id);
+    const resp = respondeuEm.get(a.lead_id);
+    if (resp && resp >= new Date(a.criado_em).getTime()) r.responderam.add(a.lead_id);
+  });
+  const ordem = (nome) => {
+    const m = mensagensCache.find((x) => x.etapa === nome);
+    return m ? m.ordem : 9999;
+  };
+  document.getElementById("comRoteiros").innerHTML = tabela(
+    ["Roteiro", "Envios", "Leads", "Responderam", "Taxa de resposta"],
+    [...porRoteiro.entries()]
+      .sort((a, b) => ordem(a[0]) - ordem(b[0]))
+      .map(([nome, r]) => {
+        const taxa = pct(r.responderam.size, r.leads.size);
+        return [
+          esc(nome),
+          r.envios,
+          r.leads.size,
+          r.responderam.size,
+          `<span class="taxa"><span class="taxa-barra"><span style="width:${taxa}%"></span></span>${taxa}%</span>`,
+        ];
+      }),
+    "Nenhuma mensagem enviada no período.",
+  );
+
+  // ---- bairros (desde o início) ----
+  const porBairro = new Map();
+  leadsCache.forEach((l, i) => {
+    if (maximos[i] < 1) return; // nunca contatado
+    const b = l.bairro || "Sem bairro";
+    if (!porBairro.has(b)) porBairro.set(b, { contatados: 0, responderam: 0, clientes: 0 });
+    const r = porBairro.get(b);
+    r.contatados += 1;
+    if (maximos[i] >= 2) r.responderam += 1;
+    if (maximos[i] >= 5) r.clientes += 1;
+  });
+  document.getElementById("comBairros").innerHTML = tabela(
+    ["Bairro", "Contatados", "Responderam", "Clientes", "Taxa de resposta"],
+    [...porBairro.entries()]
+      .sort((a, b) => b[1].contatados - a[1].contatados)
+      .slice(0, 10)
+      .map(([b, r]) => [esc(b), r.contatados, r.responderam, r.clientes, `${pct(r.responderam, r.contatados)}%`]),
+    "Nenhum lead contatado ainda.",
+  );
+
+  // ---- safras ----
+  const safrasPeriodo = comSafras.filter((s) => noPeriodo(s.criado_em) && s.status !== "cancelada" && s.status !== "previa");
+  const soma = (campo) => safrasPeriodo.reduce((t, s) => t + Number((s.resumo || {})[campo] || 0), 0);
+  document.getElementById("comSafras").innerHTML = safrasPeriodo.length
+    ? `<ul class="com-lista">
+        <li><span>Safras disparadas</span><strong>${safrasPeriodo.length}</strong></li>
+        <li><span>Mensagens enviadas</span><strong>${soma("enviado")}</strong></li>
+        <li><span>Números sem WhatsApp</span><strong>${soma("sem_whatsapp")}</strong></li>
+        <li><span>Já tinham respondido (follow-up evitado)</span><strong>${soma("respondeu")}</strong></li>
+        <li><span>Erros</span><strong>${soma("erro")}</strong></li>
+      </ul>`
+    : '<div class="loading">Nenhuma safra no período.</div>';
+
+  // ---- motivos de perda ----
+  const motivos = new Map();
+  leadsCache
+    .filter((l) => l.status === "perdido")
+    .forEach((l) => {
+      const m = (l.motivo_perda || "Sem motivo informado").trim();
+      motivos.set(m, (motivos.get(m) || 0) + 1);
+    });
+  document.getElementById("comPerdas").innerHTML = motivos.size
+    ? `<ul class="com-lista">${[...motivos.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([m, n]) => `<li><span>${esc(m)}</span><strong>${n}</strong></li>`)
+        .join("")}</ul>`
+    : '<div class="loading">Nenhum lead perdido.</div>';
+}
+
+function initComercial() {
+  document.getElementById("comPeriodo").addEventListener("change", () => {
+    if (comAtividades) renderizarComercial();
+  });
+  document.getElementById("comAtualizar").addEventListener("click", () =>
+    carregarComercial(true).catch(console.error),
+  );
+}
+
 // ---------- relatórios de SaaS ----------
 let relatoriosCarregados = false;
 
@@ -1373,6 +1642,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initModal();
   initWhatsapp();
   initSafra();
+  initComercial();
 
   try {
     const ok = await checarAcesso();

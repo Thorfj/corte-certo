@@ -5,10 +5,17 @@ const defaults = {
   taxRate: 6.0,
 };
 
-// Custos da operação direta: cada item é fixo no mês ou cobrado por cliente.
-// A lista fica salva neste navegador para não precisar digitar de novo.
-const defaultCosts = [{ name: "Custos gerais (VPN, servidor)", value: 100.0, type: "fixo" }];
-const COSTS_KEY = "barbozap-calculadora-custos";
+// Custos da operação direta: cada item é por mês, por ano (vira 1/12 por mês)
+// ou por cliente. A lista fica salva neste navegador para não precisar digitar de novo.
+const defaultCosts = [
+  { name: "Supabase", value: 120.0, type: "fixo" },
+  { name: "n8n", value: 320.0, type: "fixo" },
+  { name: "Evolution API", value: 400.0, type: "ano" },
+  { name: "Domínio", value: 180.0, type: "ano" },
+  { name: "WhatsApp", value: 30.0, type: "fixo" },
+  { name: "Claude", value: 120.0, type: "fixo" },
+];
+const COSTS_KEY = "barbozap-calculadora-custos-v2";
 const costList = document.getElementById("costList");
 const costBreakdown = document.getElementById("costBreakdown");
 
@@ -30,6 +37,18 @@ function saveCosts() {
   }
 }
 
+// quanto o custo pesa no mês
+function monthlyAmount(cost, clients) {
+  if (cost.type === "ano") return cost.value / 12;
+  if (cost.type === "cliente") return cost.value * clients;
+  return cost.value;
+}
+
+function costDetail(cost) {
+  const per = { fixo: "/mês", ano: "/ano", cliente: " por cliente" }[cost.type] || "";
+  return `${currency.format(cost.value)}${per}`;
+}
+
 function addCostRow(cost = { name: "", value: 0, type: "fixo" }) {
   const row = document.createElement("div");
   row.className = "cost-row";
@@ -39,15 +58,16 @@ function addCostRow(cost = { name: "", value: 0, type: "fixo" }) {
       <span class="input-prefix">R$</span>
       <input class="cost-value" type="number" inputmode="decimal" min="0" step="0.01" aria-label="Valor do custo">
     </div>
-    <select class="cost-type" aria-label="Tipo do custo">
+    <select class="cost-type" aria-label="Frequência do custo">
       <option value="fixo">por mês</option>
+      <option value="ano">por ano</option>
       <option value="cliente">por cliente</option>
     </select>
     <button class="cost-remove" type="button" aria-label="Remover custo" title="Remover custo">&times;</button>
   `;
   row.querySelector(".cost-name").value = cost.name || "";
   row.querySelector(".cost-value").value = Number(cost.value || 0).toFixed(2);
-  row.querySelector(".cost-type").value = cost.type === "cliente" ? "cliente" : "fixo";
+  row.querySelector(".cost-type").value = ["fixo", "ano", "cliente"].includes(cost.type) ? cost.type : "fixo";
   row.querySelectorAll("input, select").forEach((el) =>
     el.addEventListener("input", () => {
       saveCosts();
@@ -126,11 +146,11 @@ function calculate() {
   const taxRate = Math.min(getNumber("taxRate"), 100) / 100;
   const costs = readCosts();
   const fixedCosts = costs
-    .filter((cost) => cost.type === "fixo")
-    .reduce((total, cost) => total + cost.value, 0);
+    .filter((cost) => cost.type !== "cliente")
+    .reduce((total, cost) => total + monthlyAmount(cost, clients), 0);
   const otherPerClient = costs
     .filter((cost) => cost.type === "cliente")
-    .reduce((total, cost) => total + cost.value, 0);
+    .reduce((total, cost) => total + monthlyAmount(cost, 1), 0);
 
   const revenue = price * clients;
   const taxes = revenue * taxRate;
@@ -177,9 +197,9 @@ function calculate() {
     const line = document.createElement("div");
     line.className = "breakdown-row";
     const label = document.createElement("span");
-    label.textContent = (cost.name || "Custo sem nome") + (cost.type === "cliente" ? " (por cliente)" : "");
+    label.textContent = `${cost.name || "Custo sem nome"} (${costDetail(cost)})`;
     const amount = document.createElement("strong");
-    amount.textContent = currency.format(cost.type === "cliente" ? cost.value * clients : cost.value);
+    amount.textContent = currency.format(monthlyAmount(cost, clients));
     line.append(label, amount);
     costBreakdown.appendChild(line);
   });

@@ -3,9 +3,87 @@ const defaults = {
   clients: 10,
   asaasCost: 2.0,
   taxRate: 6.0,
-  vpnCost: 100.0,
-  otherFixedCost: 0.0,
 };
+
+// Custos da operação direta: cada item é fixo no mês ou cobrado por cliente.
+// A lista fica salva neste navegador para não precisar digitar de novo.
+const defaultCosts = [{ name: "Custos gerais (VPN, servidor)", value: 100.0, type: "fixo" }];
+const COSTS_KEY = "barbozap-calculadora-custos";
+const costList = document.getElementById("costList");
+const costBreakdown = document.getElementById("costBreakdown");
+
+function loadCosts() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(COSTS_KEY));
+    if (Array.isArray(saved)) return saved;
+  } catch (err) {
+    // sem armazenamento disponível: usa o exemplo
+  }
+  return defaultCosts.map((cost) => ({ ...cost }));
+}
+
+function saveCosts() {
+  try {
+    localStorage.setItem(COSTS_KEY, JSON.stringify(readCosts()));
+  } catch (err) {
+    // navegador sem armazenamento: a lista vale só nesta visita
+  }
+}
+
+function addCostRow(cost = { name: "", value: 0, type: "fixo" }) {
+  const row = document.createElement("div");
+  row.className = "cost-row";
+  row.innerHTML = `
+    <input class="cost-name" type="text" placeholder="Nome do custo" aria-label="Nome do custo">
+    <div class="input-wrap">
+      <span class="input-prefix">R$</span>
+      <input class="cost-value" type="number" inputmode="decimal" min="0" step="0.01" aria-label="Valor do custo">
+    </div>
+    <select class="cost-type" aria-label="Tipo do custo">
+      <option value="fixo">por mês</option>
+      <option value="cliente">por cliente</option>
+    </select>
+    <button class="cost-remove" type="button" aria-label="Remover custo" title="Remover custo">&times;</button>
+  `;
+  row.querySelector(".cost-name").value = cost.name || "";
+  row.querySelector(".cost-value").value = Number(cost.value || 0).toFixed(2);
+  row.querySelector(".cost-type").value = cost.type === "cliente" ? "cliente" : "fixo";
+  row.querySelectorAll("input, select").forEach((el) =>
+    el.addEventListener("input", () => {
+      saveCosts();
+      calculate();
+    }),
+  );
+  row.querySelector(".cost-remove").addEventListener("click", () => {
+    row.remove();
+    saveCosts();
+    calculate();
+  });
+  costList.appendChild(row);
+  return row;
+}
+
+function readCosts() {
+  return [...costList.querySelectorAll(".cost-row")].map((row) => {
+    const value = Number.parseFloat(row.querySelector(".cost-value").value);
+    return {
+      name: row.querySelector(".cost-name").value.trim(),
+      value: Number.isFinite(value) && value >= 0 ? value : 0,
+      type: row.querySelector(".cost-type").value,
+    };
+  });
+}
+
+function renderCosts(costs) {
+  costList.innerHTML = "";
+  costs.forEach((cost) => addCostRow(cost));
+}
+
+document.getElementById("addCost").addEventListener("click", () => {
+  addCostRow().querySelector(".cost-name").focus();
+  saveCosts();
+  calculate();
+});
 
 const ids = Object.keys(defaults);
 const inputs = Object.fromEntries(
@@ -20,9 +98,7 @@ const output = {
   breakEven: document.getElementById("breakEven"),
   taxes: document.getElementById("taxes"),
   asaasTotal: document.getElementById("asaasTotal"),
-  coreFixedCosts: document.getElementById("coreFixedCosts"),
   partnerCommissionCost: document.getElementById("partnerCommissionCost"),
-  otherFixedTotal: document.getElementById("otherFixedTotal"),
   totalCosts: document.getElementById("totalCosts"),
   marginPill: document.getElementById("marginPill"),
   statusPill: document.getElementById("statusPill"),
@@ -48,13 +124,18 @@ function calculate() {
   const clients = Math.floor(getNumber("clients"));
   const asaasPerClient = getNumber("asaasCost");
   const taxRate = Math.min(getNumber("taxRate"), 100) / 100;
-  const vpn = getNumber("vpnCost");
-  const otherFixed = getNumber("otherFixedCost");
+  const costs = readCosts();
+  const fixedCosts = costs
+    .filter((cost) => cost.type === "fixo")
+    .reduce((total, cost) => total + cost.value, 0);
+  const otherPerClient = costs
+    .filter((cost) => cost.type === "cliente")
+    .reduce((total, cost) => total + cost.value, 0);
 
   const revenue = price * clients;
   const taxes = revenue * taxRate;
   const asaasTotal = asaasPerClient * clients;
-  const fixedCosts = vpn + otherFixed;
+  const listedCosts = fixedCosts + otherPerClient * clients;
 
   const channelClients = Math.min(
     clients,
@@ -76,13 +157,13 @@ function calculate() {
     partnerRevenue * commissionRate +
     (fixedCommission + acquisitionBonus) * channelClients;
 
-  const totalCosts = taxes + asaasTotal + fixedCosts + partnerCommissionTotal;
+  const totalCosts = taxes + asaasTotal + listedCosts + partnerCommissionTotal;
   const netProfit = revenue - totalCosts;
   const margin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
   const profitPerClient = clients > 0 ? netProfit / clients : 0;
   const costPerClient = clients > 0 ? totalCosts / clients : fixedCosts;
 
-  const contributionPerClient = price * (1 - taxRate) - asaasPerClient;
+  const contributionPerClient = price * (1 - taxRate) - asaasPerClient - otherPerClient;
   const breakEvenClients =
     contributionPerClient > 0
       ? Math.ceil(fixedCosts / contributionPerClient)
@@ -91,11 +172,20 @@ function calculate() {
   output.revenue.textContent = currency.format(revenue);
   output.taxes.textContent = currency.format(taxes);
   output.asaasTotal.textContent = currency.format(asaasTotal);
-  output.coreFixedCosts.textContent = currency.format(vpn);
+  costBreakdown.innerHTML = "";
+  costs.forEach((cost) => {
+    const line = document.createElement("div");
+    line.className = "breakdown-row";
+    const label = document.createElement("span");
+    label.textContent = (cost.name || "Custo sem nome") + (cost.type === "cliente" ? " (por cliente)" : "");
+    const amount = document.createElement("strong");
+    amount.textContent = currency.format(cost.type === "cliente" ? cost.value * clients : cost.value);
+    line.append(label, amount);
+    costBreakdown.appendChild(line);
+  });
   output.partnerCommissionCost.textContent = currency.format(
     partnerCommissionTotal,
   );
-  output.otherFixedTotal.textContent = currency.format(otherFixed);
   output.totalCosts.textContent = currency.format(totalCosts);
   output.netProfit.textContent = currency.format(netProfit);
   output.profitPerClient.textContent = currency.format(profitPerClient);
@@ -118,6 +208,8 @@ document.getElementById("resetButton").addEventListener("click", () => {
   ids.forEach((id) => {
     inputs[id].value = defaults[id];
   });
+  renderCosts(defaultCosts);
+  saveCosts();
   calculate();
   if (typeof calculatePartnerships === "function") calculatePartnerships();
 });
@@ -199,7 +291,9 @@ function calculatePartnerships() {
   partnerOutput.partnerMarginPill.textContent = `Margem: ${percent.format(margin)}%`;
   partnerOutput.partnerStatusPill.textContent =
     profit >= 0 ? "Canal positivo" : "Canal no prejuízo";
-  partnerOutput.commissionSummary.textContent = `O parceiro receberá ${currency.format(commissionTotal)} no mês, equivalente a ${currency.format(partnershipCostPerClient)} por cliente.`;
+  if (partnerOutput.commissionSummary) {
+    partnerOutput.commissionSummary.textContent = `O parceiro receberá ${currency.format(commissionTotal)} no mês, equivalente a ${currency.format(partnershipCostPerClient)} por cliente.`;
+  }
   partnerOutput.partnerNetProfit.classList.toggle("positive", profit >= 0);
   partnerOutput.partnerNetProfit.classList.toggle("negative", profit < 0);
 
@@ -242,5 +336,6 @@ document.querySelectorAll(".tab-button").forEach((button) => {
   });
 });
 
+renderCosts(loadCosts());
 calculatePartnerships();
 calculate();

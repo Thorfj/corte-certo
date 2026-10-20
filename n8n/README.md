@@ -96,6 +96,7 @@ resposta), registra a linha em `safras_prospeccao`, responde para a Central e se
 - Antes de cada envio: relê a etapa do lead (pula se mudou), checa o número em `/chat/whatsappNumbers` e, se o lead
   já teve contato, procura respostas em `/chat/findMessages` (se respondeu, vira Respondeu e a mensagem não sai).
 - Resultado de cada lead: RPC `registrar_lead_safra` (atualiza o lead, etapa só avança, e grava `lead_atividades`).
+- Número sem WhatsApp: o lead vai para **Perdido** com o motivo "Sem WhatsApp" (sem próximo passo).
 - Entre envios: 3 a 7 minutos. No fim: `safras_prospeccao` vira `concluida` e chega um e-mail com o resumo.
   A aba **WhatsApp** da Central lista as últimas safras.
 - Se a execução parar no meio, os leads restantes ficam com o próximo passo "Na fila do n8n".

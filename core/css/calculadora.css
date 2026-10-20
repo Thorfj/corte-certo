@@ -126,6 +126,66 @@
   padding-left: 14px;
 }
 
+.cost-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cost-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(0, 0.9fr) auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.cost-name,
+.cost-type {
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  font: 600 14px var(--font-body);
+}
+
+.cost-name {
+  min-width: 0;
+  padding: 0 14px;
+}
+
+.cost-type {
+  padding: 0 10px;
+}
+
+.cost-name:focus,
+.cost-type:focus {
+  outline: none;
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(23, 73, 60, 0.1);
+}
+
+.cost-remove {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cost-remove:hover {
+  color: var(--brick);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.add-cost {
+  align-self: flex-start;
+}
+
 .section-label {
   grid-column: 1 / -1;
   margin-top: 5px;
@@ -406,6 +466,14 @@
 
   .section-label {
     grid-column: auto;
+  }
+
+  .cost-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
+
+  .cost-name {
+    grid-column: 1 / -1;
   }
 
   .actions {

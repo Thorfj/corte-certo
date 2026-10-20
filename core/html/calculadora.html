@@ -142,7 +142,7 @@
               </div>
               <div id="costBreakdown"></div>
               <div class="breakdown-row">
-                <span>Comissões de parceiros</span>
+                <span>Comissões de parceiros (indicações do mês)</span>
                 <strong id="partnerCommissionCost">R$ 0,00</strong>
               </div>
               <div class="breakdown-row total">
@@ -159,63 +159,56 @@
             <div class="panel-title">
               <div>
                 <h2>Premissas das parcerias</h2>
-                <p>Projete clientes e comissões do canal.</p>
+                <p>O parceiro recebe uma mensalidade por cliente indicado, uma vez só.</p>
               </div>
               <span class="eyebrow">Entradas</span>
             </div>
             <div class="field-grid">
               <div class="field full">
-                <label for="partnerClients">Clientes via parceiros</label>
-                <div class="input-wrap"><input id="partnerClients" min="0" step="1" type="number" value="10" /><span class="input-suffix">clientes</span></div>
+                <label for="partnerClients">Novos clientes via parceiros no mês</label>
+                <div class="input-wrap"><input id="partnerClients" min="0" step="1" type="number" value="2" /><span class="input-suffix">clientes</span></div>
+                <small>Clientes indicados que começaram a pagar neste mês.</small>
               </div>
-              <div class="section-label">Comissões</div>
-              <div class="field">
-                <label for="commissionRate">Comissão recorrente</label>
-                <div class="input-wrap"><input id="commissionRate" max="100" min="0" step="0.01" type="number" value="20.00" /><span class="input-suffix">% da receita</span></div>
-                <small>Percentual pago mensalmente ao parceiro.</small>
-              </div>
-              <div class="field">
-                <label for="fixedCommission">Comissão fixa por cliente</label>
-                <div class="input-wrap"><span class="input-prefix">R$</span><input id="fixedCommission" min="0" step="0.01" type="number" value="0.00" /></div>
-                <small>Valor recorrente adicional por cliente ativo.</small>
-              </div>
+              <div class="section-label">Comissão</div>
               <div class="field full">
-                <label for="acquisitionBonus">Bônus único por novo cliente</label>
-                <div class="input-wrap"><span class="input-prefix">R$</span><input id="acquisitionBonus" min="0" step="0.01" type="number" value="0.00" /></div>
-                <small>Pago somente no mês da aquisição.</small>
+                <span class="field-label">Comissão por cliente indicado</span>
+                <div class="commission-box">
+                  <strong id="partnerCommissionPerClient">R$ 0,00</strong>
+                  <span>1 mensalidade, paga uma vez no mês da indicação</span>
+                </div>
+                <small>Acompanha a mensalidade da aba Operação direta.</small>
               </div>
             </div>
             <div class="actions">
               <button class="btn-ghost btn-sm reset-button" id="resetPartnerButton" type="button">Restaurar exemplo</button>
-              <p class="assumption">A projeção considera que todos os clientes do canal estão ativos e pagantes no mês.</p>
+              <p class="assumption">A projeção de 12 meses considera que o cliente indicado continua pagando o ano todo.</p>
             </div>
           </section>
           <section aria-live="polite" class="panel results-panel">
             <div class="panel-title">
               <div>
                 <h2>Resultado das parcerias</h2>
-                <p>Impacto financeiro mensal do canal.</p>
+                <p>O que os clientes indicados neste mês trazem.</p>
               </div>
               <span class="eyebrow" style="color:#e1b5ae">Saída</span>
             </div>
             <div class="main-result">
-              <span class="result-label">Lucro líquido do canal</span>
+              <span class="result-label">Lucro desses clientes em 12 meses</span>
               <strong id="partnerNetProfit">R$ 0,00</strong>
-              <div class="result-meta"><span class="pill" id="partnerMarginPill">Margem: 0%</span><span class="pill" id="partnerStatusPill">Canal positivo</span></div>
+              <div class="result-meta"><span class="pill" id="partnerPaybackPill">Comissão volta em 0 meses</span><span class="pill" id="partnerStatusPill">Canal positivo</span></div>
             </div>
             <div class="metrics">
-              <div class="metric"><span>Receita do canal</span><strong id="partnerRevenue">R$ 0,00</strong></div>
-              <div class="metric"><span>Comissão total</span><strong id="partnerCommissionTotal">R$ 0,00</strong></div>
-              <div class="metric"><span>Lucro por cliente</span><strong id="partnerProfitPerClient">R$ 0,00</strong></div>
-              <div class="metric highlight"><span>Custo de parceria por cliente</span><strong id="partnerCostPerClient">R$ 0,00</strong></div>
+              <div class="metric"><span>Resultado no mês da indicação</span><strong id="partnerFirstMonth">R$ 0,00</strong></div>
+              <div class="metric"><span>Comissão total (paga uma vez)</span><strong id="partnerCommissionTotal">R$ 0,00</strong></div>
+              <div class="metric"><span>Lucro por cliente a partir do 2º mês</span><strong id="partnerProfitPerClient">R$ 0,00</strong></div>
+              <div class="metric highlight"><span>Lucro por cliente em 12 meses</span><strong id="partnerYearPerClient">R$ 0,00</strong></div>
             </div>
             <div class="breakdown">
-              <div class="breakdown-row"><span>Comissão percentual</span><strong id="partnerPercentageCommission">R$ 0,00</strong></div>
-              <div class="breakdown-row"><span>Comissão fixa recorrente</span><strong id="partnerFixedCommissionTotal">R$ 0,00</strong></div>
-              <div class="breakdown-row"><span>Bônus de aquisição</span><strong id="partnerBonusTotal">R$ 0,00</strong></div>
+              <div class="breakdown-row"><span>Receita no mês da indicação</span><strong id="partnerRevenue">R$ 0,00</strong></div>
+              <div class="breakdown-row"><span>Comissão dos parceiros</span><strong id="partnerCommissionCost2">R$ 0,00</strong></div>
               <div class="breakdown-row"><span>Impostos</span><strong id="partnerTaxes">R$ 0,00</strong></div>
               <div class="breakdown-row"><span>Asaas</span><strong id="partnerAsaasTotal">R$ 0,00</strong></div>
-              <div class="breakdown-row total"><span>Custos totais</span><strong id="partnerTotalCosts">R$ 0,00</strong></div>
+              <div class="breakdown-row total"><span>Custos no mês da indicação</span><strong id="partnerTotalCosts">R$ 0,00</strong></div>
             </div>
           </section>
         </div>

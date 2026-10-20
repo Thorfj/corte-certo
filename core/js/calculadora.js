@@ -157,25 +157,14 @@ function calculate() {
   const asaasTotal = asaasPerClient * clients;
   const listedCosts = fixedCosts + otherPerClient * clients;
 
+  // comissão de parceiros: uma mensalidade por cliente indicado, só no mês da indicação
   const channelClients = Math.min(
     clients,
     Math.floor(
       Number.parseFloat(document.getElementById("partnerClients")?.value) || 0,
     ),
   );
-  const commissionRate =
-    Math.min(
-      Number.parseFloat(document.getElementById("commissionRate")?.value) || 0,
-      100,
-    ) / 100;
-  const fixedCommission =
-    Number.parseFloat(document.getElementById("fixedCommission")?.value) || 0;
-  const acquisitionBonus =
-    Number.parseFloat(document.getElementById("acquisitionBonus")?.value) || 0;
-  const partnerRevenue = price * channelClients;
-  const partnerCommissionTotal =
-    partnerRevenue * commissionRate +
-    (fixedCommission + acquisitionBonus) * channelClients;
+  const partnerCommissionTotal = price * channelClients;
 
   const totalCosts = taxes + asaasTotal + listedCosts + partnerCommissionTotal;
   const netProfit = revenue - totalCosts;
@@ -235,29 +224,25 @@ document.getElementById("resetButton").addEventListener("click", () => {
 });
 
 const partnerDefaults = {
-  partnerClients: 10,
-  commissionRate: 20.0,
-  fixedCommission: 0.0,
-  acquisitionBonus: 0.0,
+  partnerClients: 2,
 };
 const partnerInputs = Object.fromEntries(
   Object.keys(partnerDefaults).map((id) => [id, document.getElementById(id)]),
 );
 const partnerOutputIds = [
   "partnerNetProfit",
-  "partnerRevenue",
+  "partnerPaybackPill",
+  "partnerStatusPill",
+  "partnerFirstMonth",
   "partnerCommissionTotal",
   "partnerProfitPerClient",
-  "partnerCostPerClient",
-  "partnerPercentageCommission",
-  "partnerFixedCommissionTotal",
-  "partnerBonusTotal",
+  "partnerYearPerClient",
+  "partnerCommissionPerClient",
+  "partnerRevenue",
+  "partnerCommissionCost2",
   "partnerTaxes",
   "partnerAsaasTotal",
   "partnerTotalCosts",
-  "partnerMarginPill",
-  "partnerStatusPill",
-  "commissionSummary",
 ];
 const partnerOutput = Object.fromEntries(
   partnerOutputIds.map((id) => [id, document.getElementById(id)]),
@@ -268,58 +253,48 @@ function partnerNumber(id) {
   return Number.isFinite(value) && value >= 0 ? value : 0;
 }
 
+// Comissão única: o parceiro recebe uma mensalidade por cliente indicado, no mês da
+// indicação. Do 2º mês em diante o cliente rende a mensalidade menos impostos e Asaas.
 function calculatePartnerships() {
   const price = getNumber("monthlyPrice");
   const clients = Math.floor(partnerNumber("partnerClients"));
-  const rate = Math.min(partnerNumber("commissionRate"), 100) / 100;
-  const fixedCommission = partnerNumber("fixedCommission");
-  const bonus = partnerNumber("acquisitionBonus");
   const taxRate = Math.min(getNumber("taxRate"), 100) / 100;
   const asaas = getNumber("asaasCost");
 
+  const commissionPerClient = price;
   const revenue = price * clients;
-  const percentageCommission = revenue * rate;
-  const fixedCommissionTotal = fixedCommission * clients;
-  const bonusTotal = bonus * clients;
-  const commissionTotal =
-    percentageCommission + fixedCommissionTotal + bonusTotal;
+  const commissionTotal = commissionPerClient * clients;
   const taxes = revenue * taxRate;
   const asaasTotal = asaas * clients;
-  const totalCosts = commissionTotal + taxes + asaasTotal;
-  const profit = revenue - totalCosts;
-  const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
-  const profitPerClient = clients > 0 ? profit / clients : 0;
-  const partnershipCostPerClient = clients > 0 ? commissionTotal / clients : 0;
+  const firstMonthCosts = commissionTotal + taxes + asaasTotal;
+  const firstMonth = revenue - firstMonthCosts;
 
+  const monthlyPerClient = price * (1 - taxRate) - asaas; // a partir do 2º mês
+  const yearPerClient = monthlyPerClient * 12 - commissionPerClient;
+  const yearTotal = yearPerClient * clients;
+  // mês em que o acumulado do cliente cobre a comissão (o mês da indicação conta como o 1º)
+  const payback =
+    monthlyPerClient > 0 ? Math.max(1, Math.ceil(commissionPerClient / monthlyPerClient)) : null;
+
+  partnerOutput.partnerCommissionPerClient.textContent = currency.format(commissionPerClient);
   partnerOutput.partnerRevenue.textContent = currency.format(revenue);
-  partnerOutput.partnerPercentageCommission.textContent =
-    currency.format(percentageCommission);
-  partnerOutput.partnerFixedCommissionTotal.textContent =
-    currency.format(fixedCommissionTotal);
-  partnerOutput.partnerBonusTotal.textContent = currency.format(bonusTotal);
-  partnerOutput.partnerCommissionTotal.textContent =
-    currency.format(commissionTotal);
+  partnerOutput.partnerCommissionTotal.textContent = currency.format(commissionTotal);
+  partnerOutput.partnerCommissionCost2.textContent = currency.format(commissionTotal);
   partnerOutput.partnerTaxes.textContent = currency.format(taxes);
   partnerOutput.partnerAsaasTotal.textContent = currency.format(asaasTotal);
-  partnerOutput.partnerTotalCosts.textContent = currency.format(totalCosts);
-  partnerOutput.partnerNetProfit.textContent = currency.format(profit);
-  partnerOutput.partnerProfitPerClient.textContent =
-    currency.format(profitPerClient);
-  partnerOutput.partnerCostPerClient.textContent = currency.format(
-    partnershipCostPerClient,
-  );
-  partnerOutput.partnerMarginPill.textContent = `Margem: ${percent.format(margin)}%`;
+  partnerOutput.partnerTotalCosts.textContent = currency.format(firstMonthCosts);
+  partnerOutput.partnerFirstMonth.textContent = currency.format(firstMonth);
+  partnerOutput.partnerProfitPerClient.textContent = currency.format(monthlyPerClient);
+  partnerOutput.partnerYearPerClient.textContent = currency.format(yearPerClient);
+  partnerOutput.partnerNetProfit.textContent = currency.format(yearTotal);
+  partnerOutput.partnerPaybackPill.textContent =
+    payback === null
+      ? "Comissão não se paga"
+      : `Comissão se paga no ${payback}º mês`;
   partnerOutput.partnerStatusPill.textContent =
-    profit >= 0 ? "Canal positivo" : "Canal no prejuízo";
-  if (partnerOutput.commissionSummary) {
-    partnerOutput.commissionSummary.textContent = `O parceiro receberá ${currency.format(commissionTotal)} no mês, equivalente a ${currency.format(partnershipCostPerClient)} por cliente.`;
-  }
-  partnerOutput.partnerNetProfit.classList.toggle("positive", profit >= 0);
-  partnerOutput.partnerNetProfit.classList.toggle("negative", profit < 0);
-
-  const directCommissionRate = document.getElementById("directCommissionRate");
-  if (directCommissionRate)
-    directCommissionRate.value = percent.format(rate * 100).replace(",", ".");
+    yearTotal >= 0 ? "Canal positivo" : "Canal no prejuízo";
+  partnerOutput.partnerNetProfit.classList.toggle("positive", yearTotal >= 0);
+  partnerOutput.partnerNetProfit.classList.toggle("negative", yearTotal < 0);
 }
 
 Object.keys(partnerDefaults).forEach((id) =>

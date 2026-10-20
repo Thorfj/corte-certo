@@ -513,3 +513,7 @@
     max-width: none;
   }
 }
+
+#tab-parcerias .metric.highlight {
+  grid-column: 1 / -1;
+}

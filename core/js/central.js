@@ -49,10 +49,16 @@ const STAGES = [
   { status: "perdido", label: "Perdido" },
 ];
 const ETAPAS_ENCERRADAS = ["fechado_ganho", "perdido"];
+// só leads nessas etapas entram numa safra (o n8n confere de novo antes de enviar)
+const ETAPAS_SAFRA = ["novo_lead", "contato_feito"];
+const NA_FILA = "Na fila do n8n";
+const SAFRA_MAX = 30;
+const SAFRA_URL = "https://cortecerto.app.n8n.cloud/webhook/safra-prospeccao";
 
 let leadsCache = [];
 let mensagensCache = [];
 let meuNome = "";
+const selecionados = new Set();
 const filtros = { busca: "", status: "", bairro: "", hoje: false };
 
 // ---------- utilitários ----------
@@ -172,7 +178,10 @@ function initTabs() {
         .forEach((p) => p.classList.remove("active"));
       document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
       if (btn.dataset.tab === "relatorios") carregarRelatorios();
-      if (btn.dataset.tab === "whatsapp") atualizarStatusWhatsapp();
+      if (btn.dataset.tab === "whatsapp") {
+        atualizarStatusWhatsapp();
+        carregarSafras();
+      }
     });
   });
 }
@@ -187,7 +196,7 @@ async function carregarLeads() {
   if (error) {
     console.error(error);
     document.getElementById("leadsBody").innerHTML =
-      '<tr><td colspan="6" class="loading">Erro ao carregar os leads. Confira se a tabela `leads` existe.</td></tr>';
+      '<tr><td colspan="7" class="loading">Erro ao carregar os leads. Confira se a tabela `leads` existe.</td></tr>';
     document.getElementById("kanban").innerHTML =
       '<div class="loading">Erro ao carregar o funil.</div>';
     return;
@@ -273,7 +282,8 @@ function renderizarLista() {
 
   if (!lista.length) {
     body.innerHTML =
-      '<tr><td colspan="6" class="loading">Nenhum lead com esses filtros.</td></tr>';
+      '<tr><td colspan="7" class="loading">Nenhum lead com esses filtros.</td></tr>';
+    atualizarSelecao();
     return;
   }
 
@@ -290,8 +300,12 @@ function renderizarLista() {
           l.data_proximo_passo ? esc(formatarData(l.data_proximo_passo)) + " · " : ""
         }${esc(l.proximo_passo || "")}</span>`;
       }
+      const podeSafra = podeEntrarNaSafra(l);
       return `
       <tr data-id="${esc(l.id)}">
+        <td class="col-sel"><input type="checkbox" class="sel-lead" data-id="${esc(l.id)}"
+          ${selecionados.has(String(l.id)) ? "checked" : ""} ${podeSafra ? "" : "disabled"}
+          title="${podeSafra ? "Incluir na safra" : "Só leads em Novo ou Contatado, fora de outra safra"}"></td>
         <td><span class="lt-nome">${esc(l.nome_barbearia)}</span>
           ${l.endereco ? `<span class="lt-sub">${esc(l.endereco)}</span>` : ""}</td>
         <td>${esc(l.bairro || "")}</td>
@@ -305,11 +319,255 @@ function renderizarLista() {
     .join("");
 
   body.querySelectorAll("tr[data-id]").forEach((tr) => {
-    tr.addEventListener("click", () => {
+    tr.addEventListener("click", (e) => {
+      if (e.target.closest(".col-sel")) return; // clique na caixinha não abre o lead
       const lead = leadsCache.find((l) => String(l.id) === tr.dataset.id);
       if (lead) abrirModalEdicao(lead);
     });
   });
+  body.querySelectorAll(".sel-lead").forEach((cb) => {
+    cb.addEventListener("change", () => {
+      if (cb.checked) selecionados.add(cb.dataset.id);
+      else selecionados.delete(cb.dataset.id);
+      atualizarSelecao();
+    });
+  });
+  atualizarSelecao();
+}
+
+// ---------- seleção e safra ----------
+function podeEntrarNaSafra(lead) {
+  return ETAPAS_SAFRA.includes(lead.status) && lead.proximo_passo !== NA_FILA && !!lead.telefone;
+}
+
+function atualizarSelecao() {
+  // tira da seleção quem deixou de poder entrar (mudou de etapa, foi para a fila...)
+  selecionados.forEach((id) => {
+    const lead = leadsCache.find((l) => String(l.id) === id);
+    if (!lead || !podeEntrarNaSafra(lead)) selecionados.delete(id);
+  });
+  const qtd = selecionados.size;
+  document.getElementById("selBar").classList.toggle("hidden", qtd === 0);
+  document.getElementById("selInfo").textContent =
+    qtd > SAFRA_MAX
+      ? `${qtd} selecionados: o máximo por safra é ${SAFRA_MAX}`
+      : `${qtd} ${qtd === 1 ? "lead selecionado" : "leads selecionados"}`;
+  document.getElementById("selMontar").disabled = qtd === 0 || qtd > SAFRA_MAX;
+
+  const visiveis = leadsFiltrados().filter(podeEntrarNaSafra);
+  const todos = document.getElementById("selTodos");
+  const marcados = visiveis.filter((l) => selecionados.has(String(l.id))).length;
+  todos.checked = visiveis.length > 0 && marcados === visiveis.length;
+  todos.indeterminate = marcados > 0 && marcados < visiveis.length;
+  todos.disabled = visiveis.length === 0;
+}
+
+function mostrarAvisoSafra(msg) {
+  const el = document.getElementById("avisoSafra");
+  el.textContent = msg || "";
+  el.classList.toggle("hidden", !msg);
+}
+
+function initSafra() {
+  const overlay = document.getElementById("modalSafra");
+  const lista = document.getElementById("safraLista");
+  const erroEl = document.getElementById("safraErro");
+  const enviarBtn = document.getElementById("safraEnviarBtn");
+
+  document.getElementById("selTodos").addEventListener("change", (e) => {
+    const visiveis = leadsFiltrados().filter(podeEntrarNaSafra);
+    if (e.target.checked) {
+      // marca os visíveis, até completar o máximo da safra
+      for (const l of visiveis) {
+        if (selecionados.size >= SAFRA_MAX) break;
+        selecionados.add(String(l.id));
+      }
+    } else {
+      visiveis.forEach((l) => selecionados.delete(String(l.id)));
+    }
+    renderizarLista();
+  });
+
+  document.getElementById("selLimpar").addEventListener("click", () => {
+    selecionados.clear();
+    renderizarLista();
+  });
+
+  const fechar = () => overlay.classList.add("hidden");
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) fechar();
+  });
+  document
+    .querySelectorAll("[data-close='modalSafra']")
+    .forEach((b) => b.addEventListener("click", fechar));
+
+  function atualizarInfo() {
+    const qtd = lista.querySelectorAll(".safra-item").length;
+    document.getElementById("safraInfo").textContent = qtd
+      ? `${qtd} ${qtd === 1 ? "mensagem" : "mensagens"} pelo WhatsApp da prospecção. ` +
+        `Entre um envio e outro o n8n espera de 3 a 7 minutos (cerca de ${qtd * 5} min no total). ` +
+        "Dá para trocar o roteiro, editar o texto ou tirar um lead antes de enviar."
+      : "Nenhum lead na safra.";
+    enviarBtn.disabled = qtd === 0;
+  }
+
+  document.getElementById("selMontar").addEventListener("click", () => {
+    const leads = leadsCache.filter((l) => selecionados.has(String(l.id)));
+    const primeiros = mensagensCache.filter((m) => /primeiro contato/i.test(m.etapa));
+    let novos = 0;
+    lista.innerHTML = leads
+      .map((l) => {
+        // primeiro contato: reveza A/B/C dentro da safra; contatado: follow-up do dia 3 ou 7
+        const roteiro =
+          l.status === "novo_lead" && primeiros.length
+            ? primeiros[novos++ % primeiros.length]
+            : roteiroSugerido(l);
+        const opcoes = mensagensCache
+          .map(
+            (m) =>
+              `<option value="${m.id}"${roteiro && m.id === roteiro.id ? " selected" : ""}>${esc(m.etapa)}</option>`,
+          )
+          .join("");
+        return `
+        <div class="safra-item" data-id="${esc(l.id)}">
+          <div class="safra-item-head">
+            <div>
+              <span class="lt-nome">${esc(l.nome_barbearia)}</span>
+              <span class="lt-sub">${esc([l.bairro, formatarTelefone(l.telefone), stageLabel(l.status)].filter(Boolean).join(" · "))}</span>
+            </div>
+            <button type="button" class="safra-remover" title="Tirar da safra">&times;</button>
+          </div>
+          <select class="safra-roteiro">${opcoes}</select>
+          <textarea class="safra-texto" rows="3">${esc(roteiro ? preencherMensagem(roteiro.texto, l) : "")}</textarea>
+        </div>`;
+      })
+      .join("");
+
+    lista.querySelectorAll(".safra-item").forEach((item) => {
+      const lead = leadsCache.find((l) => String(l.id) === item.dataset.id);
+      item.querySelector(".safra-roteiro").addEventListener("change", (e) => {
+        const m = mensagensCache.find((x) => String(x.id) === e.target.value);
+        if (m) item.querySelector(".safra-texto").value = preencherMensagem(m.texto, lead);
+      });
+      item.querySelector(".safra-remover").addEventListener("click", () => {
+        item.remove();
+        selecionados.delete(item.dataset.id);
+        atualizarInfo();
+        renderizarLista();
+      });
+    });
+
+    erroEl.classList.remove("show");
+    atualizarInfo();
+    overlay.classList.remove("hidden");
+    overlay.querySelector(".modal").scrollTop = 0;
+  });
+
+  enviarBtn.addEventListener("click", async () => {
+    const itens = [...lista.querySelectorAll(".safra-item")].map((item) => ({
+      lead_id: item.dataset.id,
+      roteiro_id: Number(item.querySelector(".safra-roteiro").value) || null,
+      texto: item.querySelector(".safra-texto").value.trim(),
+    }));
+    erroEl.classList.remove("show");
+    if (!itens.length) return;
+    if (itens.some((i) => !i.texto)) {
+      erroEl.textContent = "Tem lead sem mensagem. Escreva o texto ou tire o lead da safra.";
+      erroEl.classList.add("show");
+      return;
+    }
+
+    enviarBtn.disabled = true;
+    enviarBtn.textContent = "Enviando...";
+    try {
+      const { estado } = await chamarWhatsapp("status");
+      if (estado !== "open") {
+        throw new Error("O WhatsApp da prospecção não está conectado. Conecte na aba WhatsApp e tente de novo.");
+      }
+      const {
+        data: { session },
+      } = await supabaseCentral.auth.getSession();
+      const resp = await fetch(SAFRA_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token || ""}`,
+        },
+        body: JSON.stringify({ itens }),
+      });
+      const dados = await resp.json().catch(() => ({}));
+      if (!resp.ok || dados.erro) {
+        throw new Error(dados.erro || "Não foi possível iniciar a safra agora.");
+      }
+
+      fechar();
+      selecionados.clear();
+      renderizarLista();
+      const ignorados = (dados.ignorados || []).map((i) => i.nome || "lead");
+      mostrarAvisoSafra(
+        `Safra #${dados.safra_id} iniciada com ${dados.total} ${dados.total === 1 ? "lead" : "leads"}. ` +
+          "Os leads vão sendo atualizados aqui conforme as mensagens saem, e no fim chega o e-mail com o resumo." +
+          (ignorados.length ? ` Ficaram de fora: ${ignorados.join(", ")}.` : ""),
+      );
+      // o n8n põe os leads "Na fila do n8n" logo depois de responder
+      setTimeout(() => carregarLeads().catch(console.error), 2500);
+      carregarSafras();
+    } catch (err) {
+      console.error(err);
+      erroEl.textContent = err.message;
+      erroEl.classList.add("show");
+    } finally {
+      enviarBtn.disabled = false;
+      enviarBtn.textContent = "Enviar safra";
+    }
+  });
+}
+
+const SAFRA_STATUS = {
+  previa: "Prévia",
+  enviando: "Enviando",
+  concluida: "Concluída",
+  cancelada: "Cancelada",
+};
+
+async function carregarSafras() {
+  const body = document.getElementById("safrasBody");
+  const { data, error } = await supabaseCentral
+    .from("safras_prospeccao")
+    .select("id, criado_em, status, total, resumo")
+    .order("id", { ascending: false })
+    .limit(10);
+  if (error) {
+    console.error(error);
+    body.innerHTML = '<tr><td colspan="5" class="loading">Erro ao carregar as safras.</td></tr>';
+    return;
+  }
+  if (!data.length) {
+    body.innerHTML = '<tr><td colspan="5" class="loading">Nenhuma safra ainda.</td></tr>';
+    return;
+  }
+  body.innerHTML = data
+    .map((s) => {
+      const r = s.resumo || {};
+      const partes = [
+        r.enviado ? `${r.enviado} ${r.enviado === 1 ? "enviada" : "enviadas"}` : "",
+        r.sem_whatsapp ? `${r.sem_whatsapp} sem WhatsApp` : "",
+        r.respondeu ? `${r.respondeu} já ${r.respondeu === 1 ? "tinha" : "tinham"} respondido` : "",
+        r.pulado ? `${r.pulado} ${r.pulado === 1 ? "pulado" : "pulados"}` : "",
+        r.erro ? `${r.erro} com erro` : "",
+      ].filter(Boolean);
+      const resultado =
+        s.status === "enviando" ? "Em andamento" : partes.join(" · ") || (s.status === "concluida" ? "—" : "");
+      return `
+      <tr>
+        <td>${esc(s.id)}</td>
+        <td class="nowrap">${esc(formatarDataHora(s.criado_em))}</td>
+        <td><span class="safra-status" data-status="${esc(s.status)}">${esc(SAFRA_STATUS[s.status] || s.status)}</span></td>
+        <td>${esc(s.total ?? "—")}</td>
+        <td>${esc(resultado)}</td>
+      </tr>`;
+    })
+    .join("");
 }
 
 // ---------- kanban ----------
@@ -959,6 +1217,16 @@ function initWhatsapp() {
   const conectarBtn = document.getElementById("waConectarBtn");
   const desconectarBtn = document.getElementById("waDesconectarBtn");
 
+  document.getElementById("waSafraBtn").addEventListener("click", () => {
+    const fStatus = document.getElementById("fStatus");
+    fStatus.value = "novo_lead";
+    filtros.status = "novo_lead";
+    document.querySelector('.tab-btn[data-tab="leads"]').click();
+    renderizarLista();
+    mostrarAvisoSafra("Marque os leads na lista (a caixinha do topo marca os visíveis) e clique em Montar safra.");
+  });
+  document.getElementById("safrasAtualizar").addEventListener("click", () => carregarSafras());
+
   conectarBtn.addEventListener("click", async () => {
     mostrarErroWhatsapp("");
     conectarBtn.disabled = true;
@@ -1104,6 +1372,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initFiltros();
   initModal();
   initWhatsapp();
+  initSafra();
 
   try {
     const ok = await checarAcesso();

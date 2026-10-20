@@ -46,10 +46,19 @@
       </div>
       <p class="text-secondary toolbar-info" id="leadsInfo"></p>
 
+      <div class="aviso hidden" id="avisoSafra"></div>
+
+      <div class="sel-bar hidden" id="selBar">
+        <span id="selInfo"></span>
+        <button type="button" class="btn" id="selLimpar">Limpar</button>
+        <button type="button" class="btn btn-primary" id="selMontar">Montar safra</button>
+      </div>
+
       <div class="table-card">
         <table class="leads-table">
           <thead>
             <tr>
+              <th class="col-sel"><input type="checkbox" id="selTodos" title="Selecionar os leads visíveis que podem entrar numa safra"></th>
               <th>Barbearia</th>
               <th>Bairro</th>
               <th>Telefone</th>
@@ -59,7 +68,7 @@
             </tr>
           </thead>
           <tbody id="leadsBody">
-            <tr><td colspan="6" class="loading">Carregando leads...</td></tr>
+            <tr><td colspan="7" class="loading">Carregando leads...</td></tr>
           </tbody>
         </table>
       </div>
@@ -113,8 +122,25 @@
 
         <div class="wa-acoes">
           <button type="button" class="btn btn-primary" id="waConectarBtn">Conectar WhatsApp</button>
-          <a class="btn btn-primary hidden" id="waSafraBtn" href="https://cortecerto.app.n8n.cloud/form/safra-prospeccao" target="_blank" rel="noopener">Disparar uma safra</a>
+          <button type="button" class="btn btn-primary hidden" id="waSafraBtn">Montar uma safra</button>
           <button type="button" class="btn btn-danger hidden" id="waDesconectarBtn">Desconectar</button>
+        </div>
+      </div>
+
+      <div class="report-block">
+        <div class="report-head">
+          <p class="report-title">Safras</p>
+          <button type="button" class="btn" id="safrasAtualizar">Atualizar</button>
+        </div>
+        <div class="table-scroll">
+          <table class="leads-table">
+            <thead>
+              <tr><th>#</th><th>Início</th><th>Situação</th><th>Leads</th><th>Resultado</th></tr>
+            </thead>
+            <tbody id="safrasBody">
+              <tr><td colspan="5" class="loading">Carregando safras...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -288,6 +314,23 @@
         </section>
       </div>
 
+    </div>
+  </div>
+
+  <!-- Modal: prévia da safra -->
+  <div class="modal-overlay hidden" id="modalSafra">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <p class="modal-title">Prévia da safra</p>
+        <button class="modal-close" data-close="modalSafra">&times;</button>
+      </div>
+      <p class="text-secondary safra-info" id="safraInfo"></p>
+      <div id="safraLista"></div>
+      <p class="modal-error" id="safraErro"></p>
+      <div class="modal-footer">
+        <button type="button" class="btn" data-close="modalSafra">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="safraEnviarBtn">Enviar safra</button>
+      </div>
     </div>
   </div>
 

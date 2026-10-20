@@ -26,7 +26,8 @@ Eles foram migrados dos JSONs do Google Drive, corrigidos para rodar no n8n Clou
 | Criar agendas dos profissionais | sub-workflow + Webhook `POST /webhook/profissional-criado` | `ztT9jpz4sfvsyMJ9` |
 | Alerta de erro | Error Trigger (é o *Error workflow* dos workflows com gatilho) | `LO9MFNlWYRaCsKz8` |
 | Conexão WhatsApp | Webhook `POST /webhook/whatsapp-conexao` (CRM > Configurações) | `2ch6yXqWnITsEyBJ` |
-| Safra de prospecção | Formulário `/form/safra-prospeccao` (login do n8n) | `w7S7TVhqwdZs4xrU` |
+| Safra pela Central | Webhook `POST /webhook/safra-prospeccao` (Central Interna > Leads > Montar safra) | `m6QVZjtYD6pKADJT` |
+| Safra de prospecção (formulário, **despublicado**) | Formulário `/form/safra-prospeccao` | `w7S7TVhqwdZs4xrU` |
 | WhatsApp da prospecção | Webhook `POST /webhook/whatsapp-prospeccao` (Central Interna > WhatsApp) | `PeWxnjnK1sr15em3` |
 
 Fluxo do bot: `00101 nome → 00201 serviços → 00301 profissional → 00401 dia → 00501 horário → atendimento criado`.
@@ -79,16 +80,26 @@ Em **Configurações > WhatsApp do bot** o admin conecta o número lendo o QR Co
 
 ## Safra de prospecção (Central Interna)
 
-Formulário manual em `https://cortecerto.app.n8n.cloud/form/safra-prospeccao` (exige login no n8n). Escolhe a safra
-(**Primeiro contato**: leads `novo_lead`, celulares primeiro; **Follow-ups do dia**: `contato_feito` com
-"Follow-up dia 3/7" vencido), mostra a prévia de cada mensagem e só envia depois de **Enviar agora**.
+A safra é montada e disparada na própria Central Interna (`core/html/central.html`):
 
-- Roteiros: tabela `mensagens_prospeccao` (aba Mensagens da Central). Primeiro contato reveza as versões A/B/C.
+1. **Aba Leads:** marque os leads (caixinha em cada linha; a do topo marca os visíveis, até 30). Só entram leads em
+   Novo ou Contatado, com telefone e fora de outra safra.
+2. **Montar safra:** abre a prévia com o roteiro sugerido de cada lead (primeiro contato reveza A/B/C; Contatado recebe
+   o follow-up do dia 3 ou 7). Dá para trocar o roteiro, editar o texto ou tirar um lead.
+3. **Enviar safra:** a Central confere se o WhatsApp está conectado e chama `POST /webhook/safra-prospeccao` com o token
+   do usuário e `{ itens: [{ lead_id, roteiro_id, texto }] }`.
+
+O workflow *Safra pela Central* só aceita a `equipe_interna`, descarta quem não pode entrar (e devolve a lista na
+resposta), registra a linha em `safras_prospeccao`, responde para a Central e segue com o envio pela instância
+`prospeccao`. O texto enviado é o da prévia; a etapa e o próximo passo vêm do roteiro em `mensagens_prospeccao`.
+
 - Antes de cada envio: relê a etapa do lead (pula se mudou), checa o número em `/chat/whatsappNumbers` e, se o lead
-  já teve contato, procura respostas em `/chat/findMessages` (se respondeu, vira Respondeu e o follow-up não sai).
+  já teve contato, procura respostas em `/chat/findMessages` (se respondeu, vira Respondeu e a mensagem não sai).
 - Resultado de cada lead: RPC `registrar_lead_safra` (atualiza o lead, etapa só avança, e grava `lead_atividades`).
 - Entre envios: 3 a 7 minutos. No fim: `safras_prospeccao` vira `concluida` e chega um e-mail com o resumo.
+  A aba **WhatsApp** da Central lista as últimas safras.
 - Se a execução parar no meio, os leads restantes ficam com o próximo passo "Na fila do n8n".
-- A instância é a `prospeccao` (padrão no formulário). Conecte pela aba **WhatsApp** da Central Interna: o workflow
-  *WhatsApp da prospecção* só aceita usuários da `equipe_interna`, usa sempre essa instância e a deixa **sem webhook**
-  (o Roteador do bot nunca recebe as respostas dos prospects). Nunca use a instância de uma barbearia.
+- A instância é a `prospeccao`. Conecte pela aba **WhatsApp** da Central: o workflow *WhatsApp da prospecção* só aceita
+  usuários da `equipe_interna`, usa sempre essa instância e a deixa **sem webhook** (o Roteador do bot nunca recebe as
+  respostas dos prospects). Nunca use a instância de uma barbearia.
+- O formulário antigo (*Safra de prospecção*, `/form/safra-prospeccao`) ficou despublicado; usava o mesmo laço de envio.

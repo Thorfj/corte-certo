@@ -29,6 +29,7 @@
       <button class="tab-btn" data-tab="funil">Funil</button>
       <button class="tab-btn" data-tab="mensagens">Mensagens</button>
       <button class="tab-btn" data-tab="whatsapp">WhatsApp</button>
+      <button class="tab-btn" data-tab="comercial">Comercial</button>
       <button class="tab-btn" data-tab="relatorios">Relatórios de SaaS</button>
     </div>
 
@@ -151,6 +152,70 @@
           <li>Prefira o WhatsApp Business, com nome, foto e descrição do BarboZap.</li>
           <li>Número novo: use alguns dias normalmente antes da primeira safra e comece com 10 a 15 mensagens por dia.</li>
         </ul>
+      </div>
+    </div>
+
+    <!-- ===================== ABA: PERFORMANCE COMERCIAL ===================== -->
+    <div class="tab-panel" id="tab-comercial">
+      <div class="com-filtros">
+        <label for="comPeriodo" class="text-secondary">Período</label>
+        <select id="comPeriodo" class="toolbar-input">
+          <option value="7">Últimos 7 dias</option>
+          <option value="30" selected>Últimos 30 dias</option>
+          <option value="90">Últimos 90 dias</option>
+          <option value="0">Desde o início</option>
+        </select>
+        <button type="button" class="btn" id="comAtualizar">Atualizar</button>
+      </div>
+
+      <div class="metrics-grid com-kpis" id="comKpis">
+        <div class="loading">Carregando...</div>
+      </div>
+
+      <div class="com-grid">
+        <div class="report-block">
+          <p class="report-title">Funil: até onde os leads chegaram</p>
+          <p class="report-sub">Todos os leads, desde o início. A porcentagem compara com a etapa anterior.</p>
+          <div id="comFunil"></div>
+        </div>
+        <div class="report-block">
+          <p class="report-title">Leads por etapa hoje</p>
+          <p class="report-sub">Onde cada lead está agora.</p>
+          <div id="comEtapas"></div>
+        </div>
+      </div>
+
+      <div class="com-grid">
+        <div class="report-block">
+          <p class="report-title">Mensagens enviadas por semana</p>
+          <p class="report-sub">Últimas 8 semanas, pelo CRM e pelas safras.</p>
+          <div class="chart-wrap" id="comSemanaMsgs"></div>
+        </div>
+        <div class="report-block">
+          <p class="report-title">Respostas por semana</p>
+          <p class="report-sub">Leads que passaram para Respondeu, últimas 8 semanas.</p>
+          <div class="chart-wrap" id="comSemanaResp"></div>
+        </div>
+      </div>
+
+      <div class="report-block">
+        <p class="report-title">Desempenho dos roteiros</p>
+        <p class="report-sub">No período. "Responderam" conta os leads que chegaram a Respondeu depois de receber o roteiro.</p>
+        <div class="table-scroll" id="comRoteiros"></div>
+      </div>
+
+      <div class="com-grid">
+        <div class="report-block">
+          <p class="report-title">Bairros</p>
+          <p class="report-sub">Leads já contatados, desde o início. Os 10 bairros com mais contatos.</p>
+          <div class="table-scroll" id="comBairros"></div>
+        </div>
+        <div class="report-block">
+          <p class="report-title">Safras no período</p>
+          <div id="comSafras"></div>
+          <p class="report-title com-mt">Motivos de perda</p>
+          <div id="comPerdas"></div>
+        </div>
       </div>
     </div>
 

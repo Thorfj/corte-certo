@@ -233,7 +233,6 @@ const partnerOutputIds = [
   "partnerNetProfit",
   "partnerPaybackPill",
   "partnerStatusPill",
-  "partnerFirstMonth",
   "partnerCommissionTotal",
   "partnerProfitPerClient",
   "partnerYearPerClient",
@@ -267,7 +266,6 @@ function calculatePartnerships() {
   const taxes = revenue * taxRate;
   const asaasTotal = asaas * clients;
   const firstMonthCosts = commissionTotal + taxes + asaasTotal;
-  const firstMonth = revenue - firstMonthCosts;
 
   const monthlyPerClient = price * (1 - taxRate) - asaas; // a partir do 2º mês
   const yearPerClient = monthlyPerClient * 12 - commissionPerClient;
@@ -283,7 +281,6 @@ function calculatePartnerships() {
   partnerOutput.partnerTaxes.textContent = currency.format(taxes);
   partnerOutput.partnerAsaasTotal.textContent = currency.format(asaasTotal);
   partnerOutput.partnerTotalCosts.textContent = currency.format(firstMonthCosts);
-  partnerOutput.partnerFirstMonth.textContent = currency.format(firstMonth);
   partnerOutput.partnerProfitPerClient.textContent = currency.format(monthlyPerClient);
   partnerOutput.partnerYearPerClient.textContent = currency.format(yearPerClient);
   partnerOutput.partnerNetProfit.textContent = currency.format(yearTotal);

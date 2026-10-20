@@ -966,6 +966,34 @@ button {
   background: var(--brand-light);
   color: var(--brand-dark);
 }
+.safra-status[data-status="atrasado"] {
+  background: #fbe4e2;
+  color: #b3261e;
+}
+
+/* ---------- onboarding das barbearias ---------- */
+.onb-passos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.onb-passo {
+  white-space: nowrap;
+}
+.onb-passo.feito {
+  color: var(--brand-dark);
+  font-weight: 500;
+}
+.onb-passo.opcional:not(.feito) {
+  font-style: italic;
+}
+.report-nota {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
 
 /* ---------- whatsapp da prospecção ---------- */
 .wa-card {

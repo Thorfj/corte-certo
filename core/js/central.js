@@ -1595,7 +1595,66 @@ async function carregarRelatorios() {
       '<div class="loading">Erro ao carregar gráfico.</div>';
   }
 
+  carregarOnboarding();
   renderizarFunilResumo();
+}
+
+// mesmos passos do checklist "Primeiros passos" do app (app/js/crm-global.js)
+const TRIAL_DIAS = 14;
+
+function passoOnboarding(b) {
+  if (/cancel/i.test(b.status_assinatura || "")) return { texto: "Cancelou", tipo: "cancelada" };
+  if (b.cliente) return { texto: "Assinante", tipo: "concluida" };
+  if (b.bot_ligado || b.trial_iniciado_em) {
+    const inicio = new Date(b.trial_iniciado_em || b.criado_em);
+    const restam = TRIAL_DIAS - Math.floor((Date.now() - inicio) / 86400000);
+    return restam > 0
+      ? { texto: `Teste grátis · ${restam} ${restam === 1 ? "dia" : "dias"}`, tipo: "enviando" }
+      : { texto: "Teste acabou, não assinou", tipo: "atrasado" };
+  }
+  if (!b.servicos) return { texto: "Cadastrar os serviços", tipo: "" };
+  return { texto: "Ligar o bot", tipo: "" };
+}
+
+async function carregarOnboarding() {
+  const body = document.getElementById("onboardingBody");
+  const { data, error } = await supabaseCentral.rpc("saas_onboarding");
+  if (error) {
+    console.error(error);
+    body.innerHTML = '<tr><td colspan="5" class="loading">Erro ao carregar as barbearias.</td></tr>';
+    return;
+  }
+  if (!data.length) {
+    body.innerHTML = '<tr><td colspan="5" class="loading">Nenhuma barbearia cadastrada ainda.</td></tr>';
+    return;
+  }
+  body.innerHTML = data
+    .map((b) => {
+      const passo = passoOnboarding(b);
+      const passos = [
+        [b.servicos > 0, "Serviços"],
+        [b.horario_ajustado, "Horário"],
+        [b.bot_ligado, "Bot ligado"],
+        [b.profissionais > 1, "Equipe", true],
+        [b.google_conectado, "Google", true],
+        [b.landing_publicada, "Página", true],
+      ];
+      const fone = String(b.whatsapp || "").replace(/\D/g, "");
+      return `
+      <tr>
+        <td><span class="lt-nome">${esc(b.empresa || "Sem nome")}</span><span class="lt-sub">${esc(b.email || "—")}</span></td>
+        <td class="nowrap">${esc(formatarData(b.criado_em))}</td>
+        <td><span class="safra-status" data-status="${esc(passo.tipo)}">${esc(passo.texto)}</span></td>
+        <td><div class="onb-passos">${passos
+          .map(
+            ([feito, nome, opcional]) =>
+              `<span class="onb-passo${feito ? " feito" : ""}${opcional ? " opcional" : ""}">${feito ? "✓" : "○"} ${esc(nome)}</span>`,
+          )
+          .join("")}</div></td>
+        <td class="nowrap">${fone ? `<a href="https://wa.me/${esc(fone)}" target="_blank" rel="noopener">${esc(formatarTelefone(fone))}</a>` : "—"}</td>
+      </tr>`;
+    })
+    .join("");
 }
 
 function renderizarChartBarras(dados) {

@@ -126,6 +126,34 @@
   padding-left: 14px;
 }
 
+.field-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.commission-box {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.commission-box strong {
+  font: 600 18px var(--font-body);
+  color: var(--ink);
+}
+
+.commission-box span {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
 .cost-list {
   display: flex;
   flex-direction: column;

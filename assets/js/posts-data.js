@@ -10,6 +10,17 @@
 
 const BLOG_POSTS = [
   {
+    slug: "horario-vazio-agenda",
+    title: "Quanto custa um horário vazio na sua agenda",
+    excerpt:
+      "Cadeira parada não aparece no caixa, mas pesa no fim do mês. Faça a conta da sua barbearia e veja onde estão os buracos e como preencher.",
+    category: "gestao",
+    categoryLabel: "Gestão",
+    date: "22 out 2026",
+    readTime: "3 min",
+    featured: false,
+  },
+  {
     slug: "cliente-que-sumiu",
     title: "O cliente que sumiu: como trazer de volta quem não voltou mais",
     excerpt:

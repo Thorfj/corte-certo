@@ -9,13 +9,13 @@ const defaults = {
 // ou por cliente. A lista fica salva neste navegador para não precisar digitar de novo.
 const defaultCosts = [
   { name: "Supabase", value: 120.0, type: "fixo" },
-  { name: "n8n", value: 320.0, type: "fixo" },
+  { name: "n8n (VPS)", value: 425.0, type: "ano" },
   { name: "Evolution API", value: 400.0, type: "ano" },
   { name: "Domínio", value: 180.0, type: "ano" },
   { name: "WhatsApp", value: 30.0, type: "fixo" },
   { name: "Claude", value: 120.0, type: "fixo" },
 ];
-const COSTS_KEY = "barbozap-calculadora-custos-v2";
+const COSTS_KEY = "barbozap-calculadora-custos-v3";
 const costList = document.getElementById("costList");
 const costBreakdown = document.getElementById("costBreakdown");
 

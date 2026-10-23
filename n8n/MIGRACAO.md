@@ -18,16 +18,34 @@ clientes. A versão hospedada na VPS não tem limite de execuções.
 - O Claude acessa o n8n novo por um conector MCP próprio (configurado em claude.ai, além do
   conector do n8n Cloud).
 
+## Status (23/10/2026, ~23h20)
+
+Virada feita. Os 21 fluxos rodam na VPS; no Cloud estão todos desligados (não apagar
+até o passo 7). Site e gatilhos do Supabase já apontam para a VPS.
+
+Problemas resolvidos na virada:
+- Os workers (modo fila) não subiam: `N8N_ENCRYPTION_KEY=` estava vazio no
+  `/docker/n8n/docker-compose.yml`. Preenchido com a chave do n8n principal
+  (`/home/node/.n8n/config`); backup em `docker-compose.yml.bak`. Não usar "reimplantar"
+  no Gerenciador Docker da Hostinger: pode voltar o arquivo original.
+- A credencial "Evolution API" estava com a chave errada (401); corrigida com a
+  `AUTHENTICATION_API_KEY` da VPS da Evolution (srv2067195, 179.197.232.141).
+- Na Evolution só existe a instância `prospeccao` (sem webhook), então não havia webhook de
+  barbearia para trocar. O fluxo auxiliar "Barbozap - Migração: apontar webhooks da Evolution"
+  (n8n novo) refaz isso se precisar; pode ser arquivado.
+- O Google não precisou de mudança: o redirect do OAuth é `barbozap.com.br/oauth/google.html`,
+  que agora chama o webhook novo.
+
 ## Passos
 
-- [ ] 1. Importar os fluxos no n8n novo, **todos desligados**, mantendo os nomes.
+- [x] 1. Importar os fluxos no n8n novo, **todos desligados**, mantendo os nomes.
       Os sub-fluxos são chamados por ID: depois de importar, trocar nos nós
       "Execute Workflow" os IDs antigos pelos novos (tabela de-para no fim deste arquivo).
-- [ ] 2. Recadastrar as credenciais no n8n novo (as senhas não saem do Cloud). Lista em
+- [x] 2. Recadastrar as credenciais no n8n novo (as senhas não saem do Cloud). Lista em
       `n8n/workflows/INDEX.md`. Principais: Supabase (service role), Evolution API (apikey
       global), SMTP (e-mail de alertas). Conferir se há credenciais do Google.
-- [ ] 3. Configurar o error workflow ("Barbozap - Alerta de erro") em cada fluxo.
-- [ ] 4. Trocar os endereços `https://cortecerto.app.n8n.cloud/webhook/...` por
+- [x] 3. Configurar o error workflow ("Barbozap - Alerta de erro") em cada fluxo.
+- [x] 4. Trocar os endereços `https://cortecerto.app.n8n.cloud/webhook/...` por
       `https://n8n.srv2088418.hstgr.cloud/webhook/...`:
   - Site:
     - `core/js/central.js`: `whatsapp-prospeccao`, `safra-prospeccao`
@@ -43,7 +61,7 @@ clientes. A versão hospedada na VPS não tem limite de execuções.
   - Google Cloud Console: URI de redirecionamento autorizado do OAuth →
     `https://n8n.srv2088418.hstgr.cloud/webhook/google-oauth-retorno` (o Thor troca).
   - URLs fixas dentro dos próprios fluxos (ver INDEX.md).
-- [ ] 5. Virada: ligar os fluxos no n8n novo e desligar os mesmos no Cloud, logo em seguida.
+- [x] 5. Virada: ligar os fluxos no n8n novo e desligar os mesmos no Cloud, logo em seguida.
       Publicar o site com os endereços novos e aplicar a migração do Supabase no mesmo momento.
 - [ ] 6. Testes: mensagem no WhatsApp da barbearia de teste (thorfj@gmail.com, "barbearia da
       analu") até marcar um horário; conexão do WhatsApp na Central; status na tela de

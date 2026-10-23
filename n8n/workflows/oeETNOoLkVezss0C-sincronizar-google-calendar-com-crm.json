@@ -1,0 +1,582 @@
+{
+  "id": "oeETNOoLkVezss0C",
+  "name": "Barbozap - Sincronizar Google Calendar com CRM",
+  "active": true,
+  "isArchived": false,
+  "versionId": "d646c69a-f801-4d8c-a4aa-105ca591acb9",
+  "createdAt": "2026-10-13T23:35:56.096Z",
+  "updatedAt": "2026-10-16T18:42:20.851Z",
+  "description": "A cada 30 min traz mudanças do Google Calendar para o CRM: atendimentos remarcados e eventos manuais como bloqueios.",
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "errorWorkflow": "LO9MFNlWYRaCsKz8"
+  },
+  "tags": [],
+  "parentFolderId": "BoAyeDqZ8dyqPVtm",
+  "nodes": [
+    {
+      "id": "1714dfd9-6a91-402b-b27e-b8ebffb95e1d",
+      "name": "A cada 30 minutos",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ec36a52b-7ad7-4ac5-a656-24f10fd492ed",
+      "name": "Busca barbearias conectadas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://jzqiqrymqbzullysukja.supabase.co/rest/v1/barbearias?google_calendar_status=eq.conectado&select=id",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "02c199b9-9686-4c22-b0f1-c32268a8eefd",
+      "name": "Busca profissionais com agenda",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/profissionais?barbearia_id=in.({{ $('Busca barbearias conectadas').all().map(i => i.json.id).join(',') }})&agendas=not.is.null&select=id,barbearia_id,agendas",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "9b1b9be0-8ff8-4115-b732-5e9258ebb795",
+      "name": "Busca atendimentos sincronizados",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/atendimentos?google_event_id=not.is.null&data_agend=gte.{{ $now.setZone('America/Sao_Paulo').minus({ days: 1 }).toFormat('yyyy-MM-dd') }}&select=id,id_prof,data_agend,horario,duracao_atend",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "91828b13-dd8c-4246-b9b3-20f705b62e63",
+      "name": "Busca bloqueios vindos do Google",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://jzqiqrymqbzullysukja.supabase.co/rest/v1/bloqueios_agenda?origem=eq.google_calendar&select=id,barbearia_id,id_prof,data_inicio,google_event_ids",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "cd015feb-4eac-40f9-b676-dc62a74c830e",
+      "name": "Lista profissionais",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Uma leitura da agenda principal de cada barbearia conectada (bloqueio vale para a barbearia toda)\n// e uma para cada profissional que tem agenda própria.\nconst barbs = $('Busca barbearias conectadas').all().map(i => i.json).filter(b => b.id);\nconst profs = $('Busca profissionais com agenda').all().map(i => i.json).filter(p => p.id && p.agendas);\nconst itens = barbs.map(b => ({ json: { id: null, barbearia_id: b.id, agendas: 'primary' } }));\nfor (const p of profs) itens.push({ json: { id: p.id, barbearia_id: p.barbearia_id, agendas: p.agendas } });\nreturn itens;"
+      }
+    },
+    {
+      "id": "b9a8acab-a951-4561-9adb-fb056dffe8d6",
+      "name": "Obter Token",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "mode": "each",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "kLvLNOMEiaxcT1mL",
+          "cachedResultName": "Corte Certo - Obter Access Token Válido (Google Calendar)"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "barbearia_id": "={{ String($json.barbearia_id) }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "barbearia_id",
+              "displayName": "barbearia_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "3ff73a84-ad6a-4ae5-8c59-b996b5fdf49a",
+      "name": "Lista eventos do Google (14 dias)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($('Lista profissionais').item.json.agendas) }}/events?singleEvents=true&maxResults=250&timeMin={{ encodeURIComponent($now.toISO()) }}&timeMax={{ encodeURIComponent($now.plus({ days: 14 }).toISO()) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "b16a5348-5bab-4458-a571-2b56eedf9332",
+      "name": "Calcula ações de sincronização",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ZONA = 'America/Sao_Paulo';\nconst prof = $('Lista profissionais').item.json;\nif ($json.error || !Array.isArray($json.items)) return { json: { acoes: [] } };\n\nconst hoje = DateTime.now().setZone(ZONA).startOf('day');\nconst limite = hoje.plus({ days: 14 });\nconst atends = $('Busca atendimentos sincronizados').all().map(i => i.json).filter(a => a.id);\nconst bloqs = $('Busca bloqueios vindos do Google').all().map(i => i.json)\n  .filter(b => b.id && String(b.barbearia_id) === String(prof.barbearia_id) && String(b.id_prof) === String(prof.id));\nconst local = (dt) => DateTime.fromISO(dt, { setZone: true }).setZone(ZONA);\n\nconst acoes = [];\nconst idsVistos = new Set();\n\nfor (const ev of $json.items) {\n  if (ev.status === 'cancelled' || ev.transparency === 'transparent') continue;\n  const priv = (ev.extendedProperties && ev.extendedProperties.private) || {};\n  idsVistos.add(ev.id);\n\n  // Evento criado pelo próprio Barbozap a partir de um bloqueio: nada a fazer\n  if (priv.corte_certo_bloqueio_id) continue;\n\n  // Evento de atendimento: se alguém mexeu no Google, o Google manda\n  if (priv.corte_certo_atendimento_id) {\n    const at = atends.find(a => String(a.id) === String(priv.corte_certo_atendimento_id));\n    if (!at || !ev.start || !ev.start.dateTime || !ev.end || !ev.end.dateTime) continue;\n    const ini = local(ev.start.dateTime);\n    const dur = Math.round(local(ev.end.dateTime).diff(ini, 'minutes').minutes);\n    const data = ini.toFormat('yyyy-MM-dd');\n    const horario = ini.toFormat('HH:mm');\n    if (data !== at.data_agend || horario !== String(at.horario).slice(0, 5) || dur !== Number(at.duracao_atend)) {\n      acoes.push({ tipo: 'atualizar_atendimento', id: at.id, body: { data_agend: data, horario: horario + ':00', duracao_atend: dur } });\n    }\n    continue;\n  }\n\n  // Evento manual: vira bloqueio no CRM (do profissional, ou da barbearia toda se for a agenda principal)\n  const jaExiste = bloqs.some(b => Object.values(b.google_event_ids || {}).includes(ev.id));\n  if (jaExiste) continue;\n\n  const body = { barbearia_id: prof.barbearia_id, id_prof: prof.id, motivo: ev.summary || 'Bloqueio manual no Google Calendar', origem: 'google_calendar', google_event_ids: { [prof.agendas]: ev.id } };\n  if (ev.start && ev.start.dateTime) {\n    const ini = local(ev.start.dateTime);\n    const fim = local(ev.end.dateTime);\n    Object.assign(body, { tipo: 'unico', data_inicio: ini.toFormat('yyyy-MM-dd'), horario_inicio: ini.toFormat('HH:mm'), horario_fim: fim.toFormat('HH:mm') });\n  } else if (ev.start && ev.start.date) {\n    const ultimoDia = DateTime.fromISO(ev.end.date, { zone: ZONA }).minus({ days: 1 }).toFormat('yyyy-MM-dd');\n    if (ultimoDia > ev.start.date) Object.assign(body, { tipo: 'periodo', data_inicio: ev.start.date, data_fim: ultimoDia });\n    else Object.assign(body, { tipo: 'unico', data_inicio: ev.start.date });\n  } else continue;\n  acoes.push({ tipo: 'criar_bloqueio', body });\n}\n\n// Bloqueios importados cujo evento sumiu do Google (só dentro da janela consultada)\nfor (const b of bloqs) {\n  const eventId = Object.values(b.google_event_ids || {})[0];\n  const dia = b.data_inicio ? DateTime.fromISO(b.data_inicio, { zone: ZONA }) : null;\n  if (eventId && !idsVistos.has(eventId) && dia && dia >= hoje && dia < limite) acoes.push({ tipo: 'apagar_bloqueio', id: b.id });\n}\n\nreturn { json: { acoes } };"
+      }
+    },
+    {
+      "id": "2fe731d6-6bb6-4f5b-a0e1-931261ad6af0",
+      "name": "Separa ações",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "fieldToSplitOut": "acoes",
+        "options": {}
+      }
+    },
+    {
+      "id": "709cfa1b-4f69-4b12-9698-6a2a38ca5023",
+      "name": "Tipo de ação",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "renameOutput": true,
+              "outputKey": "Atualizar atendimento",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.tipo }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "atualizar_atendimento"
+                  }
+                ]
+              }
+            },
+            {
+              "renameOutput": true,
+              "outputKey": "Criar bloqueio",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.tipo }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "criar_bloqueio"
+                  }
+                ]
+              }
+            },
+            {
+              "renameOutput": true,
+              "outputKey": "Apagar bloqueio",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.tipo }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "apagar_bloqueio"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "2595b969-8109-4015-a8ba-7952b3d67a7f",
+      "name": "Atualiza atendimento",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2440,
+        -160
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/atendimentos?id=eq.{{ $json.id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "2006aca8-ad20-4b9b-a53e-dc323a4dc3e2",
+      "name": "Cria bloqueio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2440,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://jzqiqrymqbzullysukja.supabase.co/rest/v1/bloqueios_agenda",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "3081adac-c1b9-41eb-b668-a27ab05b6671",
+      "name": "Apaga bloqueio órfão",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2440,
+        160
+      ],
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/bloqueios_agenda?id=eq.{{ $json.id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "eb62b7e3-9a2f-4bbd-b0a1-6cc143e33999",
+      "name": "Sticky Note 8b198432",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        192,
+        -96
+      ],
+      "parameters": {
+        "content": "## Sincronizar Google Calendar -> CRM\nA cada 30 min, para cada profissional com agenda conectada:\n- evento de atendimento alterado no Google -> atualiza data/horário no CRM;\n- evento manual -> vira bloqueio (origem `google_calendar`);\n- bloqueio cujo evento sumiu -> é apagado (só nos próximos 14 dias).",
+        "color": 4,
+        "width": 1040,
+        "height": 224
+      }
+    }
+  ],
+  "connections": {
+    "A cada 30 minutos": {
+      "main": [
+        [
+          {
+            "node": "Busca barbearias conectadas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca barbearias conectadas": {
+      "main": [
+        [
+          {
+            "node": "Busca profissionais com agenda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca profissionais com agenda": {
+      "main": [
+        [
+          {
+            "node": "Busca atendimentos sincronizados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca atendimentos sincronizados": {
+      "main": [
+        [
+          {
+            "node": "Busca bloqueios vindos do Google",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca bloqueios vindos do Google": {
+      "main": [
+        [
+          {
+            "node": "Lista profissionais",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lista profissionais": {
+      "main": [
+        [
+          {
+            "node": "Obter Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obter Token": {
+      "main": [
+        [
+          {
+            "node": "Lista eventos do Google (14 dias)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lista eventos do Google (14 dias)": {
+      "main": [
+        [
+          {
+            "node": "Calcula ações de sincronização",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcula ações de sincronização": {
+      "main": [
+        [
+          {
+            "node": "Separa ações",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separa ações": {
+      "main": [
+        [
+          {
+            "node": "Tipo de ação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tipo de ação": {
+      "main": [
+        [
+          {
+            "node": "Atualiza atendimento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cria bloqueio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Apaga bloqueio órfão",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  }
+}

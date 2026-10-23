@@ -1,0 +1,287 @@
+{
+  "id": "kLvLNOMEiaxcT1mL",
+  "name": "Barbozap - Obter Access Token Válido (Google Calendar)",
+  "active": true,
+  "isArchived": false,
+  "versionId": "3839dc3b-26a0-4b8a-8d4a-5fe199f7442a",
+  "createdAt": "2026-10-13T23:20:05.464Z",
+  "updatedAt": "2026-10-16T12:51:28.042Z",
+  "description": "Sub-workflow: devolve um access_token válido do Google Calendar para a barbearia, renovando com o refresh_token quando necessário.",
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "tags": [],
+  "parentFolderId": "BoAyeDqZ8dyqPVtm",
+  "nodes": [
+    {
+      "id": "070dc79f-cd0a-4801-b427-0c5951a82471",
+      "name": "Recebe barbearia_id",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "barbearia_id",
+              "type": "any"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "54f3b108-4974-478e-be1e-6f35bca1be4c",
+      "name": "Busca o token salvo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/google_calendar_tokens?barbearia_id=eq.{{ $json.barbearia_id }}&select=access_token,refresh_token,expires_at&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "2107e429-1bf3-4148-adcb-2f6e9cc705c7",
+      "name": "Token expirado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ !$json.expires_at || new Date($json.expires_at).getTime() < Date.now() + 5 * 60 * 1000 }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "7a3d21ec-f15f-4491-948b-dbc6137ce341",
+      "name": "Renova o token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        -120
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://oauth2.googleapis.com/token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "refresh_token",
+              "value": "={{ $('Busca o token salvo').item.json.refresh_token }}"
+            },
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "cqynC2eNkG0tsLp8",
+          "name": "Google Clooud Calendar"
+        }
+      }
+    },
+    {
+      "id": "0b092b9a-78c0-42b1-9e6c-7ac4fd7a9c00",
+      "name": "Salva o token renovado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        -120
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/google_calendar_tokens?barbearia_id=eq.{{ $('Recebe barbearia_id').item.json.barbearia_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ access_token: $json.access_token, expires_at: new Date(Date.now() + ($json.expires_in * 1000)).toISOString() }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "80994c4b-fe3d-486b-80b0-3c4d285efb77",
+      "name": "Retorna token renovado",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1100,
+        -120
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "tk",
+              "name": "access_token",
+              "value": "={{ $('Renova o token').item.json.access_token }}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "4df87530-dec2-4665-adb0-df2d7e4bdfcc",
+      "name": "Retorna token atual",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        660,
+        120
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "tk",
+              "name": "access_token",
+              "value": "={{ $json.access_token }}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "5a82528a-574e-4c71-8277-e0453dcd412e",
+      "name": "Sticky Note 4f878de7",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -96
+      ],
+      "parameters": {
+        "content": "## Obter Access Token (Google Calendar)\nDevolve `access_token` válido da barbearia, renovando quando faltam < 5 min.\n\nCredencial **Google OAuth Client (Corte Certo)** (Basic Auth): usuário = Client ID, senha = Client Secret do Google Cloud.\n\nSe a barbearia não tem token salvo, o fluxo para (0 itens).",
+        "color": 4,
+        "width": 384,
+        "height": 224
+      }
+    }
+  ],
+  "connections": {
+    "Recebe barbearia_id": {
+      "main": [
+        [
+          {
+            "node": "Busca o token salvo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca o token salvo": {
+      "main": [
+        [
+          {
+            "node": "Token expirado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token expirado?": {
+      "main": [
+        [
+          {
+            "node": "Renova o token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Retorna token atual",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Renova o token": {
+      "main": [
+        [
+          {
+            "node": "Salva o token renovado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salva o token renovado": {
+      "main": [
+        [
+          {
+            "node": "Retorna token renovado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  }
+}

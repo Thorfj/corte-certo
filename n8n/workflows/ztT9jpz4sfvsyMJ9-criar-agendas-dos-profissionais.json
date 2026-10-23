@@ -1,0 +1,543 @@
+{
+  "id": "ztT9jpz4sfvsyMJ9",
+  "name": "Barbozap - Criar agendas dos profissionais",
+  "active": true,
+  "isArchived": false,
+  "versionId": "660be87a-a0b7-46e8-8225-57830fce803f",
+  "createdAt": "2026-10-16T15:01:01.218Z",
+  "updatedAt": "2026-10-18T03:15:37.711Z",
+  "description": "Cria uma agenda Google por profissional na conta da barbearia, grava o ID no cadastro e compartilha com o e-mail do profissional.",
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "errorWorkflow": "LO9MFNlWYRaCsKz8"
+  },
+  "tags": [],
+  "parentFolderId": "BoAyeDqZ8dyqPVtm",
+  "nodes": [
+    {
+      "id": "cfea8b50-ce8a-4f59-85bd-9406234424b3",
+      "name": "Barbearia conectou o Google",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "barbearia_id",
+              "type": "any"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "976208cb-c389-4a88-96c0-71d1b2409413",
+      "name": "Alvo: todos os profissionais",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b",
+              "name": "barbearia_id",
+              "value": "={{ String($json.barbearia_id) }}",
+              "type": "string"
+            },
+            {
+              "id": "p",
+              "name": "id_prof",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "1ad3e455-7190-4c76-a7a7-49c087131ac5",
+      "name": "Busca status do Google da barbearia",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        120
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/barbearias?id=eq.{{ $json.barbearia_id }}&select=id,google_calendar_status&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "dbe613fb-7764-4880-85fc-c7f918ec8931",
+      "name": "Webhook - Profissional cadastrado",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        240
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "profissional-criado",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "fa9395f0-7934-43a8-8979-63f465726bd8"
+    },
+    {
+      "id": "46f19087-1d00-48b0-9453-253907e6ff7a",
+      "name": "É cadastro novo sem agenda?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        240
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.body.type }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "INSERT"
+            },
+            {
+              "leftValue": "={{ $json.body.record?.agendas || '' }}",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "80338cd9-9cc0-4c96-845e-47e8ef016690",
+      "name": "Alvo: profissional novo",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        240
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b",
+              "name": "barbearia_id",
+              "value": "={{ String($json.body.record.barbearia_id) }}",
+              "type": "string"
+            },
+            {
+              "id": "p",
+              "name": "id_prof",
+              "value": "={{ String($json.body.record.id) }}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "21c622dd-a668-445d-abdc-f6d022617b47",
+      "name": "Google conectado?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        940,
+        120
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.google_calendar_status }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "conectado"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "158fb08b-b5c5-4ee9-bcef-7ed694f3cb77",
+      "name": "Obter Token",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1160,
+        120
+      ],
+      "parameters": {
+        "mode": "once",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "kLvLNOMEiaxcT1mL",
+          "cachedResultName": "Barbozap - Obter Access Token Válido (Google Calendar)"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "barbearia_id": "={{ String($json.id) }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "barbearia_id",
+              "displayName": "barbearia_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "dca5a575-7205-4e1b-994b-1bdccee3d8a1",
+      "name": "Busca profissionais sem agenda",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1380,
+        120
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/profissionais?barbearia_id=eq.{{ $('Busca status do Google da barbearia').first().json.id }}&agendas=is.null&removido_em=is.null&atende_clientes=is.true{{ ($('Alvo: profissional novo').isExecuted && $('Alvo: profissional novo').first().json.id_prof) ? '&id=eq.' + $('Alvo: profissional novo').first().json.id_prof : '' }}&select=id,nome,email",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "executeOnce": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "b2b82385-f3bf-4ec3-9e69-b186893d2a0e",
+      "name": "Cria agenda do profissional",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1600,
+        120
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/calendar/v3/calendars",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Obter Token').first().json.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ summary: 'Barbozap — ' + $json.nome, timeZone: 'America/Sao_Paulo', description: 'Agenda do profissional no Barbozap' }) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "ba395e2a-87e5-40e1-b954-76f427975651",
+      "name": "Salva agenda no cadastro",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1820,
+        120
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/profissionais?id=eq.{{ $('Busca profissionais sem agenda').item.json.id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ agendas: $json.id }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "82a90f82-a2e0-4a4b-9068-44d8b794c78b",
+      "name": "Profissional tem e-mail?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        2040,
+        120
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $('Busca profissionais sem agenda').item.json.email || '' }}",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              },
+              "rightValue": "@"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "7b37ccaf-60b5-4ceb-b2e1-573c20cc025f",
+      "name": "Compartilha agenda com o profissional",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2260,
+        120
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($('Cria agenda do profissional').item.json.id) }}/acl?sendNotifications=true",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Obter Token').first().json.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ role: 'writer', scope: { type: 'user', value: $('Busca profissionais sem agenda').item.json.email } }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "09249150-2184-40ff-94e1-e80c22672865",
+      "name": "Sticky Note fc9fac47",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -96
+      ],
+      "parameters": {
+        "content": "## Criar agendas dos profissionais\nCria a agenda \"Barbozap — Nome\" na conta Google da barbearia para cada profissional sem agenda, grava o ID em `profissionais.agendas` e compartilha com o e-mail do profissional (permissão de edição).\n\nDisparado quando a barbearia conecta o Google (chamado pelo OAuth Retorno) e quando um profissional é cadastrado (trigger do banco em `/webhook/profissional-criado`).",
+        "color": 4,
+        "width": 160,
+        "height": 464
+      }
+    }
+  ],
+  "connections": {
+    "Barbearia conectou o Google": {
+      "main": [
+        [
+          {
+            "node": "Alvo: todos os profissionais",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alvo: todos os profissionais": {
+      "main": [
+        [
+          {
+            "node": "Busca status do Google da barbearia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca status do Google da barbearia": {
+      "main": [
+        [
+          {
+            "node": "Google conectado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Profissional cadastrado": {
+      "main": [
+        [
+          {
+            "node": "É cadastro novo sem agenda?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É cadastro novo sem agenda?": {
+      "main": [
+        [
+          {
+            "node": "Alvo: profissional novo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alvo: profissional novo": {
+      "main": [
+        [
+          {
+            "node": "Busca status do Google da barbearia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google conectado?": {
+      "main": [
+        [
+          {
+            "node": "Obter Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obter Token": {
+      "main": [
+        [
+          {
+            "node": "Busca profissionais sem agenda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca profissionais sem agenda": {
+      "main": [
+        [
+          {
+            "node": "Cria agenda do profissional",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cria agenda do profissional": {
+      "main": [
+        [
+          {
+            "node": "Salva agenda no cadastro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salva agenda no cadastro": {
+      "main": [
+        [
+          {
+            "node": "Profissional tem e-mail?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Profissional tem e-mail?": {
+      "main": [
+        [
+          {
+            "node": "Compartilha agenda com o profissional",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  }
+}

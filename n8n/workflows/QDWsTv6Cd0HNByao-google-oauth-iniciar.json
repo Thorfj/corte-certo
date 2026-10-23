@@ -1,0 +1,131 @@
+{
+  "id": "QDWsTv6Cd0HNByao",
+  "name": "Barbozap - Google OAuth Iniciar",
+  "active": true,
+  "isArchived": false,
+  "versionId": "fccd75dd-1a57-4993-840a-79b883a1e85b",
+  "createdAt": "2026-10-13T23:32:42.710Z",
+  "updatedAt": "2026-10-16T19:15:04.233Z",
+  "description": "Redireciona a barbearia para a tela de consentimento do Google Calendar.",
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "errorWorkflow": "LO9MFNlWYRaCsKz8"
+  },
+  "tags": [],
+  "parentFolderId": "BoAyeDqZ8dyqPVtm",
+  "nodes": [
+    {
+      "id": "4032d88a-3aaa-485d-be86-ecca512ada77",
+      "name": "Webhook - Iniciar OAuth",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "google-oauth-iniciar",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "d7b00c49-b900-4cb0-a9b8-b142f5e7ca3b"
+    },
+    {
+      "id": "b14688dd-8a6f-46fe-8b11-a498be68f9dd",
+      "name": "Monta URL de autorização",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cid",
+              "name": "client_id",
+              "value": "1093224833285-ke00g0753a1efe1l082sb4o5b6tqboa4.apps.googleusercontent.com",
+              "type": "string"
+            },
+            {
+              "id": "redir",
+              "name": "redirect_uri",
+              "value": "https://barbozap.com.br/oauth/google.html",
+              "type": "string"
+            },
+            {
+              "id": "state",
+              "name": "state",
+              "value": "={{ JSON.stringify({ b: $json.query.barbearia_id, r: $json.query.retorno || $json.headers.referer || '' }) }}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "d67a4a46-4b3a-4f71-b0f4-361b5a816db7",
+      "name": "Redireciona para o Google",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "respondWith": "redirect",
+        "redirectURL": "=https://accounts.google.com/o/oauth2/v2/auth?client_id={{ encodeURIComponent($json.client_id) }}&redirect_uri={{ encodeURIComponent($json.redirect_uri) }}&response_type=code&scope={{ encodeURIComponent('https://www.googleapis.com/auth/calendar openid email') }}&access_type=offline&prompt=consent&state={{ encodeURIComponent($json.state) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "21b94055-b28b-4c51-9fd6-ecdba0836b1d",
+      "name": "Sticky Note 73d84550",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -96
+      ],
+      "parameters": {
+        "content": "## Google OAuth - Iniciar\nO botão \"Conectar com Google\" do CRM abre:\n`https://cortecerto.app.n8n.cloud/webhook/google-oauth-iniciar?barbearia_id=...&retorno=...`\n\nO Google devolve para `https://barbozap.com.br/oauth/google.html` (domínio verificado), que repassa para o webhook *google-oauth-retorno*. O mesmo endereço precisa estar no nó *Troca código por token* do Retorno e nos URIs autorizados do Google Cloud.",
+        "color": 4,
+        "width": 608,
+        "height": 224
+      }
+    }
+  ],
+  "connections": {
+    "Webhook - Iniciar OAuth": {
+      "main": [
+        [
+          {
+            "node": "Monta URL de autorização",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monta URL de autorização": {
+      "main": [
+        [
+          {
+            "node": "Redireciona para o Google",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  }
+}

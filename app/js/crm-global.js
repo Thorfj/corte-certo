@@ -258,7 +258,7 @@
   // ---------------- Primeiros passos (Atendimentos, só admin) ----------------
   // Checklist que se marca sozinho conforme o dono configura a barbearia.
   // Some quando os passos obrigatórios estão feitos (ou quando a pessoa fecha).
-  const WHATSAPP_STATUS_URL = "https://cortecerto.app.n8n.cloud/webhook/whatsapp-conexao";
+  const WHATSAPP_STATUS_URL = "https://n8n.srv2088418.hstgr.cloud/webhook/whatsapp-conexao";
   const HORARIO_PADRAO_JSON = JSON.stringify({
     0: null, 1: ["09:00", "19:00"], 2: ["09:00", "19:00"], 3: ["09:00", "19:00"],
     4: ["09:00", "19:00"], 5: ["09:00", "19:00"], 6: ["09:00", "19:00"],

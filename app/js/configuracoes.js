@@ -12,7 +12,7 @@ let cnpjAtualCache = null;
 // Webhook n8n que inicia o OAuth do Google. Recebe a barbearia_id (onde salvar
 // o token) e a URL desta página (pra onde voltar depois da autorização).
 const GOOGLE_OAUTH_URL =
-  "https://cortecerto.app.n8n.cloud/webhook/google-oauth-iniciar";
+  "https://n8n.srv2088418.hstgr.cloud/webhook/google-oauth-iniciar";
 
 // TODO: ajustar para a URL real da Edge Function depois do deploy
 const CRIAR_USUARIO_URL =
@@ -174,7 +174,7 @@ async function configurarAparenciaEGoogle(barbearia) {
 // O n8n (workflow "Conexão WhatsApp") confere se quem chama é admin e fala com a
 // Evolution API usando o whatsapp_barbearia como nome da instância. A chave da
 // Evolution nunca passa pelo navegador.
-const WHATSAPP_CONEXAO_URL = "https://cortecerto.app.n8n.cloud/webhook/whatsapp-conexao";
+const WHATSAPP_CONEXAO_URL = "https://n8n.srv2088418.hstgr.cloud/webhook/whatsapp-conexao";
 const WHATSAPP_POLL_MS = 4000; // confere se o QR já foi lido
 const WHATSAPP_QR_RENOVA_MS = 35000; // o QR da Evolution expira em ~40s
 const WHATSAPP_QR_LIMITE_MS = 180000; // depois de 3 min sem ler, para e pede para tentar de novo

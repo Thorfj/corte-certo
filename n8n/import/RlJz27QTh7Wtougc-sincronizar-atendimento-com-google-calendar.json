@@ -1,0 +1,607 @@
+{
+  "id": "RlJz27QTh7Wtougc",
+  "name": "Barbozap - Sincronizar Atendimento com Google Calendar",
+  "nodes": [
+    {
+      "id": "ef1ac193-25a9-4f65-b3b7-681a3dfe7c85",
+      "name": "Webhook - Atendimento alterado",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "atendimento-alterado",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "191ba4cf-9154-42b5-a1a5-6ddeb1d4e061"
+    },
+    {
+      "id": "f67af2b7-1356-4b96-b89c-37c3052295f4",
+      "name": "Analisa mudança",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const b = $input.first().json.body || {};\nconst tipo = b.type;\nconst rec = b.record || null;\nconst old = b.old_record || null;\nconst campos = ['data_agend', 'horario', 'id_prof', 'duracao_atend'];\n\n// Só reage a mudanças de data/horário/profissional/duração. Isso evita loop quando\n// o próprio n8n grava google_event_id ou os flags de lembrete.\nconst mudou = tipo === 'UPDATE' && rec && old && campos.some(k => String(rec[k]) !== String(old[k]));\n\n// ID fixo do evento no Google (letras a-v e dígitos): disparos simultâneos não duplicam o evento\nconst atendimento_id = (rec || old).id;\nconst event_id = 'atend' + atendimento_id;\nconst trocouProf = Boolean(rec && old && String(rec.id_prof) !== String(old.id_prof));\nconst legado = Boolean(old && old.google_event_id && old.google_event_id !== event_id);\n\nconst apagar = Boolean(old && (tipo === 'DELETE' || (mudou && (trocouProf || legado))));\nconst criar = Boolean(rec && rec.data_agend && rec.horario && rec.id_prof && (tipo === 'INSERT' || mudou));\n\nif (!apagar && !criar) return [];\nreturn [{ json: { tipo, apagar, criar, atendimento_id, event_id, barbearia_id: (rec || old).barbearia_id, old_prof: old ? old.id_prof : null, old_event: old ? (old.google_event_id || event_id) : null, rec } }];"
+      }
+    },
+    {
+      "id": "0600fc86-d414-4d23-a98b-d510cebded2c",
+      "name": "Busca status do Google da barbearia",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/barbearias?id=eq.{{ $json.barbearia_id }}&select=google_calendar_status&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "7a48a332-ee0a-45f3-bd22-d28cfe1089ee",
+      "name": "Google conectado?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.google_calendar_status }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "conectado"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "9ec85d7c-6f79-4202-8242-b3b0fcf935d5",
+      "name": "Obter Token",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "mode": "once",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "kLvLNOMEiaxcT1mL",
+          "cachedResultName": "Corte Certo - Obter Access Token Válido (Google Calendar)"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "barbearia_id": "={{ String($('Analisa mudança').first().json.barbearia_id) }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "barbearia_id",
+              "displayName": "barbearia_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "131507ed-e9b5-4cca-bb7c-17170284047e",
+      "name": "Apagar evento antigo?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        -160
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $('Analisa mudança').first().json.apagar }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "25ab3942-4729-4ead-87d0-79a18c0be307",
+      "name": "Busca Calendar ID antigo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        -160
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/profissionais?id=eq.{{ $('Analisa mudança').first().json.old_prof }}&select=agendas&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "699fb01e-a86f-4450-a565-967013697bff",
+      "name": "Apaga evento no Google",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1560,
+        -160
+      ],
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($json.agendas || 'primary') }}/events/{{ $('Analisa mudança').first().json.old_event }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Obter Token').first().json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "92cc9b63-9bec-4a00-b6f9-82361f7da699",
+      "name": "Criar evento novo?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        160
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $('Analisa mudança').first().json.criar }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "67ec5fb7-52e1-448b-9b54-817dd32aeeed",
+      "name": "Busca Calendar ID novo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        160
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/profissionais?id=eq.{{ $json.id_prof }}&select=agendas,nome&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "5b0e7b7a-1243-46e0-aadb-384a304a8293",
+      "name": "Busca nome do cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1780,
+        160
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/clientes?id=eq.{{ $('Busca atendimento atual').first().json.id_cliente }}&select=nome,telefone&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "9cac84a6-4fbe-40b8-9ae9-662727601f77",
+      "name": "Monta corpo do evento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        160
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const ZONA = 'America/Sao_Paulo';\n// Dados relidos do banco: se dois disparos chegam juntos, os dois usam o estado mais recente\nconst r = $('Busca atendimento atual').first().json;\nconst eventId = $('Analisa mudança').first().json.event_id;\nconst prof = $('Busca Calendar ID novo').first().json || {};\nconst cliente = $input.first().json || {};\nconst inicio = DateTime.fromISO(r.data_agend + 'T' + String(r.horario).slice(0, 8), { zone: ZONA });\nconst fim = inicio.plus({ minutes: Number(r.duracao_atend) || 30 });\n\n// Sem agenda própria do profissional, o evento vai para a agenda principal da conta Google da barbearia\nconst calendarId = prof.agendas || 'primary';\nconst partes = [prof.nome, cliente.nome].filter(Boolean);\n\nconst evento = {\n  id: eventId,\n  status: 'confirmed',\n  summary: partes.length ? partes.join(' — ') : 'Atendimento agendado',\n  description: 'Criado automaticamente pelo Barbozap' + (prof.nome ? '\\nProfissional: ' + prof.nome : '') + (cliente.nome ? '\\nCliente: ' + cliente.nome : '') + (cliente.telefone ? '\\nTelefone: ' + cliente.telefone : ''),\n  start: { dateTime: inicio.toISO({ suppressMilliseconds: true }), timeZone: ZONA },\n  end: { dateTime: fim.toISO({ suppressMilliseconds: true }), timeZone: ZONA },\n  extendedProperties: { private: { corte_certo_atendimento_id: String(r.id) } }\n};\n\nreturn [{ json: { evento, calendarId, eventId } }];"
+      }
+    },
+    {
+      "id": "b6c5d580-a8e2-4230-8eae-3bafdee97dd8",
+      "name": "Cria evento no Google",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2440,
+        320
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($('Monta corpo do evento').first().json.calendarId) }}/events",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Obter Token').first().json.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Monta corpo do evento').first().json.evento) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "e9742e03-27f6-479d-acf2-164f7ebf80ad",
+      "name": "Salva google_event_id",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2660,
+        160
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/atendimentos?id=eq.{{ $('Analisa mudança').first().json.atendimento_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ google_event_id: $('Analisa mudança').first().json.event_id }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "a62dad20-2fa1-47eb-81d4-674a6e5b53fc",
+      "name": "Sticky Note 16f2f741",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -96
+      ],
+      "parameters": {
+        "content": "## Sincronizar Atendimento -> Google Calendar\n**Database Webhook do Supabase** na tabela `atendimentos` (INSERT, UPDATE, DELETE):\n`https://n8n.srv2088418.hstgr.cloud/webhook/atendimento-alterado`\n\nCria/recria/apaga o evento na agenda do profissional. Ignora updates que não mudam data, horário, profissional ou duração (evita loop).",
+        "color": 4,
+        "width": 384,
+        "height": 224
+      }
+    },
+    {
+      "id": "8c90f613-e49c-4260-a05d-743538c5fc39",
+      "name": "Busca atendimento atual",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        320
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "method": "GET",
+        "nodeCredentialType": "supabaseApi",
+        "options": {},
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/atendimentos?id=eq.{{ $('Analisa mudança').first().json.atendimento_id }}&select=id,id_prof,id_cliente,data_agend,horario,duracao_atend&limit=1"
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "66d2fbff-3455-4225-9b8d-e4227bedad15",
+      "name": "Atualiza evento no Google",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2220,
+        0
+      ],
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Obter Token').first().json.access_token }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify($json.evento) }}",
+        "method": "PUT",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($json.calendarId) }}/events/{{ $json.eventId }}"
+      },
+      "onError": "continueErrorOutput"
+    }
+  ],
+  "connections": {
+    "Webhook - Atendimento alterado": {
+      "main": [
+        [
+          {
+            "node": "Analisa mudança",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analisa mudança": {
+      "main": [
+        [
+          {
+            "node": "Busca status do Google da barbearia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca status do Google da barbearia": {
+      "main": [
+        [
+          {
+            "node": "Google conectado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google conectado?": {
+      "main": [
+        [
+          {
+            "node": "Obter Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obter Token": {
+      "main": [
+        [
+          {
+            "node": "Apagar evento antigo?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Criar evento novo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apagar evento antigo?": {
+      "main": [
+        [
+          {
+            "node": "Busca Calendar ID antigo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Calendar ID antigo": {
+      "main": [
+        [
+          {
+            "node": "Apaga evento no Google",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca nome do cliente": {
+      "main": [
+        [
+          {
+            "node": "Monta corpo do evento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cria evento no Google": {
+      "main": [
+        [
+          {
+            "node": "Salva google_event_id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Calendar ID novo": {
+      "main": [
+        [
+          {
+            "node": "Busca nome do cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar evento novo?": {
+      "main": [
+        [
+          {
+            "node": "Busca atendimento atual",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca atendimento atual": {
+      "main": [
+        [
+          {
+            "node": "Busca Calendar ID novo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monta corpo do evento": {
+      "main": [
+        [
+          {
+            "node": "Atualiza evento no Google",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualiza evento no Google": {
+      "main": [
+        [
+          {
+            "node": "Salva google_event_id",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cria evento no Google",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "errorWorkflow": "LO9MFNlWYRaCsKz8"
+  },
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  },
+  "active": false,
+  "description": "Webhook do Supabase: espelha atendimentos criados/alterados/apagados no Google Calendar do profissional."
+}

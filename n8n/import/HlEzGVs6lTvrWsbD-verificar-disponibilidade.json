@@ -1,0 +1,438 @@
+{
+  "id": "HlEzGVs6lTvrWsbD",
+  "name": "Barbozap - Verificar Disponibilidade",
+  "nodes": [
+    {
+      "id": "32b637db-c012-4662-9ed7-d09cc6ac3919",
+      "name": "Recebe horário a verificar",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "barbearia_id",
+              "type": "any"
+            },
+            {
+              "name": "id_prof",
+              "type": "any"
+            },
+            {
+              "name": "data",
+              "type": "string"
+            },
+            {
+              "name": "horario_inicio",
+              "type": "string"
+            },
+            {
+              "name": "horario_fim",
+              "type": "string"
+            },
+            {
+              "name": "ignorar_atend_id",
+              "type": "any"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "795e9482-b481-4a7c-92f6-1529efe75569",
+      "name": "Busca bloqueios",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/bloqueios_agenda?barbearia_id=eq.{{ $json.barbearia_id }}&or=(id_prof.eq.{{ $json.id_prof }},id_prof.is.null)&select=id_prof,tipo,data_inicio,data_fim,dia_semana,horario_inicio,horario_fim",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "5e705543-776e-46bc-94a9-1ee7cbe6a6fa",
+      "name": "Busca atendimentos existentes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/atendimentos?id_prof=eq.{{ $('Recebe horário a verificar').first().json.id_prof }}&data_agend=eq.{{ $('Recebe horário a verificar').first().json.data }}&id=neq.{{ Number($('Recebe horário a verificar').first().json.ignorar_atend_id) || 0 }}&select=id,horario,duracao_atend",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "19c13ba7-8634-4adb-8bf9-31d435c90bcc",
+      "name": "Confere bloqueios e conflitos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const entrada = $('Recebe horário a verificar').first().json;\nconst bloqueios = $('Busca bloqueios').all().map(i => i.json).filter(b => b.tipo);\nconst atendimentos = $input.all().map(i => i.json).filter(a => a.horario);\n\nconst min = (h) => { if (!h) return null; const [hh, mm] = String(h).split(':').map(Number); return hh * 60 + mm; };\nconst reqIni = min(entrada.horario_inicio);\nconst reqFim = min(entrada.horario_fim);\n\nfunction aplica(b) {\n  if (b.id_prof && String(b.id_prof) !== String(entrada.id_prof)) return false;\n  if (b.tipo === 'unico') return b.data_inicio === entrada.data;\n  if (b.tipo === 'periodo') return entrada.data >= b.data_inicio && entrada.data <= b.data_fim;\n  if (b.tipo === 'recorrente') return new Date(entrada.data + 'T12:00:00').getDay() === Number(b.dia_semana);\n  return false;\n}\nfunction conflitaBloqueio(b) {\n  if (!b.horario_inicio || !b.horario_fim) return true;\n  return reqIni < min(b.horario_fim) && reqFim > min(b.horario_inicio);\n}\n\nconst bloqueado = bloqueios.some(b => aplica(b) && conflitaBloqueio(b));\nconst conflita = atendimentos.some(a => {\n  const ini = min(a.horario);\n  const fim = ini + (Number(a.duracao_atend) || 30);\n  return reqIni < fim && reqFim > ini;\n});\n\nreturn [{ json: { bloqueado, conflita, livre: !bloqueado && !conflita } }];"
+      }
+    },
+    {
+      "id": "0855d80e-0777-4492-b887-ffe04f164a7c",
+      "name": "Livre no CRM?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.livre }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "399e073a-900b-4d89-8441-7db18288dfd6",
+      "name": "Busca Calendar ID do profissional",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        -120
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/profissionais?id=eq.{{ $('Recebe horário a verificar').first().json.id_prof }}&select=agendas",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "f064da04-f5ce-4c3c-a8cf-97fd06c122ca",
+      "name": "Profissional tem Google Calendar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        -120
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.agendas }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "f6589529-d41e-4b44-87b4-3e793a1f34bb",
+      "name": "Obter Token",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1540,
+        -240
+      ],
+      "parameters": {
+        "mode": "once",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "kLvLNOMEiaxcT1mL",
+          "cachedResultName": "Corte Certo - Obter Access Token Válido (Google Calendar)"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "barbearia_id": "={{ String($('Recebe horário a verificar').first().json.barbearia_id) }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "barbearia_id",
+              "displayName": "barbearia_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "ec477a57-bcaf-4a3d-af55-3b2956a33fee",
+      "name": "Consulta Google - eventos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        -240
+      ],
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "method": "GET",
+        "options": {},
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "timeMin",
+              "value": "={{ $('Recebe horário a verificar').first().json.data + 'T' + $('Recebe horário a verificar').first().json.horario_inicio + ':00-03:00' }}"
+            },
+            {
+              "name": "timeMax",
+              "value": "={{ $('Recebe horário a verificar').first().json.data + 'T' + $('Recebe horário a verificar').first().json.horario_fim + ':00-03:00' }}"
+            },
+            {
+              "name": "singleEvents",
+              "value": "true"
+            },
+            {
+              "name": "maxResults",
+              "value": "50"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "sendQuery": true,
+        "url": "=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($('Busca Calendar ID do profissional').first().json.agendas) }}/events"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "e35cdd25-7be5-4f2e-8fa7-fe0fc0ff8566",
+      "name": "Resultado final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const c = $('Confere bloqueios e conflitos').first().json;\nconst ignorar = Number($('Recebe horário a verificar').first().json.ignorar_atend_id) || 0;\nlet ocupadoGoogle = false;\ntry {\n  const r = $('Consulta Google - eventos').first();\n  const eventos = (r && r.json && r.json.items) || [];\n  // Ignora eventos cancelados, marcados como \"livre\" e o evento do próprio atendimento que está sendo remarcado\n  ocupadoGoogle = eventos.some(ev => ev.status !== 'cancelled' && ev.transparency !== 'transparent' && !(ignorar && ev.id === 'atend' + ignorar));\n} catch (e) {}\n\nlet motivo = null;\nif (c.bloqueado) motivo = 'Bloqueado na agenda';\nelse if (c.conflita) motivo = 'Já existe atendimento nesse horário';\nelse if (ocupadoGoogle) motivo = 'Ocupado no Google Calendar';\n\nreturn [{ json: { disponivel: !c.bloqueado && !c.conflita && !ocupadoGoogle, motivo } }];"
+      }
+    },
+    {
+      "id": "10d17f20-20d3-4aff-8e4c-7d58aae10a30",
+      "name": "Sticky Note 032eeace",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -96
+      ],
+      "parameters": {
+        "content": "## Verificar Disponibilidade\nEntrada: barbearia_id, id_prof, data (AAAA-MM-DD), horario_inicio e horario_fim (HH:MM).\nSaída: `{ disponivel, motivo }`.\n\nCheca bloqueios, atendimentos do profissional e, se ele tiver Google Calendar, o freeBusy.",
+        "color": 4,
+        "width": 384,
+        "height": 224
+      }
+    }
+  ],
+  "connections": {
+    "Recebe horário a verificar": {
+      "main": [
+        [
+          {
+            "node": "Busca bloqueios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca bloqueios": {
+      "main": [
+        [
+          {
+            "node": "Busca atendimentos existentes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca atendimentos existentes": {
+      "main": [
+        [
+          {
+            "node": "Confere bloqueios e conflitos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confere bloqueios e conflitos": {
+      "main": [
+        [
+          {
+            "node": "Livre no CRM?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Livre no CRM?": {
+      "main": [
+        [
+          {
+            "node": "Busca Calendar ID do profissional",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resultado final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Calendar ID do profissional": {
+      "main": [
+        [
+          {
+            "node": "Profissional tem Google Calendar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Profissional tem Google Calendar?": {
+      "main": [
+        [
+          {
+            "node": "Obter Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resultado final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obter Token": {
+      "main": [
+        [
+          {
+            "node": "Consulta Google - eventos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consulta Google - eventos": {
+      "main": [
+        [
+          {
+            "node": "Resultado final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  },
+  "active": false,
+  "description": "Sub-workflow: verifica se um profissional está livre num horário (bloqueios, atendimentos e Google Calendar)."
+}

@@ -1,0 +1,499 @@
+{
+  "id": "TWFMokNZoX8qhKZh",
+  "name": "Barbozap - Sincronizar Bloqueio com Google Calendar",
+  "nodes": [
+    {
+      "id": "de71763d-b2ab-4b05-a8ab-18180c962f34",
+      "name": "Webhook - Bloqueio alterado",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sincronizar-bloqueio",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "97c92cd9-261d-4589-83ec-ff00e94e2ead"
+    },
+    {
+      "id": "b57f2c27-11dc-4424-8947-0f3774bad09b",
+      "name": "Analisa mudança",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const b = $input.first().json.body || {};\nconst rec = b.record || null;\nconst old = b.old_record || null;\n\n// Bloqueios que vieram do próprio Google não voltam para o Google. UPDATE é ignorado\n// (o n8n grava google_event_ids depois de criar os eventos).\nif (b.type === 'INSERT' && rec && rec.origem !== 'google_calendar') {\n  return [{ json: { acao: 'criar', barbearia_id: rec.barbearia_id, bloqueio: rec, lista: [] } }];\n}\nif (b.type === 'DELETE' && old && old.origem !== 'google_calendar') {\n  const lista = Object.entries(old.google_event_ids || {}).map(([calendarId, eventId]) => ({ calendarId, eventId }));\n  if (lista.length) return [{ json: { acao: 'apagar', barbearia_id: old.barbearia_id, bloqueio: old, lista } }];\n}\nreturn [];"
+      }
+    },
+    {
+      "id": "b6202900-cde2-4be2-ab60-e15be6ca3504",
+      "name": "Busca status do Google da barbearia",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/barbearias?id=eq.{{ $json.barbearia_id }}&select=google_calendar_status&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "eb93a41b-b9b1-48fc-a531-2056a6da7b83",
+      "name": "Google conectado?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.google_calendar_status }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "conectado"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "230b70f8-ec33-45b0-a82f-48ac337c2eb6",
+      "name": "Obter Token",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "mode": "once",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "kLvLNOMEiaxcT1mL",
+          "cachedResultName": "Corte Certo - Obter Access Token Válido (Google Calendar)"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "barbearia_id": "={{ String($('Analisa mudança').first().json.barbearia_id) }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "barbearia_id",
+              "displayName": "barbearia_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "057cd37d-f51d-43f9-9330-7af9799748e9",
+      "name": "Criar ou apagar?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "renameOutput": true,
+              "outputKey": "Criar",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Analisa mudança').first().json.acao }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "criar"
+                  }
+                ]
+              }
+            },
+            {
+              "renameOutput": true,
+              "outputKey": "Apagar",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Analisa mudança').first().json.acao }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "apagar"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "987e0f5c-d0f1-4352-8ae5-ac7726525085",
+      "name": "Busca calendários alvo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        -140
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/profissionais?{{ $('Analisa mudança').first().json.bloqueio.id_prof ? 'id=eq.' + $('Analisa mudança').first().json.bloqueio.id_prof : 'barbearia_id=eq.' + $('Analisa mudança').first().json.barbearia_id }}&select=agendas",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "7432d3eb-6fd3-4087-9913-4ee5c1c9b4f7",
+      "name": "Monta eventos por calendário",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        -140
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const ZONA = 'America/Sao_Paulo';\nconst b = $('Analisa mudança').first().json.bloqueio;\n// Profissional sem agenda própria usa a agenda principal da conta Google da barbearia\nconst calendarios = [...new Set($input.all().map(i => i.json.agendas || 'primary'))];\nconst hora = (h) => String(h).length === 5 ? h + ':00' : String(h);\nconst BYDAY = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];\nconst temHorario = Boolean(b.horario_inicio && b.horario_fim);\nconst somaDias = (iso, dias) => DateTime.fromISO(iso, { zone: ZONA }).plus({ days: dias }).toFormat('yyyy-MM-dd');\n\nconst evento = {\n  summary: b.motivo ? 'Bloqueado — ' + b.motivo : 'Bloqueado',\n  description: 'Criado automaticamente pelo Barbozap',\n  extendedProperties: { private: { corte_certo_bloqueio_id: String(b.id) } }\n};\n\nlet dataBase = b.data_inicio;\nif (b.tipo === 'recorrente') {\n  const hoje = DateTime.now().setZone(ZONA).startOf('day');\n  const alvo = Number(b.dia_semana) === 0 ? 7 : Number(b.dia_semana);\n  dataBase = hoje.plus({ days: (alvo - hoje.weekday + 7) % 7 }).toFormat('yyyy-MM-dd');\n}\n\nif (temHorario) {\n  evento.start = { dateTime: dataBase + 'T' + hora(b.horario_inicio), timeZone: ZONA };\n  evento.end = { dateTime: dataBase + 'T' + hora(b.horario_fim), timeZone: ZONA };\n} else {\n  evento.start = { date: dataBase };\n  evento.end = { date: somaDias(b.tipo === 'periodo' ? b.data_fim : dataBase, 1) };\n}\nif (b.tipo === 'periodo' && temHorario) evento.recurrence = ['RRULE:FREQ=DAILY;UNTIL=' + String(b.data_fim).replace(/-/g, '') + 'T235959Z'];\nif (b.tipo === 'recorrente') evento.recurrence = ['RRULE:FREQ=WEEKLY;BYDAY=' + BYDAY[Number(b.dia_semana)]];\n\nreturn calendarios.map(calendarId => ({ json: { calendarId, evento } }));"
+      }
+    },
+    {
+      "id": "c5d10ecc-5e41-4b60-9130-bab6ec816ee2",
+      "name": "Cria evento no Google",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1780,
+        -140
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($json.calendarId) }}/events",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Obter Token').first().json.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.evento) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "9831da70-8f7c-47ab-a745-37cd8b4bae77",
+      "name": "Monta mapa google_event_ids",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        -140
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const mapa = {};\nconst eventos = $('Monta eventos por calendário').all();\n$input.all().forEach((item, i) => {\n  if (item.json && item.json.id && eventos[i]) mapa[eventos[i].json.calendarId] = item.json.id;\n});\nreturn [{ json: { google_event_ids: mapa } }];"
+      }
+    },
+    {
+      "id": "7aabdd4e-a189-498a-853b-1e6afb9e97a3",
+      "name": "Salva google_event_ids",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2220,
+        -140
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/bloqueios_agenda?id=eq.{{ $('Analisa mudança').first().json.bloqueio.id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ google_event_ids: $json.google_event_ids }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "b7b88ee4-6254-4ef6-b05a-d4a31785db18",
+      "name": "Lista eventos para apagar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        140
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $('Analisa mudança').first().json.lista.map(x => ({ json: x }));"
+      }
+    },
+    {
+      "id": "12fce312-b936-4779-8cd9-d4dadd12d804",
+      "name": "Apaga evento no Google",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1560,
+        140
+      ],
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($json.calendarId) }}/events/{{ $json.eventId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Obter Token').first().json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "689616c7-2fa0-4dfb-b28e-a8d3fb0dc729",
+      "name": "Sticky Note 1af06324",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -96
+      ],
+      "parameters": {
+        "content": "## Sincronizar Bloqueio -> Google Calendar\n**Database Webhook do Supabase** na tabela `bloqueios_agenda` (INSERT e DELETE):\n`https://n8n.srv2088418.hstgr.cloud/webhook/sincronizar-bloqueio`\n\nCria o bloqueio como evento no calendário do profissional (ou de todos, se for da barbearia inteira) e apaga quando o bloqueio é removido. Bloqueios importados do Google são ignorados.",
+        "color": 4,
+        "width": 384,
+        "height": 224
+      }
+    }
+  ],
+  "connections": {
+    "Webhook - Bloqueio alterado": {
+      "main": [
+        [
+          {
+            "node": "Analisa mudança",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analisa mudança": {
+      "main": [
+        [
+          {
+            "node": "Busca status do Google da barbearia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca status do Google da barbearia": {
+      "main": [
+        [
+          {
+            "node": "Google conectado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google conectado?": {
+      "main": [
+        [
+          {
+            "node": "Obter Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obter Token": {
+      "main": [
+        [
+          {
+            "node": "Criar ou apagar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar ou apagar?": {
+      "main": [
+        [
+          {
+            "node": "Busca calendários alvo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Lista eventos para apagar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca calendários alvo": {
+      "main": [
+        [
+          {
+            "node": "Monta eventos por calendário",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monta eventos por calendário": {
+      "main": [
+        [
+          {
+            "node": "Cria evento no Google",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cria evento no Google": {
+      "main": [
+        [
+          {
+            "node": "Monta mapa google_event_ids",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monta mapa google_event_ids": {
+      "main": [
+        [
+          {
+            "node": "Salva google_event_ids",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lista eventos para apagar": {
+      "main": [
+        [
+          {
+            "node": "Apaga evento no Google",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "errorWorkflow": "LO9MFNlWYRaCsKz8"
+  },
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  },
+  "active": false,
+  "description": "Webhook do Supabase: espelha bloqueios da agenda (folgas, feriados) como eventos no Google Calendar."
+}

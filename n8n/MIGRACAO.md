@@ -67,7 +67,7 @@ Problemas resolvidos na virada:
       analu") até marcar um horário; conexão do WhatsApp na Central; status na tela de
       Configurações do CRM; uma safra de 1 lead; lembrete do agendador.
 - [ ] 7. Uma semana sem problemas → cancelar o n8n Cloud.
-- [ ] 8. Backups: ativar os backups automáticos da VPS na Hostinger.
+- [x] 8. Backups: snapshot das duas VPS (n8n e Evolution) feito em 23/10 após a virada; tirar um novo antes de mexer em qualquer servidor.
 
 ## Otimizações para depois
 

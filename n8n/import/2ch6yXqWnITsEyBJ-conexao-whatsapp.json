@@ -1,0 +1,755 @@
+{
+  "id": "2ch6yXqWnITsEyBJ",
+  "name": "Barbozap - Conexão WhatsApp",
+  "nodes": [
+    {
+      "id": "ba2bde3a-be43-4e7d-a0cf-be48b89093b2",
+      "name": "Webhook - Conexão WhatsApp",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        480
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-conexao",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "webhookId": "3f548be2-dcd5-4557-b98d-5381918ef07a"
+    },
+    {
+      "id": "39f96b9c-e3b2-4a06-ba16-729033fd72fe",
+      "name": "Valida usuário logado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        224,
+        480
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://jzqiqrymqbzullysukja.supabase.co/auth/v1/user",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "sb_publishable_lqY19MJcqfYcVAABzRgiNg_6h4DIWUO"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ $json.headers.authorization || \"\" }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "59190907-cba8-4e15-b6cd-7a0077801b90",
+      "name": "Usuário válido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        480
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.statusCode === 200 && !!($json.body && $json.body.id) }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "4aec1c17-7e31-435f-b6b8-2d6978eae9de",
+      "name": "Busca profissional e barbearia",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        672,
+        384
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/profissionais?auth_user_id=eq.{{ $json.body.id }}&select=barbearia_id,acesso,barbearias(whatsapp_barbearia)&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "2324a55c-f667-44a8-8ce1-b43f3d01169f",
+      "name": "É admin com WhatsApp cadastrado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        896,
+        384
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.acesso === \"admin\" && !!($json.barbearias && $json.barbearias.whatsapp_barbearia) }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "7b5f3210-74f5-4e1e-bd70-0257a756c6e3",
+      "name": "Prepara pedido",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        288
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// O nome da instância na Evolution é sempre o WhatsApp da barbearia (vem do banco, nunca do navegador)\nconst p = $input.first().json;\nconst pedido = ($('Webhook - Conexão WhatsApp').first().json.body || {}).acao;\nconst acao = ['status', 'conectar', 'desconectar'].includes(pedido) ? pedido : 'status';\nreturn [{ json: { acao, barbearia_id: p.barbearia_id, instancia: p.barbearias.whatsapp_barbearia } }];"
+      }
+    },
+    {
+      "id": "001b73c7-d663-4896-8296-5e511e19bb01",
+      "name": "Estado na Evolution",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1344,
+        288
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.barbozap.com.br/instance/connectionState/{{ encodeURIComponent($json.instancia) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "jB5xmUPIxgfJ0h0I",
+          "name": "Evolution API"
+        }
+      }
+    },
+    {
+      "id": "bbec97e7-6290-4e66-b48f-7a6cedb60a4a",
+      "name": "Decide o que fazer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        288
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const ctx = $('Prepara pedido').first().json;\nconst r = $input.first().json;\nconst existe = r.statusCode !== 404;\n// open = conectado | connecting = esperando ler o QR | close = desconectado\nconst estado = existe ? ((r.body && r.body.instance && r.body.instance.state) || 'close') : 'inexistente';\nlet rota = 'responder';\nif (ctx.acao === 'conectar' && estado !== 'open') rota = existe ? 'qr' : 'criar';\nif (ctx.acao === 'desconectar' && existe && estado !== 'close') rota = 'desconectar';\nreturn [{ json: { ...ctx, estado, rota } }];"
+      }
+    },
+    {
+      "id": "aa4e043a-09fd-44e7-8db0-df72f2b9aa53",
+      "name": "Rota",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1792,
+        256
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "Criar instância",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.rota }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "criar"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "outputKey": "Gerar QR",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.rota }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "qr"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "outputKey": "Desconectar",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.rota }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "desconectar"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Só responder"
+        }
+      }
+    },
+    {
+      "id": "b53e9068-a832-454c-b945-55f6be61fd14",
+      "name": "Cria instância com webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2016,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.barbozap.com.br/instance/create",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ instanceName: $json.instancia, qrcode: true, integration: \"WHATSAPP-BAILEYS\", groupsIgnore: true, webhook: { url: \"https://n8n.srv2088418.hstgr.cloud/webhook/whatsapp-mensagem\", byEvents: false, base64: false, events: [\"MESSAGES_UPSERT\"] } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "jB5xmUPIxgfJ0h0I",
+          "name": "Evolution API"
+        }
+      }
+    },
+    {
+      "id": "a2ca2157-4618-4160-9062-9ed809073be6",
+      "name": "Responde QR (instância nova)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2240,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ estado: \"connecting\", qr: ($json.body && $json.body.qrcode && $json.body.qrcode.base64) || null, erro: $json.statusCode >= 400 ? \"Não foi possível criar a conexão. Tente de novo em instantes.\" : null }) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "dc4fce20-9139-4f58-95e9-b18014503c38",
+      "name": "Garante webhook da instância",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2016,
+        192
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.barbozap.com.br/webhook/set/{{ encodeURIComponent($json.instancia) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"webhook\":{\"enabled\":true,\"url\":\"https://n8n.srv2088418.hstgr.cloud/webhook/whatsapp-mensagem\",\"byEvents\":false,\"base64\":false,\"events\":[\"MESSAGES_UPSERT\"]}}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "jB5xmUPIxgfJ0h0I",
+          "name": "Evolution API"
+        }
+      }
+    },
+    {
+      "id": "07588e3d-2138-43fc-8f35-e7f9179ae74e",
+      "name": "Gera QR Code",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2240,
+        192
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.barbozap.com.br/instance/connect/{{ encodeURIComponent($(\"Decide o que fazer\").first().json.instancia) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "jB5xmUPIxgfJ0h0I",
+          "name": "Evolution API"
+        }
+      }
+    },
+    {
+      "id": "1d61a72f-bd7b-4c53-85cd-b168e885225d",
+      "name": "Responde QR",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2464,
+        192
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ estado: \"connecting\", qr: ($json.body && $json.body.base64) || null, erro: $json.statusCode >= 400 ? \"Não foi possível gerar o QR Code. Tente de novo em instantes.\" : null }) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "3dd0cb91-01fd-442f-b400-6466dd27aa14",
+      "name": "Desconecta WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2016,
+        384
+      ],
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://api.barbozap.com.br/instance/logout/{{ encodeURIComponent($json.instancia) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "jB5xmUPIxgfJ0h0I",
+          "name": "Evolution API"
+        }
+      }
+    },
+    {
+      "id": "9286d594-5a0f-4b7b-9c4a-35051d63d7ab",
+      "name": "Responde desconectado",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2464,
+        384
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"estado\":\"close\"}",
+        "options": {}
+      }
+    },
+    {
+      "id": "49fe30c6-97d3-4513-be49-149de7844e76",
+      "name": "Responde estado",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2016,
+        576
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ estado: $json.estado }) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "a2e3ec89-534e-4c80-9974-ae824bb999d3",
+      "name": "Responde 403",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1120,
+        480
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"erro\":\"Só o admin da barbearia pode conectar o WhatsApp, e o número precisa estar cadastrado em Configurações.\"}",
+        "options": {
+          "responseCode": 403
+        }
+      }
+    },
+    {
+      "id": "2c526174-0921-4dc8-93b9-b8e33df5ca58",
+      "name": "Responde 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        672,
+        576
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"erro\":\"Sessão inválida. Entre de novo no CRM.\"}",
+        "options": {
+          "responseCode": 401
+        }
+      }
+    },
+    {
+      "id": "b8b5272d-6aee-4e60-816e-8da588fdfbff",
+      "name": "Sticky Note c81b7265",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        384
+      ],
+      "parameters": {
+        "content": "## Conexão WhatsApp (CRM > Configurações)\nO CRM chama `POST /webhook/whatsapp-conexao` com o token do usuário logado e `{ acao: status | conectar | desconectar }`.\n\nSó o **admin** da barbearia passa. A instância da Evolution é sempre o `whatsapp_barbearia` (vem do banco), já criada com o webhook do Roteador.",
+        "color": 4,
+        "width": 384,
+        "height": 224
+      }
+    },
+    {
+      "id": "de15bd2d-a992-4056-898c-a1382aa339a6",
+      "name": "Apaga instância",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2240,
+        384
+      ],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "DELETE",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        },
+        "url": "=https://api.barbozap.com.br/instance/delete/{{ encodeURIComponent($('Decide o que fazer').first().json.instancia) }}"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "jB5xmUPIxgfJ0h0I",
+          "name": "Evolution API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook - Conexão WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Valida usuário logado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valida usuário logado": {
+      "main": [
+        [
+          {
+            "node": "Usuário válido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Usuário válido?": {
+      "main": [
+        [
+          {
+            "node": "Busca profissional e barbearia",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responde 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca profissional e barbearia": {
+      "main": [
+        [
+          {
+            "node": "É admin com WhatsApp cadastrado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É admin com WhatsApp cadastrado?": {
+      "main": [
+        [
+          {
+            "node": "Prepara pedido",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responde 403",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepara pedido": {
+      "main": [
+        [
+          {
+            "node": "Estado na Evolution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Estado na Evolution": {
+      "main": [
+        [
+          {
+            "node": "Decide o que fazer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide o que fazer": {
+      "main": [
+        [
+          {
+            "node": "Rota",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rota": {
+      "main": [
+        [
+          {
+            "node": "Cria instância com webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Garante webhook da instância",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Desconecta WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responde estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cria instância com webhook": {
+      "main": [
+        [
+          {
+            "node": "Responde QR (instância nova)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Garante webhook da instância": {
+      "main": [
+        [
+          {
+            "node": "Gera QR Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gera QR Code": {
+      "main": [
+        [
+          {
+            "node": "Responde QR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Desconecta WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Apaga instância",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apaga instância": {
+      "main": [
+        [
+          {
+            "node": "Responde desconectado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "errorWorkflow": "LO9MFNlWYRaCsKz8"
+  },
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  },
+  "active": false,
+  "description": "Chamado pelo CRM (Configurações): status, QR Code e desconexão do WhatsApp da barbearia na Evolution. Só admin."
+}

@@ -1,0 +1,559 @@
+{
+  "id": "jMULX7EiBx8jTsQh",
+  "name": "Barbozap - Etapa 00101 - Primeiro contato",
+  "active": true,
+  "isArchived": false,
+  "versionId": "edb892e0-cb8a-4c6c-a94e-57b920071b90",
+  "createdAt": "2026-10-13T23:27:08.919Z",
+  "updatedAt": "2026-10-18T03:10:23.020Z",
+  "description": "Etapa 00101 do bot: pergunta e salva o nome do cliente novo e chama a escolha de serviço.",
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "tags": [],
+  "parentFolderId": "BoAyeDqZ8dyqPVtm",
+  "nodes": [
+    {
+      "id": "5d19ba64-de31-493f-a268-089b7556d713",
+      "name": "Entrada da etapa",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "c1603e7e-e77d-471e-acc3-238a65e11028",
+      "name": "O que fazer?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "renameOutput": true,
+              "outputKey": "Cliente já tem nome",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.nome_cliente }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "rightValue": ""
+                  },
+                  {
+                    "leftValue": "={{ Boolean($json.sessao && $json.sessao.aguardando_resposta) }}",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    },
+                    "rightValue": ""
+                  }
+                ]
+              }
+            },
+            {
+              "renameOutput": true,
+              "outputKey": "Perguntar o nome",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ Boolean($json.sessao && $json.sessao.aguardando_resposta) }}",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    },
+                    "rightValue": ""
+                  }
+                ]
+              }
+            },
+            {
+              "renameOutput": true,
+              "outputKey": "Nome válido",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ (() => { const t = String($json.mensagem_texto || '').trim(); return t.length >= 2 && t.length <= 60 && !/\\d{3,}/.test(t); })() }}",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "rightValue": ""
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Não entendi"
+        }
+      }
+    },
+    {
+      "id": "5a17c758-509a-4c84-b8b8-b551c23995e4",
+      "name": "Avança para escolha de serviço",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        100
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/sessoes?id_cliente=eq.{{ $('Entrada da etapa').first().json.id_cliente }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ etapa_atual: '00201', aguardando_resposta: false }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "cd431fc9-e11e-408f-ac08-2e51ced53b53",
+      "name": "Prepara próxima etapa",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        100
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const e = $('Entrada da etapa').first().json;\nconst nome = e.nome_cliente || String(e.mensagem_texto || '').trim();\n// true = o cliente acabou de dizer o nome agora (a 00201 cumprimenta com \"Prazer\")\nconst nomeRecemInformado = !e.nome_cliente;\nreturn [{ json: { ...e, nome_cliente: nome, nome_recem_informado: nomeRecemInformado, sessao: { ...(e.sessao || {}), etapa_atual: '00201', aguardando_resposta: false } } }];"
+      }
+    },
+    {
+      "id": "3387d49a-a962-48bc-9915-ae1c184597c6",
+      "name": "Chama Etapa 00201 - Serviço",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1140,
+        100
+      ],
+      "parameters": {
+        "mode": "once",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "OJyYgzwZAQfOZGIm",
+          "cachedResultName": "Corte Certo - Etapa 00201 - Escolha de Serviço"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "1a68d127-d367-45f1-a5a5-85639e32b294",
+      "name": "Busca mensagem - Primeiro contato",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        -100
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/fluxo_mensagens?barbearia_id=eq.{{ $('Entrada da etapa').first().json.barbearia_id }}&etapa=eq.{{ encodeURIComponent('Primeiro contato') }}&mensagem=not.like.%5B*&select=mensagem&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "045038c9-145a-4d92-9fed-b97c464743ad",
+      "name": "Envia WhatsApp - pergunta o nome",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        700,
+        -100
+      ],
+      "parameters": {
+        "mode": "each",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "U9nMESK4Zb5NPZZ0",
+          "cachedResultName": "Corte Certo - Enviar WhatsApp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "instancia": "={{ $('Entrada da etapa').first().json.instancia }}",
+            "numero": "={{ $('Entrada da etapa').first().json.telefone }}",
+            "texto": "={{ $json.mensagem || 'Olá! 👋 Que bom te ver por aqui. Para começar, qual é o seu nome?' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "instancia",
+              "displayName": "instancia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "numero",
+              "displayName": "numero",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "f4b3c5ba-9fec-4075-9a46-e6f7a94ef49a",
+      "name": "Marca aguardando resposta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        -100
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/sessoes?id_cliente=eq.{{ $('Entrada da etapa').first().json.id_cliente }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ etapa_atual: '00101', aguardando_resposta: true }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "d41b1056-279d-4a61-b01f-c27e255aa195",
+      "name": "Salva nome do cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        100
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/clientes?id=eq.{{ $('Entrada da etapa').first().json.id_cliente }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ nome: String($('Entrada da etapa').first().json.mensagem_texto || '').trim() }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "30148b75-19c8-4649-98a5-270278472aff",
+      "name": "Busca mensagem - Não entendi",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/fluxo_mensagens?barbearia_id=eq.{{ $('Entrada da etapa').first().json.barbearia_id }}&etapa=eq.{{ encodeURIComponent('Não entendi a resposta') }}&mensagem=not.like.%5B*&select=mensagem&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "20031dbf-933d-4b8a-964f-d215c7433683",
+      "name": "Envia WhatsApp - não entendi",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        700,
+        300
+      ],
+      "parameters": {
+        "mode": "each",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "U9nMESK4Zb5NPZZ0",
+          "cachedResultName": "Corte Certo - Enviar WhatsApp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "instancia": "={{ $('Entrada da etapa').first().json.instancia }}",
+            "numero": "={{ $('Entrada da etapa').first().json.telefone }}",
+            "texto": "={{ ($json.mensagem || 'Desculpe, não entendi 😅') + '\\n\\nMe diga só o seu nome, por favor.' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "instancia",
+              "displayName": "instancia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "numero",
+              "displayName": "numero",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "179929ab-7865-40f7-aad3-70e051ac1508",
+      "name": "Sticky Note 15ec7a65",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -96
+      ],
+      "parameters": {
+        "content": "## Etapa 00101 - Primeiro contato\nPergunta o nome do cliente novo e salva em `clientes.nome`. Cliente que já tem nome cadastrado pula direto para a escolha de serviço.",
+        "color": 5,
+        "width": 384,
+        "height": 288
+      }
+    }
+  ],
+  "connections": {
+    "Entrada da etapa": {
+      "main": [
+        [
+          {
+            "node": "O que fazer?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "O que fazer?": {
+      "main": [
+        [
+          {
+            "node": "Avança para escolha de serviço",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Busca mensagem - Primeiro contato",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Salva nome do cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Busca mensagem - Não entendi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Avança para escolha de serviço": {
+      "main": [
+        [
+          {
+            "node": "Prepara próxima etapa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepara próxima etapa": {
+      "main": [
+        [
+          {
+            "node": "Chama Etapa 00201 - Serviço",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca mensagem - Primeiro contato": {
+      "main": [
+        [
+          {
+            "node": "Envia WhatsApp - pergunta o nome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envia WhatsApp - pergunta o nome": {
+      "main": [
+        [
+          {
+            "node": "Marca aguardando resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salva nome do cliente": {
+      "main": [
+        [
+          {
+            "node": "Avança para escolha de serviço",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca mensagem - Não entendi": {
+      "main": [
+        [
+          {
+            "node": "Envia WhatsApp - não entendi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  }
+}

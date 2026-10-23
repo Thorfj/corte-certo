@@ -1,0 +1,2021 @@
+{
+  "id": "5BKxY2tNAptONoYS",
+  "name": "Barbozap - Roteador Principal WhatsApp",
+  "active": true,
+  "isArchived": false,
+  "versionId": "12a9078a-9421-4153-a6e6-142194af765b",
+  "createdAt": "2026-10-13T23:30:00.668Z",
+  "updatedAt": "2026-10-18T02:59:51.830Z",
+  "description": "Recebe mensagens da Evolution API, identifica barbearia/cliente/sessão e roteia para a etapa do bot (00101 a 00501), atendimento humano ou cancelamento.",
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "errorWorkflow": "LO9MFNlWYRaCsKz8"
+  },
+  "tags": [],
+  "parentFolderId": "BoAyeDqZ8dyqPVtm",
+  "nodes": [
+    {
+      "id": "72985b8c-cee6-4ae9-a333-6935a417682c",
+      "name": "Webhook - Mensagem WhatsApp",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-mensagem",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "d589666a-e93b-44e3-8f6e-ae2ea316286c"
+    },
+    {
+      "id": "4c7cd5ff-2b3c-404e-8849-d88299be8150",
+      "name": "Normaliza payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "evento",
+              "name": "evento",
+              "value": "={{ String($json.body?.event ?? '').toLowerCase().replace('_', '.') }}",
+              "type": "string"
+            },
+            {
+              "id": "instancia",
+              "name": "instancia",
+              "value": "={{ $json.body?.instance ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "remote",
+              "name": "remote_jid",
+              "value": "={{ $json.body?.data?.key?.remoteJid ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "fromme",
+              "name": "from_me",
+              "value": "={{ Boolean($json.body?.data?.key?.fromMe) }}",
+              "type": "boolean"
+            },
+            {
+              "id": "tel",
+              "name": "telefone",
+              "value": "={{ String($json.body?.data?.key?.remoteJid ?? '').split('@')[0].split(':')[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "push",
+              "name": "push_name",
+              "value": "={{ $json.body?.data?.pushName ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "txt",
+              "name": "mensagem_texto",
+              "value": "={{ ($json.body?.data?.message?.conversation || $json.body?.data?.message?.extendedTextMessage?.text || $json.body?.data?.message?.buttonsResponseMessage?.selectedDisplayText || $json.body?.data?.message?.listResponseMessage?.title || '').trim() }}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "df5d3117-4792-4d7c-897a-cbae5b088d78",
+      "name": "É mensagem de cliente?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.evento }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "messages.upsert"
+            },
+            {
+              "leftValue": "={{ $json.from_me }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              },
+              "rightValue": ""
+            },
+            {
+              "leftValue": "={{ $json.remote_jid }}",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              },
+              "rightValue": "@g.us"
+            },
+            {
+              "leftValue": "={{ $json.remote_jid }}",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              },
+              "rightValue": "broadcast"
+            },
+            {
+              "leftValue": "={{ $json.mensagem_texto }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "22ad16ab-06fa-45aa-a18a-8ea202442b00",
+      "name": "Busca barbearia",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/barbearias?whatsapp_barbearia=eq.{{ encodeURIComponent($json.instancia) }}&select=id,status_fluxo&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "7d6e7e51-56e9-4edd-af8b-a83105a00fd1",
+      "name": "Fluxo do bot ativo?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.status_fluxo }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "Sim"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "77a19f63-fa1c-47fc-80a5-0388a4f700b1",
+      "name": "Busca cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/clientes?barbearia_id=eq.{{ $json.id }}&telefone=in.({{ $('Normaliza payload').first().json.telefone }},{{ $('Normaliza payload').first().json.telefone.replace(/^55/, '') }})&select=id,status,nome&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "3f22f551-de8d-4d43-9883-addc18456458",
+      "name": "Cliente existe?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.id }}",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "c2c62003-22be-4167-ba25-f7009c8243f2",
+      "name": "Dados do cliente e intenção",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "idc",
+              "name": "id_cliente",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "stc",
+              "name": "status_cliente",
+              "value": "={{ $json.status || 'em_atendimento' }}",
+              "type": "string"
+            },
+            {
+              "id": "nmc",
+              "name": "nome_cliente",
+              "value": "={{ $json.nome || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "int",
+              "name": "intencao",
+              "value": "={{ (() => { const t = String($('Normaliza payload').first().json.mensagem_texto || '').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, ''); if (/falar com (um |uma |o |a )?(atendente|humano|pessoa|alguem|barbeiro)/.test(t)) return 'humano'; if (/\\b(cancelar|parar|nao quero mais|sair da lista)\\b/.test(t)) return 'cancelar'; return 'normal'; })() }}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "2cbb05aa-4f1e-4e65-8112-58ee6d89ee7c",
+      "name": "Cria cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        120
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://jzqiqrymqbzullysukja.supabase.co/rest/v1/clientes",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ barbearia_id: $('Busca barbearia').first().json.id, telefone: $('Normaliza payload').first().json.telefone, status: 'em_atendimento', data_primeiro_contato: $now.setZone('America/Sao_Paulo').toFormat('yyyy-MM-dd') }) }}",
+        "options": {}
+      },
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "1335e319-82bf-49d8-904a-ba7670545b81",
+      "name": "Roteia intenção",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "renameOutput": true,
+              "outputKey": "Já com humano",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status_cliente }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "falar_com_humano"
+                  }
+                ]
+              }
+            },
+            {
+              "renameOutput": true,
+              "outputKey": "Pediu humano",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.intencao }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "humano"
+                  }
+                ]
+              }
+            },
+            {
+              "renameOutput": true,
+              "outputKey": "Cancelar follow-up",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.intencao }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "cancelar"
+                  },
+                  {
+                    "leftValue": "={{ $json.status_cliente }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "follow-up"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Fluxo do bot"
+        }
+      }
+    },
+    {
+      "id": "78e66921-ca6f-4fc1-a50d-9fc6c199d405",
+      "name": "Fim - atendimento humano em andamento",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2240,
+        -420
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "a3b6e644-766a-4356-80c8-f9bae8f3b928",
+      "name": "Busca mensagem - Atendimento humano",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2240,
+        -240
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/fluxo_mensagens?barbearia_id=eq.{{ $('Busca barbearia').first().json.id }}&etapa=eq.{{ encodeURIComponent('Atendimento humano') }}&mensagem=not.like.%5B*&select=mensagem&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "65ff6d7d-4f49-4fd5-b993-3d4e0207d336",
+      "name": "Atualiza status - falar_com_humano",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2460,
+        -240
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/clientes?id=eq.{{ $('Dados do cliente e intenção').first().json.id_cliente }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'falar_com_humano' }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "029017c5-a24b-4887-abb4-f74115eafcfc",
+      "name": "Envia WhatsApp - humano",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2680,
+        -240
+      ],
+      "parameters": {
+        "mode": "each",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "U9nMESK4Zb5NPZZ0",
+          "cachedResultName": "Corte Certo - Enviar WhatsApp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "instancia": "={{ $('Normaliza payload').first().json.instancia }}",
+            "numero": "={{ $('Normaliza payload').first().json.telefone }}",
+            "texto": "={{ $('Busca mensagem - Atendimento humano').first().json.mensagem || 'Certo! Já avisei a equipe, em breve alguém te responde por aqui. 🙂' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "instancia",
+              "displayName": "instancia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "numero",
+              "displayName": "numero",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "211cd95f-647c-4198-962e-44f6fe2c59fa",
+      "name": "Busca mensagem - Encerramento follow-up",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2240,
+        -60
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/fluxo_followup?barbearia_id=eq.{{ $('Busca barbearia').first().json.id }}&id_msg=eq.101&mensagem=not.like.%5B*&select=mensagem&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "a5259ca4-d6ed-4811-9a34-ccc86c60031b",
+      "name": "Atualiza status - perdido",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2460,
+        -60
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/clientes?id=eq.{{ $('Dados do cliente e intenção').first().json.id_cliente }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'perdido', data_proximo_followup: null }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "79ffd03f-0c02-4320-9b09-9462a3e5ac1b",
+      "name": "Envia WhatsApp - cancelar",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2680,
+        -60
+      ],
+      "parameters": {
+        "mode": "each",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "U9nMESK4Zb5NPZZ0",
+          "cachedResultName": "Corte Certo - Enviar WhatsApp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "instancia": "={{ $('Normaliza payload').first().json.instancia }}",
+            "numero": "={{ $('Normaliza payload').first().json.telefone }}",
+            "texto": "={{ $('Busca mensagem - Encerramento follow-up').first().json.mensagem || 'Tudo bem! Não vou mais te mandar lembretes. Quando quiser agendar, é só mandar um oi. 👋' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "instancia",
+              "displayName": "instancia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "numero",
+              "displayName": "numero",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "f8182ef2-4beb-49cd-91ce-801322338245",
+      "name": "Busca sessão do cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2240,
+        160
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/sessoes?id_cliente=eq.{{ $json.id_cliente }}&select=*&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "9b5bb2b5-f2b5-4966-9551-3933831ca30a",
+      "name": "Sessão existe?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2460,
+        160
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.id_cliente }}",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "fc5c000a-c963-4056-8785-c96a3ea540e9",
+      "name": "Monta entrada da etapa",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2900,
+        160
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const p = $('Normaliza payload').first().json;\nconst c = $('Dados do cliente e intenção').first().json;\nconst b = $('Busca barbearia').first().json;\nlet sessao = $input.first().json || {};\n\nconst txt = String(p.mensagem_texto || '').trim().toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');\nconst pediuRecomeco = /^(menu|recomecar|reiniciar|inicio|voltar)$/.test(txt);\n\n// Sessão encerrada (agendamento concluído), sem etapa ou pedido de recomeço: volta ao início do fluxo\nif (!sessao.etapa_atual || sessao.etapa_atual === 'concluido' || pediuRecomeco) {\n  sessao = { ...sessao, etapa_atual: c.nome_cliente ? '00201' : '00101', aguardando_resposta: false };\n}\n\nreturn [{ json: {\n  barbearia_id: b.id,\n  id_cliente: c.id_cliente,\n  telefone: p.telefone,\n  instancia: p.instancia,\n  mensagem_texto: p.mensagem_texto,\n  nome_cliente: c.nome_cliente,\n  sessao\n} }];"
+      }
+    },
+    {
+      "id": "74370067-a74f-469d-868a-eb9aba97ca0e",
+      "name": "Cria sessão",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2680,
+        280
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://jzqiqrymqbzullysukja.supabase.co/rest/v1/sessoes?on_conflict=id_cliente",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation,resolution=merge-duplicates"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ id_cliente: $('Dados do cliente e intenção').first().json.id_cliente, barbearia_id: $('Busca barbearia').first().json.id, etapa_atual: '00101', aguardando_resposta: false }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "9a761746-1a64-4fb7-bfcb-a49be606c08c",
+      "name": "Roteia etapa",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        4040,
+        160
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "renameOutput": true,
+              "outputKey": "00101",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.sessao.etapa_atual }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "00101"
+                  }
+                ]
+              }
+            },
+            {
+              "renameOutput": true,
+              "outputKey": "00201",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.sessao.etapa_atual }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "00201"
+                  }
+                ]
+              }
+            },
+            {
+              "renameOutput": true,
+              "outputKey": "00301",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.sessao.etapa_atual }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "00301"
+                  }
+                ]
+              }
+            },
+            {
+              "renameOutput": true,
+              "outputKey": "00401",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.sessao.etapa_atual }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "00401"
+                  }
+                ]
+              }
+            },
+            {
+              "renameOutput": true,
+              "outputKey": "00501",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.sessao.etapa_atual }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "00501"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Etapa desconhecida"
+        }
+      }
+    },
+    {
+      "id": "33c1fd3a-44eb-42d5-a12b-a338cb4bd866",
+      "name": "Etapa 00101 - Primeiro contato",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4300,
+        -160
+      ],
+      "parameters": {
+        "mode": "once",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "jMULX7EiBx8jTsQh",
+          "cachedResultName": "Corte Certo - Etapa 00101 - Primeiro contato"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "fe701325-d7e1-4678-8e1b-0b28a77a7048",
+      "name": "Etapa 00201 - Escolha de Serviço",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4300,
+        0
+      ],
+      "parameters": {
+        "mode": "once",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "OJyYgzwZAQfOZGIm",
+          "cachedResultName": "Corte Certo - Etapa 00201 - Escolha de Serviço"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "803c898c-0a32-4920-a9b9-dda6916648c4",
+      "name": "Etapa 00301 - Escolha do profissional",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4300,
+        160
+      ],
+      "parameters": {
+        "mode": "once",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "kQG08NWypUcIfJV5",
+          "cachedResultName": "Corte Certo - Etapa 00301 - Escolha do profissional"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "e464b331-c1b4-495d-ae49-90d0e3135429",
+      "name": "Etapa 00401 - Marcar o dia",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4300,
+        320
+      ],
+      "parameters": {
+        "mode": "once",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "xNZSFurucinvuFff",
+          "cachedResultName": "Corte Certo - Etapa 00401 - Marcar o dia"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "1d3a4a08-7162-45cd-b036-aa8164b42d66",
+      "name": "Etapa 00501 - Marcar o Horário",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4300,
+        480
+      ],
+      "parameters": {
+        "mode": "once",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "bDdDwzBEiP0pQ5HU",
+          "cachedResultName": "Corte Certo - Etapa 00501 - Marcar o Horário"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "e4d701f2-d1cb-486f-afa0-40d89aa75f83",
+      "name": "Fim - etapa desconhecida",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        4300,
+        640
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "b23c6c2a-6e09-4d81-97b0-01595cadcbcf",
+      "name": "Sticky Note 3ab21b30",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -96
+      ],
+      "parameters": {
+        "content": "## Roteador Principal WhatsApp\nWebhook da Evolution API (evento `MESSAGES_UPSERT`):\n`https://cortecerto.app.n8n.cloud/webhook/whatsapp-mensagem`\n\nIgnora mensagens enviadas pela própria barbearia, grupos e status. Cria cliente e sessão se não existirem e chama a etapa atual.\n\nPalavras especiais: \"falar com atendente\" -> humano; \"cancelar/parar\" (em follow-up) -> encerra; \"menu\" -> recomeça.",
+        "color": 4,
+        "width": 608,
+        "height": 224
+      }
+    },
+    {
+      "id": "9be0b7ea-f44b-4999-8729-b8c007975ff1",
+      "name": "Busca atendimentos do cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3120,
+        160
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "method": "GET",
+        "nodeCredentialType": "supabaseApi",
+        "options": {},
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/atendimentos?id_cliente=eq.{{ $json.id_cliente }}&data_agend=gte.{{ $now.setZone('America/Sao_Paulo').minus({ days: 3 }).toFormat('yyyy-MM-dd') }}&select=id,data_agend,horario,id_prof,nps,nps_solicitado,profissionais(nome),atendimento_servicos(servico_id)&order=data_agend.asc,horario.asc"
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "c7225925-0faf-4524-9970-e5bfd0df4fdd",
+      "name": "Verifica NPS, cancelar e remarcar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3340,
+        160
+      ],
+      "parameters": {
+        "jsCode": "const ZONA = 'America/Sao_Paulo';\nconst e = $('Monta entrada da etapa').first().json;\nconst s = e.sessao || {};\nconst agora = DateTime.now().setZone(ZONA);\nconst atends = $input.all().map(i => i.json).filter(a => a.id);\nconst txt = String(e.mensagem_texto || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');\n\nconst inicio = (a) => DateTime.fromISO(a.data_agend + 'T' + String(a.horario).slice(0, 8), { zone: ZONA });\nconst desc = (a) => inicio(a).toFormat('dd/MM') + ' às ' + inicio(a).toFormat('HH:mm');\nconst prof = (a) => (a.profissionais && a.profissionais.nome) ? ' com ' + a.profissionais.nome : '';\n\nconst futuros = atends.filter(a => inicio(a) > agora).sort((x, y) => inicio(x) - inicio(y));\nconst proximo = futuros[0] || null;\n// Pedido de NPS enviado e ainda sem nota, de um atendimento dos últimos 3 dias\nconst npsPendente = atends\n  .filter(a => a.nps_solicitado && a.nps == null && inicio(a) < agora && agora.diff(inicio(a), 'days').days <= 3)\n  .sort((x, y) => inicio(y) - inicio(x))[0] || null;\n\n// Nota de 1 a 5 (mesma escala do CRM e da regra atendimentos_nps_check)\nconst mNota = txt.match(/^(?:nota\\s*)?([1-5])(?:\\s*\\/\\s*5)?\\s*(?:estrelas?)?\\s*[!.]*$/);\nconst nota = mNota ? Number(mNota[1]) : null;\n// Números no meio do agendamento são respostas do fluxo (serviço, profissional, horário), não nota\nconst emAgendamento = Boolean(s.aguardando_resposta) && ['00101', '00201', '00301', '00401', '00501'].includes(s.etapa_atual);\nconst querCancelar = /\\b(cancelar|cancela|cancelamento|desmarcar|desmarca)\\b/.test(txt);\nconst querRemarcar = /\\b(remarcar|remarca|remarcacao|reagendar|reagenda)\\b/.test(txt) || /(trocar|mudar|alterar) (o |meu )?(horario|dia)/.test(txt);\nconst sim = /^(sim|s|ss|confirmo|confirmar|pode|isso|ok|quero)\\b/.test(txt);\nconst nao = /^(nao|n|deixa|esquece|manter|mantem|mantenha|desisto)\\b/.test(txt);\n\nconst out = { ...e, acao: 'fluxo', texto: '', sessao_patch: null, cliente_patch: null, alvo_id: null, nota: null, entrada_remarcar: null };\nconst concluir = { etapa_atual: 'concluido', aguardando_resposta: false, id_atend_alvo: null };\n\nfunction remarcar(a) {\n  const servicos = (a.atendimento_servicos || []).map(x => x.servico_id).filter(Boolean);\n  const patch = { etapa_atual: '00401', aguardando_resposta: false, id_atend_alvo: a.id, servicos_selecionados: servicos, id_prof_selecionado: a.id_prof, dia_selecionado: null, horario_selecionado: null };\n  out.acao = 'remarcar';\n  out.alvo_id = a.id;\n  out.sessao_patch = patch;\n  out.texto = 'Vamos remarcar seu horário de ' + desc(a) + prof(a) + ' 🔄';\n  out.entrada_remarcar = { ...e, sessao: { ...s, ...patch } };\n}\nfunction perguntarCancelamento(a) {\n  out.acao = 'outra';\n  out.alvo_id = a.id;\n  out.sessao_patch = { etapa_atual: 'cancelar_confirma', aguardando_resposta: true, id_atend_alvo: a.id };\n  out.texto = 'Você quer cancelar este horário?\\n\\n📅 ' + desc(a) + '\\n💈' + (prof(a) || ' Atendimento') + '\\n\\nResponda *SIM* para cancelar ou *NÃO* para manter.\\nSe preferir trocar de dia ou horário, responda *REMARCAR*.';\n}\n\nif (s.etapa_atual === 'cancelar_confirma') {\n  const alvo = futuros.find(a => String(a.id) === String(s.id_atend_alvo));\n  if (!alvo) {\n    out.acao = 'outra';\n    out.sessao_patch = concluir;\n    out.texto = 'Não encontrei mais esse horário marcado. Se quiser agendar, é só mandar um oi! 🙂';\n  } else if (sim) {\n    out.acao = 'cancelar_confirmado';\n    out.alvo_id = alvo.id;\n    out.sessao_patch = concluir;\n    out.cliente_patch = { status: futuros.some(a => a.id !== alvo.id) ? 'agendado' : 'em_atendimento' };\n    out.texto = 'Pronto, seu horário de ' + desc(alvo) + ' foi cancelado. ✅\\nQuando quiser marcar de novo, é só mandar um oi!';\n  } else if (nao) {\n    out.acao = 'outra';\n    out.sessao_patch = concluir;\n    out.texto = 'Combinado! Seu horário de ' + desc(alvo) + ' continua marcado. 👍';\n  } else if (querRemarcar) {\n    remarcar(alvo);\n  } else {\n    out.acao = 'outra';\n    out.sessao_patch = { aguardando_resposta: true };\n    out.texto = 'Não entendi 😅 Responda *SIM* para cancelar o horário de ' + desc(alvo) + ', *NÃO* para manter ou *REMARCAR* para trocar.';\n  }\n} else if (npsPendente && nota !== null && !emAgendamento) {\n  out.acao = 'nps';\n  out.alvo_id = npsPendente.id;\n  out.nota = nota;\n  out.texto = nota === 5\n    ? 'Que bom saber! 🙌 Obrigado pela nota 5. Te esperamos na próxima! 💈'\n    : nota === 4\n      ? 'Obrigado pela nota 4! 😊 Vamos caprichar ainda mais para a próxima ser nota 5.'\n      : 'Obrigado pela sinceridade 🙏 Sentimos muito que a experiência não foi como você esperava. Vamos repassar para a equipe.';\n} else if (querRemarcar || querCancelar) {\n  if (!proximo) {\n    out.acao = 'outra';\n    out.sessao_patch = concluir;\n    out.texto = 'Não encontrei nenhum horário marcado para você. 🤔\\nSe quiser agendar, é só mandar um oi!';\n  } else if (querRemarcar) {\n    remarcar(proximo);\n  } else {\n    perguntarCancelamento(proximo);\n  }\n} else if (s.id_atend_alvo && ['00101', '00201', '00301'].includes(s.etapa_atual)) {\n  // Recomeçou o fluxo do zero: o próximo agendamento é novo, não remarcação\n  out.acao = 'fluxo_limpar';\n  out.sessao = { ...s, id_atend_alvo: null };\n}\n\nreturn [{ json: out }];",
+        "mode": "runOnceForAllItems"
+      }
+    },
+    {
+      "id": "a4eebe31-4a9c-473b-98c6-712c0567ffb6",
+      "name": "Roteia ação",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        3560,
+        160
+      ],
+      "parameters": {
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Fluxo do bot"
+        },
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.acao }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "nps"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                }
+              },
+              "outputKey": "NPS",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.acao }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "cancelar_confirmado"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                }
+              },
+              "outputKey": "Cancelar confirmado",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.acao }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "remarcar"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                }
+              },
+              "outputKey": "Remarcar",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.acao }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "fluxo_limpar"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                }
+              },
+              "outputKey": "Limpar remarcação",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.acao }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "outra"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                }
+              },
+              "outputKey": "Responder",
+              "renameOutput": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "0237b0d3-87a1-49f4-99aa-8278cd54de36",
+      "name": "Salva nota NPS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3820,
+        760
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "jsonBody": "={{ JSON.stringify({ nps: $json.nota }) }}",
+        "method": "PATCH",
+        "nodeCredentialType": "supabaseApi",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/atendimentos?id=eq.{{ $json.alvo_id }}"
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "b262433f-6036-4df9-a1f7-0526718b7b12",
+      "name": "Cancela atendimento",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3820,
+        940
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "method": "DELETE",
+        "nodeCredentialType": "supabaseApi",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/atendimentos?id=eq.{{ $json.alvo_id }}&id_cliente=eq.{{ $json.id_cliente }}"
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "efe36498-bb89-45e2-972d-98db4b72ffaf",
+      "name": "Atualiza cliente (cancelamento)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4040,
+        940
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "jsonBody": "={{ JSON.stringify($('Verifica NPS, cancelar e remarcar').first().json.cliente_patch) }}",
+        "method": "PATCH",
+        "nodeCredentialType": "supabaseApi",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/clientes?id=eq.{{ $('Verifica NPS, cancelar e remarcar').first().json.id_cliente }}"
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "b169ab83-cd78-44f5-b2f8-832d41ba7176",
+      "name": "Atualiza sessão (pós-atendimento)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4260,
+        1120
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "jsonBody": "={{ JSON.stringify($('Verifica NPS, cancelar e remarcar').first().json.sessao_patch) }}",
+        "method": "PATCH",
+        "nodeCredentialType": "supabaseApi",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/sessoes?id_cliente=eq.{{ $('Verifica NPS, cancelar e remarcar').first().json.id_cliente }}"
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "b3642b5b-fcce-43af-bb9f-9fdd3cbc906f",
+      "name": "Envia WhatsApp - pós-atendimento",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4480,
+        940
+      ],
+      "parameters": {
+        "mode": "once",
+        "options": {},
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "Barbozap - Enviar WhatsApp",
+          "mode": "id",
+          "value": "U9nMESK4Zb5NPZZ0"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "instancia",
+              "id": "instancia",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "numero",
+              "id": "numero",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "texto",
+              "id": "texto",
+              "required": false,
+              "type": "string"
+            }
+          ],
+          "value": {
+            "instancia": "={{ $('Verifica NPS, cancelar e remarcar').first().json.instancia }}",
+            "numero": "={{ $('Verifica NPS, cancelar e remarcar').first().json.telefone }}",
+            "texto": "={{ $('Verifica NPS, cancelar e remarcar').first().json.texto }}"
+          }
+        }
+      }
+    },
+    {
+      "id": "2f21744b-e0cc-4f13-b83b-fcc333121b98",
+      "name": "Atualiza sessão (remarcar)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3820,
+        1300
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "jsonBody": "={{ JSON.stringify($json.sessao_patch) }}",
+        "method": "PATCH",
+        "nodeCredentialType": "supabaseApi",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/sessoes?id_cliente=eq.{{ $json.id_cliente }}"
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "74131349-8fe2-45ec-9ef1-eafd4753f024",
+      "name": "Envia WhatsApp - remarcar",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4040,
+        1300
+      ],
+      "parameters": {
+        "mode": "once",
+        "options": {},
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "Barbozap - Enviar WhatsApp",
+          "mode": "id",
+          "value": "U9nMESK4Zb5NPZZ0"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "instancia",
+              "id": "instancia",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "numero",
+              "id": "numero",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "texto",
+              "id": "texto",
+              "required": false,
+              "type": "string"
+            }
+          ],
+          "value": {
+            "instancia": "={{ $('Verifica NPS, cancelar e remarcar').first().json.instancia }}",
+            "numero": "={{ $('Verifica NPS, cancelar e remarcar').first().json.telefone }}",
+            "texto": "={{ $('Verifica NPS, cancelar e remarcar').first().json.texto }}"
+          }
+        }
+      }
+    },
+    {
+      "id": "ccd99978-686c-496d-b775-4b10213e4935",
+      "name": "Prepara entrada da remarcação",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4260,
+        1300
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: $('Verifica NPS, cancelar e remarcar').first().json.entrada_remarcar }];",
+        "mode": "runOnceForAllItems"
+      }
+    },
+    {
+      "id": "4b73faf9-461b-4f8a-bb40-54787b9601ef",
+      "name": "Etapa 00401 - Remarcar (dia)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4480,
+        1300
+      ],
+      "parameters": {
+        "mode": "once",
+        "options": {},
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "Barbozap - Etapa 00401 - Marcar o dia",
+          "mode": "id",
+          "value": "xNZSFurucinvuFff"
+        }
+      }
+    },
+    {
+      "id": "4cab7f27-3fa0-4551-87c4-373bb807ed93",
+      "name": "Limpa remarcação",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3820,
+        520
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "jsonBody": "={{ JSON.stringify({ id_atend_alvo: null }) }}",
+        "method": "PATCH",
+        "nodeCredentialType": "supabaseApi",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/sessoes?id_cliente=eq.{{ $json.id_cliente }}"
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "5f455db3-e482-4937-8b91-4efd0ae37d55",
+      "name": "Restaura entrada da etapa",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4040,
+        520
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: $('Verifica NPS, cancelar e remarcar').first().json }];",
+        "mode": "runOnceForAllItems"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook - Mensagem WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Normaliza payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normaliza payload": {
+      "main": [
+        [
+          {
+            "node": "É mensagem de cliente?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É mensagem de cliente?": {
+      "main": [
+        [
+          {
+            "node": "Busca barbearia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca barbearia": {
+      "main": [
+        [
+          {
+            "node": "Fluxo do bot ativo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fluxo do bot ativo?": {
+      "main": [
+        [
+          {
+            "node": "Busca cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca cliente": {
+      "main": [
+        [
+          {
+            "node": "Cliente existe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cliente existe?": {
+      "main": [
+        [
+          {
+            "node": "Dados do cliente e intenção",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cria cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dados do cliente e intenção": {
+      "main": [
+        [
+          {
+            "node": "Roteia intenção",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cria cliente": {
+      "main": [
+        [
+          {
+            "node": "Dados do cliente e intenção",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Roteia intenção": {
+      "main": [
+        [
+          {
+            "node": "Fim - atendimento humano em andamento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Busca mensagem - Atendimento humano",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Busca mensagem - Encerramento follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Busca sessão do cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca mensagem - Atendimento humano": {
+      "main": [
+        [
+          {
+            "node": "Atualiza status - falar_com_humano",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualiza status - falar_com_humano": {
+      "main": [
+        [
+          {
+            "node": "Envia WhatsApp - humano",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca mensagem - Encerramento follow-up": {
+      "main": [
+        [
+          {
+            "node": "Atualiza status - perdido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualiza status - perdido": {
+      "main": [
+        [
+          {
+            "node": "Envia WhatsApp - cancelar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca sessão do cliente": {
+      "main": [
+        [
+          {
+            "node": "Sessão existe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sessão existe?": {
+      "main": [
+        [
+          {
+            "node": "Monta entrada da etapa",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cria sessão",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cria sessão": {
+      "main": [
+        [
+          {
+            "node": "Monta entrada da etapa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Roteia etapa": {
+      "main": [
+        [
+          {
+            "node": "Etapa 00101 - Primeiro contato",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Etapa 00201 - Escolha de Serviço",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Etapa 00301 - Escolha do profissional",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Etapa 00401 - Marcar o dia",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Etapa 00501 - Marcar o Horário",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fim - etapa desconhecida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monta entrada da etapa": {
+      "main": [
+        [
+          {
+            "node": "Busca atendimentos do cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca atendimentos do cliente": {
+      "main": [
+        [
+          {
+            "node": "Verifica NPS, cancelar e remarcar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verifica NPS, cancelar e remarcar": {
+      "main": [
+        [
+          {
+            "node": "Roteia ação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Roteia ação": {
+      "main": [
+        [
+          {
+            "node": "Salva nota NPS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cancela atendimento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Atualiza sessão (remarcar)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Limpa remarcação",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Atualiza sessão (pós-atendimento)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Roteia etapa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salva nota NPS": {
+      "main": [
+        [
+          {
+            "node": "Envia WhatsApp - pós-atendimento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cancela atendimento": {
+      "main": [
+        [
+          {
+            "node": "Atualiza cliente (cancelamento)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualiza cliente (cancelamento)": {
+      "main": [
+        [
+          {
+            "node": "Atualiza sessão (pós-atendimento)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualiza sessão (pós-atendimento)": {
+      "main": [
+        [
+          {
+            "node": "Envia WhatsApp - pós-atendimento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualiza sessão (remarcar)": {
+      "main": [
+        [
+          {
+            "node": "Envia WhatsApp - remarcar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envia WhatsApp - remarcar": {
+      "main": [
+        [
+          {
+            "node": "Prepara entrada da remarcação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepara entrada da remarcação": {
+      "main": [
+        [
+          {
+            "node": "Etapa 00401 - Remarcar (dia)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limpa remarcação": {
+      "main": [
+        [
+          {
+            "node": "Restaura entrada da etapa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restaura entrada da etapa": {
+      "main": [
+        [
+          {
+            "node": "Roteia etapa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  }
+}

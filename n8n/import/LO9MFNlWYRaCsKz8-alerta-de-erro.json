@@ -1,0 +1,198 @@
+{
+  "id": "LO9MFNlWYRaCsKz8",
+  "name": "Barbozap - Alerta de erro",
+  "nodes": [
+    {
+      "id": "34cf07cc-d531-4231-b4ab-b485f60e3620",
+      "name": "Quando um workflow falhar",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "d9a47bfc-2a07-43c2-b9cd-4a71d85a5a79",
+      "name": "Monta alerta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        0
+      ],
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "inst",
+              "name": "email_alertas",
+              "type": "string",
+              "value": "thorfj1508@gmail.com"
+            },
+            {
+              "id": "num",
+              "name": "remetente",
+              "type": "string",
+              "value": "Barbozap <contato@barbozap.com.br>"
+            },
+            {
+              "id": "wf",
+              "name": "workflow",
+              "value": "={{ $json.workflow?.name || $json.trigger?.error?.workflow?.name || \"desconhecido\" }}",
+              "type": "string"
+            },
+            {
+              "id": "no",
+              "name": "no",
+              "value": "={{ $json.execution?.lastNodeExecuted || $json.execution?.error?.node?.name || \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "msg",
+              "name": "mensagem",
+              "value": "={{ String($json.execution?.error?.message || $json.trigger?.error?.message || \"Erro sem mensagem\").slice(0, 500) }}",
+              "type": "string"
+            },
+            {
+              "id": "url",
+              "name": "execucao_url",
+              "value": "={{ $json.execution?.url || \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "modo",
+              "name": "modo",
+              "value": "={{ $json.execution?.mode || \"\" }}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "25616c8f-9bdd-46ac-a88b-ea192e7fb597",
+      "name": "Grava erro no Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        448,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://jzqiqrymqbzullysukja.supabase.co/rest/v1/n8n_erros",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ workflow: $json.workflow, no: $json.no, mensagem: $json.mensagem, execucao_url: $json.execucao_url, modo: $json.modo }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "ed329f28-a0ed-432e-a7d1-9f095cf89408",
+      "name": "Sticky Note 37ef7a56",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -96
+      ],
+      "parameters": {
+        "content": "## Alerta de erro\nOs workflows do Barbozap com gatilho apontam para este (Settings > Error workflow). O *Enviar WhatsApp* fica de fora.\n\n1. Grava a falha em `n8n_erros` no Supabase.\n2. Manda e-mail para `email_alertas` pelo SMTP da Hostinger (`contato@barbozap.com.br`). Credencial: **SMTP Barbozap**.",
+        "color": 3,
+        "width": 384,
+        "height": 224
+      }
+    },
+    {
+      "id": "b9559443-59a5-4ed4-839a-234046dda130",
+      "name": "Avisa por e-mail",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        700,
+        0
+      ],
+      "parameters": {
+        "emailFormat": "text",
+        "fromEmail": "={{ $('Monta alerta').first().json.remetente }}",
+        "options": {},
+        "subject": "={{ '⚠️ Falha no Barbozap: ' + $('Monta alerta').first().json.workflow }}",
+        "text": "={{ (() => { const a = $('Monta alerta').first().json; return 'Um workflow do Barbozap falhou no n8n.\\n\\nWorkflow: ' + a.workflow + (a.no ? '\\nEtapa: ' + a.no : '') + '\\nErro: ' + a.mensagem + (a.execucao_url ? '\\n\\nVer a execução: ' + a.execucao_url : '') + '\\n\\n(Todas as falhas também ficam na tabela n8n_erros do Supabase.)'; })() }}",
+        "toEmail": "={{ $('Monta alerta').first().json.email_alertas }}"
+      },
+      "onError": "continueRegularOutput",
+      "webhookId": "c3e91400-b0fb-4673-9c8d-a364d5425f46",
+      "disabled": false,
+      "credentials": {
+        "smtp": {
+          "id": "FicjT2zSo5pBoX0p",
+          "name": "SMTP Barbozap"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Quando um workflow falhar": {
+      "main": [
+        [
+          {
+            "node": "Monta alerta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monta alerta": {
+      "main": [
+        [
+          {
+            "node": "Grava erro no Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Grava erro no Supabase": {
+      "main": [
+        [
+          {
+            "node": "Avisa por e-mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  },
+  "active": false,
+  "description": "Recebe a falha de qualquer workflow do Barbozap, grava em n8n_erros no Supabase e avisa por e-mail (thorfj1508@gmail.com)."
+}

@@ -1,0 +1,283 @@
+{
+  "id": "Y5aYPRUG8OHnXSju",
+  "name": "Barbozap - Notificação de Falta",
+  "active": true,
+  "isArchived": false,
+  "versionId": "00691c2f-9d02-4599-97b0-42715bef402a",
+  "createdAt": "2026-10-13T23:32:16.263Z",
+  "updatedAt": "2026-10-17T22:20:03.501Z",
+  "description": "Webhook do Supabase: quando um atendimento é marcado como falta, envia mensagem de remarcação ao cliente.",
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "errorWorkflow": "LO9MFNlWYRaCsKz8"
+  },
+  "tags": [],
+  "parentFolderId": "BoAyeDqZ8dyqPVtm",
+  "nodes": [
+    {
+      "id": "0ff45b55-2279-4c24-98f7-7e1d51bd8647",
+      "name": "Webhook - Atendimento atualizado",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "atendimento-falta",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "d65f5970-d013-4f2b-8710-3151d9d57dc6"
+    },
+    {
+      "id": "6347b9f3-8c79-441c-980b-2253cca95355",
+      "name": "É uma falta nova?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.body.type }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "UPDATE"
+            },
+            {
+              "leftValue": "={{ $json.body.record?.compareceu === false && $json.body.old_record?.compareceu !== false }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "29e1434d-8dcb-4139-bbc8-af5a649039bb",
+      "name": "Busca telefone do cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/clientes?id=eq.{{ $json.body.record.id_cliente }}&select=telefone,nome&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "06d04838-0d48-4334-8bdd-bf188f075d9a",
+      "name": "Busca mensagem de remarcação",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/fluxo_mensagens?barbearia_id=eq.{{ $('Webhook - Atendimento atualizado').first().json.body.record.barbearia_id }}&etapa=eq.{{ encodeURIComponent('Remarcar após falta') }}&mensagem=not.like.%5B*&select=mensagem&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "76c3d261-e79a-4e55-a3bc-f953396823e8",
+      "name": "Busca instância da barbearia",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/barbearias?id=eq.{{ $('Webhook - Atendimento atualizado').first().json.body.record.barbearia_id }}&status_fluxo=eq.Sim&whatsapp_barbearia=not.is.null&select=whatsapp_barbearia&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "02129f46-ac05-4af0-9caf-0de2a17677f2",
+      "name": "Envia WhatsApp - remarcar",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "mode": "each",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "U9nMESK4Zb5NPZZ0",
+          "cachedResultName": "Corte Certo - Enviar WhatsApp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "instancia": "={{ $json.whatsapp_barbearia }}",
+            "numero": "={{ $('Busca telefone do cliente').first().json.telefone }}",
+            "texto": "={{ String($('Busca mensagem de remarcação').first().json.mensagem || 'Oi {nome}, sentimos sua falta hoje! 😕 Quer remarcar? É só me mandar uma mensagem por aqui.').replace(/\\{\\{?\\s*nome\\s*\\}?\\}/gi, String($('Busca telefone do cliente').first().json.nome || '').split(' ')[0]).replace(/Oi ,/g, 'Oi,') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "instancia",
+              "displayName": "instancia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "numero",
+              "displayName": "numero",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "1375b856-9013-4ce8-a67f-fa616050fd2d",
+      "name": "Sticky Note 5eb927a1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -96
+      ],
+      "parameters": {
+        "content": "## Notificação de Falta\nDisparado por **Database Webhook do Supabase** (tabela `atendimentos`, evento UPDATE) em:\n`https://cortecerto.app.n8n.cloud/webhook/atendimento-falta`\n\nQuando o atendimento passa para `compareceu = false`, envia a mensagem *Remarcar após falta*. Só para barbearias com o fluxo ligado.",
+        "color": 4,
+        "width": 384,
+        "height": 224
+      }
+    }
+  ],
+  "connections": {
+    "Webhook - Atendimento atualizado": {
+      "main": [
+        [
+          {
+            "node": "É uma falta nova?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É uma falta nova?": {
+      "main": [
+        [
+          {
+            "node": "Busca telefone do cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca telefone do cliente": {
+      "main": [
+        [
+          {
+            "node": "Busca mensagem de remarcação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca mensagem de remarcação": {
+      "main": [
+        [
+          {
+            "node": "Busca instância da barbearia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca instância da barbearia": {
+      "main": [
+        [
+          {
+            "node": "Envia WhatsApp - remarcar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  }
+}

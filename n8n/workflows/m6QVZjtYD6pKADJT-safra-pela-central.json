@@ -1,0 +1,1526 @@
+{
+  "id": "m6QVZjtYD6pKADJT",
+  "name": "Barbozap - Safra pela Central",
+  "active": true,
+  "isArchived": false,
+  "versionId": "366e8967-0c40-47ee-b525-d46b6a4a041c",
+  "createdAt": "2026-10-20T00:43:21.474Z",
+  "updatedAt": "2026-10-20T13:49:57.236Z",
+  "description": "Chamado pela Central Interna (aba Leads > Montar safra): recebe os leads escolhidos com as mensagens da prévia e envia pela instância prospeccao, um a cada 3 a 7 minutos. Só equipe interna.",
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "errorWorkflow": "LO9MFNlWYRaCsKz8",
+    "timezone": "America/Sao_Paulo"
+  },
+  "tags": [],
+  "parentFolderId": "BoAyeDqZ8dyqPVtm",
+  "nodes": [
+    {
+      "id": "07d751f5-9fe3-4f43-a2cd-4cb02907d170",
+      "name": "Webhook - Safra pela Central",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        -1760,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "safra-prospeccao",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://barbozap.com.br"
+        }
+      },
+      "webhookId": "f1b020ef-1409-4db8-abb6-1571f68d72a8"
+    },
+    {
+      "id": "22e664b2-2b30-4222-902e-657782e0a7ca",
+      "name": "Valida usuário logado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1540,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://jzqiqrymqbzullysukja.supabase.co/auth/v1/user",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "sb_publishable_lqY19MJcqfYcVAABzRgiNg_6h4DIWUO"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ $json.headers.authorization || \"\" }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "63fd8eaa-8253-4ed5-a692-d3a0f6f1798c",
+      "name": "Usuário válido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1320,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.statusCode === 200 && !!($json.body && $json.body.id) }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "b7db40f2-87cc-45f1-8525-5ca74ca30e79",
+      "name": "Busca na equipe interna",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1100,
+        200
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/equipe_interna?auth_user_id=eq.{{ $json.body.id }}&select=nome,papel&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "2440055e-418a-4ac4-8921-5338a406599c",
+      "name": "É da equipe interna?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -880,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ !!$json.nome }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "e0824645-1766-4c5a-ab45-02dbda43305f",
+      "name": "Lê o pedido",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -660,
+        100
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const body = $('Webhook - Safra pela Central').first().json.body || {};\nconst uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\nconst vistos = new Set();\nconst itens = (Array.isArray(body.itens) ? body.itens : []).filter(i => {\n  if (!i || !uuid.test(String(i.lead_id)) || vistos.has(i.lead_id)) return false;\n  vistos.add(i.lead_id);\n  return true;\n}).map(i => ({ lead_id: String(i.lead_id), roteiro_id: Number(i.roteiro_id) || null, texto: String(i.texto || '').trim().slice(0, 1500) }));\nlet erro = null;\nif (!itens.length) erro = 'Nenhum lead válido na safra.';\nelse if (itens.length > 30) erro = 'No máximo 30 leads por safra.';\nelse if (itens.some(i => !i.texto)) erro = 'Tem lead sem mensagem na safra.';\nconst meuNome = String($('Busca na equipe interna').first().json.nome || '').split(' ')[0];\nreturn [{ json: { ok: !erro, erro, itens, meuNome } }];"
+      }
+    },
+    {
+      "id": "75e4ce55-206b-41a0-b729-62d5d0f13af6",
+      "name": "Pedido válido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -440,
+        100
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.ok }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "8beb1050-8c68-4d17-af32-6e62e6f2e06b",
+      "name": "Busca leads da safra",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -220,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/leads?select=*&id=in.({{ $json.itens.map(i => i.lead_id).join(\",\") }})",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "c76db2cb-ec92-4344-84e6-a2c58716cc57",
+      "name": "Busca roteiros",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://jzqiqrymqbzullysukja.supabase.co/rest/v1/mensagens_prospeccao?select=*&order=ordem.asc",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "executeOnce": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "5081e4d9-e112-4eb2-b4c0-3ee129d65f1f",
+      "name": "Monta safra",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// O texto vem da prévia da Central (pode ter sido editado); etapa e próximo passo vêm do roteiro no banco\nconst pedido = $('Lê o pedido').first().json;\nconst leads = new Map($('Busca leads da safra').all().map(i => i.json).filter(l => l && l.id).map(l => [l.id, l]));\nconst roteiros = new Map($input.all().map(i => i.json).filter(r => r && r.id).map(r => [Number(r.id), r]));\nconst etapas = ['novo_lead', 'contato_feito', 'respondeu', 'demo_agendada', 'teste_gratis', 'fechado_ganho', 'perdido'];\nconst somaDias = (n) => DateTime.now().setZone('America/Sao_Paulo').plus({ days: n }).toISODate();\nconst itens = [];\nconst ignorados = [];\npedido.itens.forEach(p => {\n  const lead = leads.get(p.lead_id);\n  if (!lead) { ignorados.push({ lead_id: p.lead_id, motivo: 'lead não encontrado' }); return; }\n  if (!['novo_lead', 'contato_feito'].includes(lead.status)) { ignorados.push({ nome: lead.nome_barbearia, motivo: 'etapa não é Novo nem Contatado' }); return; }\n  if (lead.proximo_passo === 'Na fila do n8n') { ignorados.push({ nome: lead.nome_barbearia, motivo: 'já está em outra safra' }); return; }\n  if (!lead.telefone) { ignorados.push({ nome: lead.nome_barbearia, motivo: 'sem telefone' }); return; }\n  const r = roteiros.get(p.roteiro_id) || null;\n  const update = {};\n  if (r && r.status_depois && etapas.indexOf(r.status_depois) > etapas.indexOf(lead.status)) update.status = r.status_depois;\n  if (r && r.dias_proximo_passo !== null && r.dias_proximo_passo !== undefined) {\n    update.proximo_passo = r.proximo_passo;\n    update.data_proximo_passo = somaDias(r.dias_proximo_passo);\n  }\n  itens.push({\n    id: lead.id, nome: lead.nome_barbearia, bairro: lead.bairro, telefone: lead.telefone,\n    tipo_telefone: lead.tipo_telefone, ultimo_contato: lead.ultimo_contato,\n    proximo_original: lead.proximo_passo, data_original: lead.data_proximo_passo,\n    roteiro: r ? r.etapa : 'Mensagem livre', texto: p.texto, update\n  });\n});\nreturn [{ json: { total: itens.length, leads: itens, ignorados } }];"
+      }
+    },
+    {
+      "id": "2c6a3bda-7a16-40cd-bf8f-399a38726964",
+      "name": "Sobrou lead para enviar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.total }}",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "rightValue": 0
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "7c1ed074-524b-4143-a51f-df16926752ef",
+      "name": "Registra a safra",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        -100
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://jzqiqrymqbzullysukja.supabase.co/rest/v1/safras_prospeccao",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: \"enviando\", tipo: \"central\", quantidade: $(\"Lê o pedido\").first().json.itens.length, instancia: \"prospeccao\", enviado_por: $(\"Lê o pedido\").first().json.meuNome, total: $json.total, formulario: { itens: $(\"Lê o pedido\").first().json.itens, ignorados: $json.ignorados } }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "7565ebcf-a08e-47dd-8bf1-a63c6f02a5be",
+      "name": "Normaliza parâmetros",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        -100
+      ],
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "safra_id",
+              "name": "safra_id",
+              "type": "number",
+              "value": "={{ $json.id }}"
+            },
+            {
+              "id": "instancia",
+              "name": "instancia",
+              "type": "string",
+              "value": "prospeccao"
+            },
+            {
+              "id": "meuNome",
+              "name": "meuNome",
+              "type": "string",
+              "value": "={{ $(\"Lê o pedido\").first().json.meuNome }}"
+            },
+            {
+              "id": "hoje",
+              "name": "hoje",
+              "type": "string",
+              "value": "={{ $now.setZone(\"America/Sao_Paulo\").toISODate() }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "d6d4e0cc-45d7-4fac-807c-aa226754e99b",
+      "name": "Responde safra iniciada",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1100,
+        -100
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ safra_id: $json.safra_id, total: $(\"Monta safra\").first().json.total, ignorados: $(\"Monta safra\").first().json.ignorados }) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "8b0d796f-4e5f-4206-ab59-706fcd536e34",
+      "name": "Põe leads na fila",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1980,
+        300
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/leads?id=in.({{ $(\"Monta safra\").first().json.leads.map(l => l.id).join(\",\") }})",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{ \"proximo_passo\": \"Na fila do n8n\" }",
+        "options": {}
+      },
+      "executeOnce": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "55432dc1-bbce-4b95-a9ba-3cb1dbb38016",
+      "name": "Responde sem leads",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        660,
+        100
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ erro: \"Nenhum dos leads pode entrar na safra: \" + $json.ignorados.map(i => (i.nome || \"lead\") + \" (\" + i.motivo + \")\").join(\", \") }) }}",
+        "options": {
+          "responseCode": 409
+        }
+      }
+    },
+    {
+      "id": "a0324c24-b117-42b1-a21d-90295fd0c1d8",
+      "name": "Responde pedido inválido",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -220,
+        200
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ erro: $json.erro }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      }
+    },
+    {
+      "id": "4664d2ab-eecf-4075-999b-9d96196d3398",
+      "name": "Responde 403",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -660,
+        300
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"erro\":\"Só a equipe interna pode disparar safras.\"}",
+        "options": {
+          "responseCode": 403
+        }
+      }
+    },
+    {
+      "id": "15a59be0-6b19-4bec-8895-a1792360785a",
+      "name": "Responde 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -1100,
+        400
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"erro\":\"Sessão inválida. Entre de novo na Central.\"}",
+        "options": {
+          "responseCode": 401
+        }
+      }
+    },
+    {
+      "id": "e415a40d-8425-4710-8b85-ba82f292f92d",
+      "name": "Lista leads da safra",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $('Monta safra').first().json.leads.map(l => ({ json: l }));"
+      }
+    },
+    {
+      "id": "e6d2fda0-5ff8-47c0-b239-ec66f2dab0c9",
+      "name": "Resume a safra",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        100
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const conta = { enviado: 0, sem_whatsapp: 0, respondeu: 0, pulado: 0, erro: 0 };\n$input.all().forEach(i => { const a = i.json.acao; conta[a] = (conta[a] || 0) + 1; });\nreturn [{ json: { resumo: conta, safra_id: $('Normaliza parâmetros').first().json.safra_id } }];"
+      }
+    },
+    {
+      "id": "b0efabbb-0e4e-46fe-9e5d-e5cefaebc927",
+      "name": "Marca safra como concluída",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2860,
+        100
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/safras_prospeccao?id=eq.{{ $json.safra_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: \"concluida\", resumo: $json.resumo, finalizada_em: $now.toISO() }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "c974ae90-a051-4637-bdde-aac378784689",
+      "name": "E-mail com o resumo",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        3080,
+        100
+      ],
+      "parameters": {
+        "operation": "send",
+        "fromEmail": "Barbozap <contato@barbozap.com.br>",
+        "toEmail": "thorfj1508@gmail.com",
+        "subject": "=Safra #{{ $(\"Resume a safra\").first().json.safra_id }} concluída: {{ $(\"Resume a safra\").first().json.resumo.enviado }} mensagens enviadas",
+        "emailFormat": "html",
+        "html": "=<p>A safra #{{ $(\"Resume a safra\").first().json.safra_id }} terminou.</p><ul><li>Enviadas: <b>{{ $(\"Resume a safra\").first().json.resumo.enviado }}</b></li><li>Sem WhatsApp: {{ $(\"Resume a safra\").first().json.resumo.sem_whatsapp }}</li><li>Já tinham respondido (follow-up não enviado): {{ $(\"Resume a safra\").first().json.resumo.respondeu }}</li><li>Pulados (etapa mudou): {{ $(\"Resume a safra\").first().json.resumo.pulado }}</li><li>Erros (voltaram para a fila): {{ $(\"Resume a safra\").first().json.resumo.erro }}</li></ul><p><a href=\"https://barbozap.com.br/core/html/central.html\">Abrir o CRM</a></p>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "onError": "continueRegularOutput",
+      "webhookId": "454c52d6-7a5b-473f-8688-bfe9d610b093",
+      "credentials": {
+        "smtp": {
+          "id": "rhvSDr4P1wPo3pfX",
+          "name": "SMTP Barbozap"
+        }
+      }
+    },
+    {
+      "id": "9373a2f0-4a78-49dc-94b6-3efe2ddb708b",
+      "name": "Lê etapa atual do lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        400
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/leads?id=eq.{{ $json.id }}&select=id,status,proximo_passo",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "c659de0b-3922-411a-ad70-6aa9b37b8bbc",
+      "name": "Confere número no WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2860,
+        400
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.barbozap.com.br/chat/whatsappNumbers/{{ encodeURIComponent($(\"Normaliza parâmetros\").first().json.instancia) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ numbers: [$(\"Um lead por vez\").item.json.telefone] }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "AmkxzERCZUsLm88L",
+          "name": "Evolution API"
+        }
+      }
+    },
+    {
+      "id": "644f733e-1b38-4771-b4fd-bdab39842724",
+      "name": "Busca mensagens recebidas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3080,
+        400
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.barbozap.com.br/chat/findMessages/{{ encodeURIComponent($(\"Normaliza parâmetros\").first().json.instancia) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ where: { key: { remoteJid: $(\"Confere número no WhatsApp\").item.json.jid || ($(\"Um lead por vez\").item.json.telefone + \"@s.whatsapp.net\") } } }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "AmkxzERCZUsLm88L",
+          "name": "Evolution API"
+        }
+      }
+    },
+    {
+      "id": "941255da-c6e2-4cc1-a155-3cf71a5f7eed",
+      "name": "Decide o que fazer",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3300,
+        400
+      ],
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "acao",
+              "name": "acao",
+              "type": "string",
+              "value": "={{ (() => { const lead = $(\"Um lead por vez\").item.json; const atual = $(\"Lê etapa atual do lead\").item.json; if (!atual.id || ![\"novo_lead\", \"contato_feito\"].includes(atual.status)) return \"pulado\"; const chk = $(\"Confere número no WhatsApp\").item.json; if (chk.exists !== true) return chk.exists === false ? \"sem_whatsapp\" : \"erro\"; const recs = ($json.messages && $json.messages.records) || $json.records || []; const desde = lead.ultimo_contato ? new Date(lead.ultimo_contato).getTime() : null; const respondeu = !!desde && recs.some(r => r.key && r.key.fromMe === false && Number(r.messageTimestamp) * 1000 > desde); return respondeu ? \"respondeu\" : \"enviar\"; })() }}"
+            },
+            {
+              "id": "numero",
+              "name": "numero",
+              "type": "string",
+              "value": "={{ String($(\"Confere número no WhatsApp\").item.json.jid || \"\").split(\"@\")[0] || $(\"Um lead por vez\").item.json.telefone }}"
+            },
+            {
+              "id": "etapa_atual",
+              "name": "etapa_atual",
+              "type": "string",
+              "value": "={{ $(\"Lê etapa atual do lead\").item.json.status || \"\" }}"
+            },
+            {
+              "id": "proximo_atual",
+              "name": "proximo_atual",
+              "type": "string",
+              "value": "={{ $(\"Lê etapa atual do lead\").item.json.proximo_passo || \"\" }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "0316cbd9-eb30-4eff-aa7d-1a43e2e026ba",
+      "name": "Rota do lead",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        3520,
+        400
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "enviar",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.acao }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "enviar"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "outputKey": "sem_whatsapp",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.acao }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "sem_whatsapp"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "outputKey": "respondeu",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.acao }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "respondeu"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "outputKey": "pulado",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.acao }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "pulado"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "erro"
+        }
+      }
+    },
+    {
+      "id": "ee8a55cd-6f70-4721-9451-0be85e1094ec",
+      "name": "Envia WhatsApp",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        3740,
+        100
+      ],
+      "parameters": {
+        "mode": "each",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "U9nMESK4Zb5NPZZ0",
+          "cachedResultName": "Barbozap - Enviar WhatsApp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "instancia": "={{ $(\"Normaliza parâmetros\").first().json.instancia }}",
+            "numero": "={{ $json.numero }}",
+            "texto": "={{ $(\"Um lead por vez\").item.json.texto }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "instancia",
+              "displayName": "instancia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "numero",
+              "displayName": "numero",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "a77ad9f5-7980-416c-b575-4f595e058d3d",
+      "name": "Registro: sem WhatsApp",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3960,
+        400
+      ],
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ JSON.stringify({ p_lead_id: $(\"Um lead por vez\").item.json.id, p_acao: \"sem_whatsapp\", p_patch: { status: \"perdido\", motivo_perda: \"Sem WhatsApp\", proximo_passo: null, data_proximo_passo: null }, p_tipo: \"nota\", p_descricao: \"Safra n8n #\" + $(\"Normaliza parâmetros\").first().json.safra_id + \": o número não tem WhatsApp. Lead marcado como Perdido (Sem WhatsApp).\", p_esperar: false }) }}"
+      }
+    },
+    {
+      "id": "4470a08a-9b17-496a-a666-ae30df6e7662",
+      "name": "Registro: já respondeu",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3960,
+        600
+      ],
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ JSON.stringify({ p_lead_id: $(\"Um lead por vez\").item.json.id, p_acao: \"respondeu\", p_patch: { status: \"respondeu\", proximo_passo: \"Responder no WhatsApp\", data_proximo_passo: $(\"Normaliza parâmetros\").first().json.hoje }, p_tipo: \"nota\", p_descricao: \"Safra n8n #\" + $(\"Normaliza parâmetros\").first().json.safra_id + \": a barbearia respondeu no WhatsApp desde o último contato. Follow-up não enviado.\", p_esperar: false }) }}"
+      }
+    },
+    {
+      "id": "b828745e-81ea-4889-a239-61c69bed4821",
+      "name": "Registro: pulado",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3960,
+        800
+      ],
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ JSON.stringify({ p_lead_id: $(\"Um lead por vez\").item.json.id, p_acao: \"pulado\", p_patch: $json.proximo_atual === \"Na fila do n8n\" ? { proximo_passo: $(\"Um lead por vez\").item.json.proximo_original, data_proximo_passo: $(\"Um lead por vez\").item.json.data_original } : {}, p_tipo: \"nota\", p_descricao: \"Safra n8n #\" + $(\"Normaliza parâmetros\").first().json.safra_id + \": pulado, a etapa mudou para \" + ($json.etapa_atual || \"?\") + \" antes do envio.\", p_esperar: false }) }}"
+      }
+    },
+    {
+      "id": "ed09f116-0ccd-468c-81fb-27a2811178c6",
+      "name": "Registro: erro na checagem",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3960,
+        1000
+      ],
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ JSON.stringify({ p_lead_id: $(\"Um lead por vez\").item.json.id, p_acao: \"erro\", p_patch: { proximo_passo: $(\"Um lead por vez\").item.json.proximo_original, data_proximo_passo: $(\"Um lead por vez\").item.json.data_original }, p_tipo: \"nota\", p_descricao: \"Safra n8n #\" + $(\"Normaliza parâmetros\").first().json.safra_id + \": não deu para checar o número na Evolution (instância certa e conectada?). O lead voltou para a fila.\", p_esperar: false }) }}"
+      }
+    },
+    {
+      "id": "60772d05-3d4f-4b89-90ce-451f242825b9",
+      "name": "Um lead por vez",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2420,
+        300
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "957d8700-54d8-4e7a-8b0a-6b6aadc53be4",
+      "name": "Registro: enviado",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3960,
+        0
+      ],
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ JSON.stringify({ p_lead_id: $(\"Um lead por vez\").item.json.id, p_acao: \"enviado\", p_patch: Object.assign({}, $(\"Um lead por vez\").item.json.update, { ultimo_contato: $now.toISO() }), p_tipo: \"mensagem\", p_descricao: $(\"Um lead por vez\").item.json.roteiro + \" · safra n8n #\" + $(\"Normaliza parâmetros\").first().json.safra_id, p_esperar: true }) }}"
+      }
+    },
+    {
+      "id": "1abdc127-b217-4f14-bdf1-d127812d9874",
+      "name": "Registro: falha no envio",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3960,
+        200
+      ],
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ JSON.stringify({ p_lead_id: $(\"Um lead por vez\").item.json.id, p_acao: \"erro\", p_patch: { proximo_passo: $(\"Um lead por vez\").item.json.proximo_original, data_proximo_passo: $(\"Um lead por vez\").item.json.data_original }, p_tipo: \"nota\", p_descricao: \"Safra n8n #\" + $(\"Normaliza parâmetros\").first().json.safra_id + \": o envio falhou na Evolution; o lead voltou para a fila.\", p_esperar: false }) }}"
+      }
+    },
+    {
+      "id": "0fcd3a7c-36f7-4802-a6d0-08dd1ad48d77",
+      "name": "Atualiza lead e histórico",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4180,
+        400
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://jzqiqrymqbzullysukja.supabase.co/rest/v1/rpc/registrar_lead_safra",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "24bdb0e3-24b6-4ceb-b44b-bc9728ee9dbf",
+      "name": "Espera antes do próximo",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        4400,
+        400
+      ],
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": "={{ $json.esperar ? Math.floor(180 + Math.random() * 240) : 1 }}",
+        "unit": "seconds"
+      },
+      "webhookId": "4e7d63e6-602b-41a1-b08f-1ac9c2fea6ef"
+    },
+    {
+      "id": "a9503d04-5026-47ae-80d3-a1c4771281db",
+      "name": "Sticky Note c7c4e2ae",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1792,
+        208
+      ],
+      "parameters": {
+        "content": "## Safra pela Central\nA Central Interna (aba Leads > Montar safra) chama `POST /webhook/safra-prospeccao` com o token do usuário e `{ itens: [{ lead_id, roteiro_id, texto }] }`.\n\nSó a `equipe_interna` passa. Envia pela instância **prospeccao**. Antes de cada envio: confere a etapa, se o número tem WhatsApp e se a barbearia já respondeu. Resultado em `registrar_lead_safra`; 3 a 7 min entre envios; e-mail com o resumo no fim.\n\nSe a execução parar no meio, os leads restantes ficam com o próximo passo **\"Na fila do n8n\"**.",
+        "color": 4,
+        "width": 384,
+        "height": 224
+      }
+    }
+  ],
+  "connections": {
+    "Webhook - Safra pela Central": {
+      "main": [
+        [
+          {
+            "node": "Valida usuário logado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valida usuário logado": {
+      "main": [
+        [
+          {
+            "node": "Usuário válido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Usuário válido?": {
+      "main": [
+        [
+          {
+            "node": "Busca na equipe interna",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responde 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca na equipe interna": {
+      "main": [
+        [
+          {
+            "node": "É da equipe interna?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É da equipe interna?": {
+      "main": [
+        [
+          {
+            "node": "Lê o pedido",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responde 403",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lê o pedido": {
+      "main": [
+        [
+          {
+            "node": "Pedido válido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedido válido?": {
+      "main": [
+        [
+          {
+            "node": "Busca leads da safra",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responde pedido inválido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca leads da safra": {
+      "main": [
+        [
+          {
+            "node": "Busca roteiros",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca roteiros": {
+      "main": [
+        [
+          {
+            "node": "Monta safra",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monta safra": {
+      "main": [
+        [
+          {
+            "node": "Sobrou lead para enviar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sobrou lead para enviar?": {
+      "main": [
+        [
+          {
+            "node": "Registra a safra",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responde sem leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registra a safra": {
+      "main": [
+        [
+          {
+            "node": "Normaliza parâmetros",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normaliza parâmetros": {
+      "main": [
+        [
+          {
+            "node": "Responde safra iniciada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responde safra iniciada": {
+      "main": [
+        [
+          {
+            "node": "Põe leads na fila",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Põe leads na fila": {
+      "main": [
+        [
+          {
+            "node": "Lista leads da safra",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lista leads da safra": {
+      "main": [
+        [
+          {
+            "node": "Um lead por vez",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume a safra": {
+      "main": [
+        [
+          {
+            "node": "Marca safra como concluída",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marca safra como concluída": {
+      "main": [
+        [
+          {
+            "node": "E-mail com o resumo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lê etapa atual do lead": {
+      "main": [
+        [
+          {
+            "node": "Confere número no WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confere número no WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Busca mensagens recebidas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca mensagens recebidas": {
+      "main": [
+        [
+          {
+            "node": "Decide o que fazer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide o que fazer": {
+      "main": [
+        [
+          {
+            "node": "Rota do lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rota do lead": {
+      "main": [
+        [
+          {
+            "node": "Envia WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Registro: sem WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Registro: já respondeu",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Registro: pulado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Registro: erro na checagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envia WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Registro: enviado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Registro: falha no envio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registro: sem WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Atualiza lead e histórico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registro: já respondeu": {
+      "main": [
+        [
+          {
+            "node": "Atualiza lead e histórico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registro: pulado": {
+      "main": [
+        [
+          {
+            "node": "Atualiza lead e histórico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registro: erro na checagem": {
+      "main": [
+        [
+          {
+            "node": "Atualiza lead e histórico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Um lead por vez": {
+      "main": [
+        [
+          {
+            "node": "Resume a safra",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Lê etapa atual do lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registro: enviado": {
+      "main": [
+        [
+          {
+            "node": "Atualiza lead e histórico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registro: falha no envio": {
+      "main": [
+        [
+          {
+            "node": "Atualiza lead e histórico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualiza lead e histórico": {
+      "main": [
+        [
+          {
+            "node": "Espera antes do próximo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Espera antes do próximo": {
+      "main": [
+        [
+          {
+            "node": "Um lead por vez",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [
+    {
+      "id": "37f909bf-3e30-4398-b9fd-635b2037045c",
+      "name": "Quem pode disparar",
+      "nodeNames": [
+        "Busca na equipe interna",
+        "É da equipe interna?"
+      ],
+      "description": "Confere se o usuário logado está na equipe_interna."
+    },
+    {
+      "id": "ba512ccb-5fba-4156-be64-b32012e3ac45",
+      "name": "Monta a safra",
+      "nodeNames": [
+        "Busca leads da safra",
+        "Busca roteiros",
+        "Monta safra"
+      ],
+      "description": "Busca os leads escolhidos e os roteiros, e descarta quem não pode entrar (etapa errada, já em outra safra, sem telefone)."
+    },
+    {
+      "id": "8155cd91-5d1d-459a-8617-4c99576a4f99",
+      "name": "Inicia a safra",
+      "nodeNames": [
+        "Registra a safra",
+        "Normaliza parâmetros",
+        "Responde safra iniciada"
+      ],
+      "description": "Registra a safra, responde para a Central e segue com o envio."
+    },
+    {
+      "id": "b936c1e0-1c52-4a6a-932b-0e6f710d54a6",
+      "name": "Prepara o envio",
+      "nodeNames": [
+        "Põe leads na fila",
+        "Lista leads da safra"
+      ],
+      "description": "Põe os leads 'Na fila do n8n' e solta um item por lead."
+    },
+    {
+      "id": "1462b6df-8f5a-4c23-8e47-df057bff14be",
+      "name": "Checagens do lead",
+      "nodeNames": [
+        "Lê etapa atual do lead",
+        "Confere número no WhatsApp",
+        "Busca mensagens recebidas",
+        "Decide o que fazer"
+      ],
+      "description": "Antes de enviar: confere a etapa atual, se o número tem WhatsApp e se a barbearia já respondeu."
+    },
+    {
+      "id": "c61650c6-acc9-4aad-a4c1-bb552705c239",
+      "name": "Envio e registro",
+      "nodeNames": [
+        "Rota do lead",
+        "Envia WhatsApp",
+        "Registro: enviado",
+        "Registro: falha no envio",
+        "Registro: sem WhatsApp",
+        "Registro: já respondeu",
+        "Registro: pulado",
+        "Registro: erro na checagem",
+        "Atualiza lead e histórico",
+        "Espera antes do próximo"
+      ],
+      "description": "Envia (ou não) e grava o resultado no lead e no histórico. Depois de um envio, espera 3 a 7 min."
+    },
+    {
+      "id": "5da34d6f-cff9-462a-827d-42771395cc4e",
+      "name": "Fechamento",
+      "nodeNames": [
+        "Resume a safra",
+        "Marca safra como concluída",
+        "E-mail com o resumo"
+      ],
+      "description": "Conta o resultado da safra, marca como concluída e manda o resumo por e-mail."
+    }
+  ],
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  }
+}

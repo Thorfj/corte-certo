@@ -1,0 +1,1317 @@
+{
+  "id": "bDdDwzBEiP0pQ5HU",
+  "name": "Barbozap - Etapa 00501 - Marcar o Horário",
+  "active": true,
+  "isArchived": false,
+  "versionId": "a3b6ec59-e5a1-4948-a2a2-6a7e28824606",
+  "createdAt": "2026-10-13T23:24:36.981Z",
+  "updatedAt": "2026-10-18T03:15:33.493Z",
+  "description": "Etapa 00501 do bot: lista horários livres do dia, recebe a escolha, cria o atendimento no CRM e confirma no WhatsApp.",
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "tags": [],
+  "parentFolderId": "BoAyeDqZ8dyqPVtm",
+  "nodes": [
+    {
+      "id": "73be1f91-0b04-41c4-baae-64514f20bf6d",
+      "name": "Entrada da etapa",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "4aec81b7-9eaa-4fcf-b2cf-fee719c45823",
+      "name": "Busca serviços selecionados",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/servicos?id=in.({{ (($json.sessao || {}).servicos_selecionados || []).join(',') }})&select=id,nome,preco,duracao_min",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "21810f53-b393-413f-9010-e50daf3388a5",
+      "name": "Busca profissionais",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/profissionais?barbearia_id=eq.{{ $('Entrada da etapa').first().json.barbearia_id }}&removido_em=is.null&atende_clientes=is.true&select=id,nome&order=nome.asc",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "9f8c79bc-eae1-4ddf-86fe-ff622315bad5",
+      "name": "Busca atendimentos do dia",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/atendimentos?barbearia_id=eq.{{ $('Entrada da etapa').first().json.barbearia_id }}&data_agend=eq.{{ $('Entrada da etapa').first().json.sessao.dia_selecionado }}&select=id,id_prof,horario,duracao_atend",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "ed2863f7-f97e-414a-ac9c-5265a880ec19",
+      "name": "Busca bloqueios",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/bloqueios_agenda?barbearia_id=eq.{{ $('Entrada da etapa').first().json.barbearia_id }}&select=id_prof,tipo,data_inicio,data_fim,dia_semana,horario_inicio,horario_fim",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "a7c3bc09-057a-4c43-9377-36488b0e32e3",
+      "name": "Calcula horários livres e escolha",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Horário de funcionamento vem de barbearias.horario_funcionamento (CRM > Configurações):\n// { \"0\": null, \"1\": [\"09:00\",\"19:00\"], ... } com 0 = domingo ... 6 = sábado e null = fechado.\n// Folgas e feriados continuam vindo dos bloqueios da agenda.\nconst HORARIO_PADRAO = { 0: null, 1: ['09:00', '19:00'], 2: ['09:00', '19:00'], 3: ['09:00', '19:00'], 4: ['09:00', '19:00'], 5: ['09:00', '19:00'], 6: ['09:00', '19:00'] };\nconst PASSO_MIN = 30;\nconst ANTECEDENCIA_MIN = 30;\n\nconst e = $('Entrada da etapa').first().json;\nconst s = e.sessao || {};\n// Remarcação: o horário antigo do próprio cliente não conta como ocupado\nconst remarcarId = s.id_atend_alvo ? Number(s.id_atend_alvo) : null;\nconst servicos = $('Busca serviços selecionados').all().map(i => i.json).filter(x => x.id);\nconst profs = $('Busca profissionais').all().map(i => i.json).filter(x => x.id);\nconst horarioBarbearia = ($('Busca horário da barbearia').first().json || {}).horario_funcionamento || HORARIO_PADRAO;\nconst atends = $('Busca atendimentos do dia').all().map(i => i.json).filter(x => x.horario && Number(x.id) !== remarcarId);\nconst bloqs = $input.all().map(i => i.json).filter(x => x.tipo);\n\nconst min = (h) => { const [hh, mm] = String(h).split(':').map(Number); return hh * 60 + (mm || 0); };\nconst hhmm = (m) => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');\n\nconst data = s.dia_selecionado;\nconst duracao = servicos.reduce((t, x) => t + (Number(x.duracao_min) || 0), 0) || 30;\nconst candidatos = s.id_prof_selecionado ? profs.filter(p => String(p.id) === String(s.id_prof_selecionado)) : profs;\nconst agora = DateTime.now().setZone('America/Sao_Paulo');\nconst hoje = agora.toFormat('yyyy-MM-dd');\nconst diaSemana = data ? DateTime.fromISO(data, { zone: 'America/Sao_Paulo' }).weekday % 7 : null;\nconst faixa = diaSemana === null ? null : (horarioBarbearia[String(diaSemana)] ?? horarioBarbearia[diaSemana] ?? null);\nconst aberto = Array.isArray(faixa) && faixa.length === 2;\nconst ABERTURA = aberto ? faixa[0] : null;\nconst FECHAMENTO = aberto ? faixa[1] : null;\n\nfunction aplica(b, idProf) {\n  if (b.id_prof && String(b.id_prof) !== String(idProf)) return false;\n  if (b.tipo === 'unico') return b.data_inicio === data;\n  if (b.tipo === 'periodo') return data >= b.data_inicio && data <= b.data_fim;\n  if (b.tipo === 'recorrente') return Number(b.dia_semana) === diaSemana;\n  return false;\n}\nfunction bateBloqueio(b, ini, fim) {\n  if (!b.horario_inicio || !b.horario_fim) return true;\n  return ini < min(b.horario_fim) && fim > min(b.horario_inicio);\n}\nfunction bateAtendimento(a, idProf, ini, fim) {\n  if (String(a.id_prof) !== String(idProf)) return false;\n  const aIni = min(a.horario);\n  const aFim = aIni + (Number(a.duracao_atend) || 30);\n  return ini < aFim && fim > aIni;\n}\n\nconst slots = [];\nif (data && aberto) {\n  for (let t = min(ABERTURA); t + duracao <= min(FECHAMENTO); t += PASSO_MIN) {\n    if (data === hoje && t < agora.hour * 60 + agora.minute + ANTECEDENCIA_MIN) continue;\n    const fim = t + duracao;\n    const livre = candidatos.find(p => !bloqs.some(b => aplica(b, p.id) && bateBloqueio(b, t, fim)) && !atends.some(a => bateAtendimento(a, p.id, t, fim)));\n    if (livre) slots.push({ horario: hhmm(t), fim: hhmm(fim), id_prof: livre.id, nome_prof: livre.nome });\n  }\n}\n\n// Lista sem números de opção (o cliente responde com o próprio horário),\n// separada por período para ficar fácil de ler no WhatsApp\nconst PERIODOS = [['Manhã', 0, 720], ['Tarde', 720, 1080], ['Noite', 1080, 1440]];\nconst lista = PERIODOS.map(([nome, ini, fim]) => {\n  const hs = slots.filter(x => min(x.horario) >= ini && min(x.horario) < fim).map(x => x.horario);\n  return hs.length ? '*' + nome + ':* ' + hs.join(', ') : null;\n}).filter(Boolean).join('\\n');\n\n// Entende \"13\", \"13h\", \"13:30\", \"13h30\", \"1330\", \"às 13\", \"meio-dia\", \"9 e meia\";\n// \"2\" ou \"às 2\" vira 14:00 quando 02:00 não existe\nfunction horariosPedidos(texto) {\n  const t = String(texto || '').trim().toLowerCase().replace(/meio[\\s-]?dia/, '12:00');\n  let h = null, mm = 0, r;\n  if ((r = t.match(/(\\d{1,2})\\s*(?::|h|hs|horas?)\\s*(\\d{2})?/))) { h = Number(r[1]); mm = Number(r[2] || 0); }\n  else if ((r = t.match(/^\\D*(\\d{2})(\\d{2})\\D*$/))) { h = Number(r[1]); mm = Number(r[2]); }\n  else if ((r = t.match(/^\\D{0,5}(\\d{1,2})\\D*$/))) { h = Number(r[1]); }\n  if (h === null) return [];\n  if (!mm && /e meia/.test(t)) mm = 30;\n  if (h > 23 || mm > 59) return [];\n  const opcoes = [h * 60 + mm];\n  if (h >= 1 && h <= 7) opcoes.push((h + 12) * 60 + mm);\n  return opcoes.map(hhmm);\n}\n\nconst pedidos = horariosPedidos(e.mensagem_texto);\nlet escolha = null;\nfor (const alvo of pedidos) {\n  escolha = slots.find(x => x.horario === alvo) || null;\n  if (escolha) break;\n}\n\nreturn [{ json: {\n  aguardando: Boolean(s.aguardando_resposta),\n  tem_horarios: slots.length > 0,\n  fechado: Boolean(data) && !aberto,\n  slots,\n  lista,\n  data,\n  data_br: data ? DateTime.fromISO(data).toFormat('dd/MM') : '',\n  duracao,\n  servicos,\n  resumo_servicos: servicos.map(x => x.nome).join(', '),\n  escolha,\n  escolha_valida: Boolean(escolha),\n  // respondeu um horário, mas ele não está na lista (ocupado ou fora do expediente)\n  pediu_horario_indisponivel: !escolha && pedidos.length > 0,\n  remarcar_id: remarcarId\n} }];"
+      }
+    },
+    {
+      "id": "e63483a4-2cf0-4fb4-b3a3-de91c9a75754",
+      "name": "O que fazer?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "renameOutput": true,
+              "outputKey": "Sem horários",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.tem_horarios }}",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    },
+                    "rightValue": ""
+                  }
+                ]
+              }
+            },
+            {
+              "renameOutput": true,
+              "outputKey": "Mostrar horários",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.aguardando }}",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    },
+                    "rightValue": ""
+                  }
+                ]
+              }
+            },
+            {
+              "renameOutput": true,
+              "outputKey": "Escolha válida",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.escolha_valida }}",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "rightValue": ""
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Não entendi"
+        }
+      }
+    },
+    {
+      "id": "f130fb15-db69-446b-b79c-f3da1549b4c7",
+      "name": "Envia WhatsApp - sem horários",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1560,
+        -360
+      ],
+      "parameters": {
+        "mode": "each",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "U9nMESK4Zb5NPZZ0",
+          "cachedResultName": "Corte Certo - Enviar WhatsApp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "instancia": "={{ $('Entrada da etapa').first().json.instancia }}",
+            "numero": "={{ $('Entrada da etapa').first().json.telefone }}",
+            "texto": "={{ $json.fechado ? 'Poxa, não abrimos em ' + $json.data_br + ' 😕\\nMe diga outro dia (ex: 25/10, amanhã ou sexta).' : 'Poxa, não tenho horários livres em ' + $json.data_br + ' 😕\\nMe diga outro dia (ex: 25/10, amanhã ou sexta).' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "instancia",
+              "displayName": "instancia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "numero",
+              "displayName": "numero",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "af52ee50-7555-4cae-a35c-c76159d26358",
+      "name": "Volta para etapa do dia",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1780,
+        -360
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/sessoes?id_cliente=eq.{{ $('Entrada da etapa').first().json.id_cliente }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ etapa_atual: '00401', aguardando_resposta: true, dia_selecionado: null }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "cbc9c7e1-5b0b-4d6f-8674-8ac748dbfa63",
+      "name": "Busca mensagem - Marcar o Horário",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1560,
+        -140
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/fluxo_mensagens?barbearia_id=eq.{{ $('Entrada da etapa').first().json.barbearia_id }}&etapa=eq.{{ encodeURIComponent('Marcar o Horário') }}&mensagem=not.like.%5B*&select=mensagem&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "2ebd730a-fd6a-4cdb-8f6a-51570b268390",
+      "name": "Envia WhatsApp - lista de horários",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1780,
+        -140
+      ],
+      "parameters": {
+        "mode": "each",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "U9nMESK4Zb5NPZZ0",
+          "cachedResultName": "Corte Certo - Enviar WhatsApp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "instancia": "={{ $('Entrada da etapa').first().json.instancia }}",
+            "numero": "={{ $('Entrada da etapa').first().json.telefone }}",
+            "texto": "={{ ($json.mensagem || 'Esses são os horários livres em ' + $('Calcula horários livres e escolha').first().json.data_br + ' ⏰ Responda com o horário que preferir (ex: 14:30):') + '\\n\\n' + $('Calcula horários livres e escolha').first().json.lista }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "instancia",
+              "displayName": "instancia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "numero",
+              "displayName": "numero",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "2269cc31-4ebc-4a74-9042-380bfa72b6e3",
+      "name": "Marca aguardando resposta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2000,
+        -140
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/sessoes?id_cliente=eq.{{ $('Entrada da etapa').first().json.id_cliente }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ etapa_atual: '00501', aguardando_resposta: true }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "4a7df5ce-fea1-459f-b235-561412b5904c",
+      "name": "Verificar Disponibilidade",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1560,
+        120
+      ],
+      "parameters": {
+        "mode": "each",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "HlEzGVs6lTvrWsbD",
+          "cachedResultName": "Corte Certo - Verificar Disponibilidade"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "barbearia_id",
+              "id": "barbearia_id",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "id_prof",
+              "id": "id_prof",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "data",
+              "id": "data",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "horario_inicio",
+              "id": "horario_inicio",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "horario_fim",
+              "id": "horario_fim",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "ignorar_atend_id",
+              "id": "ignorar_atend_id",
+              "required": false,
+              "type": "string"
+            }
+          ],
+          "value": {
+            "barbearia_id": "={{ String($('Entrada da etapa').first().json.barbearia_id) }}",
+            "data": "={{ $json.data }}",
+            "horario_fim": "={{ $json.escolha.fim }}",
+            "horario_inicio": "={{ $json.escolha.horario }}",
+            "id_prof": "={{ String($json.escolha.id_prof) }}",
+            "ignorar_atend_id": "={{ String($json.remarcar_id || '') }}"
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "bdb6c7be-ac72-4bb5-9158-d359fe06c4eb",
+      "name": "Ainda disponível?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1780,
+        120
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.disponivel }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "aa426de9-eadb-40a9-ae63-144e9c0cddf7",
+      "name": "Cria atendimento",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2660,
+        40
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://jzqiqrymqbzullysukja.supabase.co/rest/v1/atendimentos",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ barbearia_id: $('Entrada da etapa').first().json.barbearia_id, id_cliente: $('Entrada da etapa').first().json.id_cliente, id_prof: $('Calcula horários livres e escolha').first().json.escolha.id_prof, data_agend: $('Calcula horários livres e escolha').first().json.data, horario: $('Calcula horários livres e escolha').first().json.escolha.horario + ':00' }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "43f13de5-2eb3-4c44-a4b1-29d486b43df8",
+      "name": "Grava serviços do atendimento",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2880,
+        40
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://jzqiqrymqbzullysukja.supabase.co/rest/v1/atendimento_servicos",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Calcula horários livres e escolha').first().json.servicos.map(s => ({ id_atend: $json.id, servico_id: s.id, preco_cobrado: s.preco, duracao_cobrada: s.duracao_min }))) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "executeOnce": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "d5675bfa-2d89-4326-9190-e77ffe31fe3d",
+      "name": "Atualiza status do cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3100,
+        40
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/clientes?id=eq.{{ $('Entrada da etapa').first().json.id_cliente }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'agendado', data_ult_agend: $('Calcula horários livres e escolha').first().json.data }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "2fc0880f-be99-4e9b-b112-7ae512cf8ce8",
+      "name": "Conclui sessão",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3320,
+        40
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/sessoes?id_cliente=eq.{{ $('Entrada da etapa').first().json.id_cliente }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ etapa_atual: 'concluido', aguardando_resposta: false, id_atend_alvo: null, horario_selecionado: $('Calcula horários livres e escolha').first().json.escolha.horario }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "e0f8c7b1-347b-415a-962e-e9da186cf91a",
+      "name": "Envia WhatsApp - confirmação",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        3540,
+        40
+      ],
+      "parameters": {
+        "mode": "each",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "U9nMESK4Zb5NPZZ0",
+          "cachedResultName": "Corte Certo - Enviar WhatsApp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "instancia": "={{ $('Entrada da etapa').first().json.instancia }}",
+            "numero": "={{ $('Entrada da etapa').first().json.telefone }}",
+            "texto": "={{ (() => { const c = $('Calcula horários livres e escolha').first().json; const nome = $('Entrada da etapa').first().json.nome_cliente; const remarcou = Boolean(c.remarcar_id) && $('Remarcou?').isExecuted && Boolean($('Remarca atendimento').first().json.id); return 'Prontinho' + (nome ? ', ' + nome.split(' ')[0] : '') + '! ✅ ' + (remarcou ? 'Seu horário foi remarcado para:' : 'Seu horário está confirmado:') + '\\n\\n📅 ' + c.data_br + ' às ' + c.escolha.horario + '\\n💈 ' + c.resumo_servicos + ' com ' + c.escolha.nome_prof + '\\n\\nSe precisar remarcar ou cancelar, é só me escrever \"remarcar\" ou \"cancelar\" por aqui.'; })() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "instancia",
+              "displayName": "instancia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "numero",
+              "displayName": "numero",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "da9d0fce-5935-4d21-a6a5-99ffc8d442d3",
+      "name": "Envia WhatsApp - horário ocupado",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2000,
+        240
+      ],
+      "parameters": {
+        "mode": "each",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "U9nMESK4Zb5NPZZ0",
+          "cachedResultName": "Corte Certo - Enviar WhatsApp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "instancia": "={{ $('Entrada da etapa').first().json.instancia }}",
+            "numero": "={{ $('Entrada da etapa').first().json.telefone }}",
+            "texto": "={{ 'Ops, esse horário acabou de ser ocupado 😕 Escolha outro:\\n\\n' + $('Calcula horários livres e escolha').first().json.lista }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "instancia",
+              "displayName": "instancia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "numero",
+              "displayName": "numero",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "dc3fe043-0ed0-479a-8521-b2aa0cd3d409",
+      "name": "Busca mensagem - Não entendi",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1560,
+        400
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/fluxo_mensagens?barbearia_id=eq.{{ $('Entrada da etapa').first().json.barbearia_id }}&etapa=eq.{{ encodeURIComponent('Não entendi a resposta') }}&mensagem=not.like.%5B*&select=mensagem&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "71e70222-bcb5-4dc4-a4a1-45b485383a41",
+      "name": "Envia WhatsApp - não entendi",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1780,
+        400
+      ],
+      "parameters": {
+        "mode": "each",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "U9nMESK4Zb5NPZZ0",
+          "cachedResultName": "Corte Certo - Enviar WhatsApp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "instancia": "={{ $('Entrada da etapa').first().json.instancia }}",
+            "numero": "={{ $('Entrada da etapa').first().json.telefone }}",
+            "texto": "={{ $('Calcula horários livres e escolha').first().json.pediu_horario_indisponivel ? 'Esse horário não está livre 😕 Escolha um destes:\\n\\n' + $('Calcula horários livres e escolha').first().json.lista : ($json.mensagem || 'Desculpe, não entendi 😅') + '\\n\\nMe diga o horário que você prefere (ex: 14:30):\\n\\n' + $('Calcula horários livres e escolha').first().json.lista }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "instancia",
+              "displayName": "instancia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "numero",
+              "displayName": "numero",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "eff4046e-1ea2-431a-9f30-8c2c272ba814",
+      "name": "Sticky Note 66a3a5ef",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -96
+      ],
+      "parameters": {
+        "content": "## Etapa 00501 - Marcar o Horário\nCalcula os horários livres do dia escolhido (bloqueios + atendimentos), mostra a lista e, quando o cliente responde, confere a disponibilidade, cria (ou remarca) o atendimento e confirma.\n\nHorário de funcionamento: `barbearias.horario_funcionamento`, editado no CRM em **Configurações > Horário de funcionamento**.",
+        "color": 5,
+        "width": 1264,
+        "height": 224
+      }
+    },
+    {
+      "id": "25f150c2-f654-4cf0-9fdc-14bcaa700593",
+      "name": "É remarcação?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2000,
+        -20
+      ],
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ Boolean($('Calcula horários livres e escolha').first().json.remarcar_id) }}",
+              "operator": {
+                "operation": "true",
+                "singleValue": true,
+                "type": "boolean"
+              },
+              "rightValue": ""
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          }
+        }
+      }
+    },
+    {
+      "id": "634ec5a7-48d1-4e1e-bcb5-7b16bd2231c5",
+      "name": "Remarca atendimento",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2220,
+        -120
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify({ id_prof: $('Calcula horários livres e escolha').first().json.escolha.id_prof, data_agend: $('Calcula horários livres e escolha').first().json.data, horario: $('Calcula horários livres e escolha').first().json.escolha.horario + ':00', aviso_1dia_enviado: false, aviso_1hora_enviado: false }) }}",
+        "method": "PATCH",
+        "nodeCredentialType": "supabaseApi",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/atendimentos?id=eq.{{ $('Calcula horários livres e escolha').first().json.remarcar_id }}&id_cliente=eq.{{ $('Entrada da etapa').first().json.id_cliente }}"
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "ee5db749-7325-42ec-bee2-149cc66de9bd",
+      "name": "Remarcou?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2440,
+        -120
+      ],
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ Boolean($json.id) }}",
+              "operator": {
+                "operation": "true",
+                "singleValue": true,
+                "type": "boolean"
+              },
+              "rightValue": ""
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          }
+        }
+      }
+    },
+    {
+      "id": "23b641e4-65df-4c7b-a91d-118046376ee2",
+      "name": "Busca horário da barbearia",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        550,
+        -180
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "method": "GET",
+        "nodeCredentialType": "supabaseApi",
+        "options": {},
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/barbearias?id=eq.{{ $('Entrada da etapa').first().json.barbearia_id }}&select=horario_funcionamento&limit=1"
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Entrada da etapa": {
+      "main": [
+        [
+          {
+            "node": "Busca serviços selecionados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca serviços selecionados": {
+      "main": [
+        [
+          {
+            "node": "Busca profissionais",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca atendimentos do dia": {
+      "main": [
+        [
+          {
+            "node": "Busca bloqueios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca bloqueios": {
+      "main": [
+        [
+          {
+            "node": "Calcula horários livres e escolha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcula horários livres e escolha": {
+      "main": [
+        [
+          {
+            "node": "O que fazer?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "O que fazer?": {
+      "main": [
+        [
+          {
+            "node": "Envia WhatsApp - sem horários",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Busca mensagem - Marcar o Horário",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Verificar Disponibilidade",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Busca mensagem - Não entendi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envia WhatsApp - sem horários": {
+      "main": [
+        [
+          {
+            "node": "Volta para etapa do dia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca mensagem - Marcar o Horário": {
+      "main": [
+        [
+          {
+            "node": "Envia WhatsApp - lista de horários",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envia WhatsApp - lista de horários": {
+      "main": [
+        [
+          {
+            "node": "Marca aguardando resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar Disponibilidade": {
+      "main": [
+        [
+          {
+            "node": "Ainda disponível?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ainda disponível?": {
+      "main": [
+        [
+          {
+            "node": "É remarcação?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Envia WhatsApp - horário ocupado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cria atendimento": {
+      "main": [
+        [
+          {
+            "node": "Grava serviços do atendimento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Grava serviços do atendimento": {
+      "main": [
+        [
+          {
+            "node": "Atualiza status do cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualiza status do cliente": {
+      "main": [
+        [
+          {
+            "node": "Conclui sessão",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conclui sessão": {
+      "main": [
+        [
+          {
+            "node": "Envia WhatsApp - confirmação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca mensagem - Não entendi": {
+      "main": [
+        [
+          {
+            "node": "Envia WhatsApp - não entendi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É remarcação?": {
+      "main": [
+        [
+          {
+            "node": "Remarca atendimento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cria atendimento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remarca atendimento": {
+      "main": [
+        [
+          {
+            "node": "Remarcou?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remarcou?": {
+      "main": [
+        [
+          {
+            "node": "Atualiza status do cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cria atendimento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca profissionais": {
+      "main": [
+        [
+          {
+            "node": "Busca horário da barbearia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca horário da barbearia": {
+      "main": [
+        [
+          {
+            "node": "Busca atendimentos do dia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  }
+}

@@ -1,0 +1,529 @@
+{
+  "id": "OJyYgzwZAQfOZGIm",
+  "name": "Barbozap - Etapa 00201 - Escolha de Serviço",
+  "nodes": [
+    {
+      "id": "f8ee5df2-98a0-461f-b567-bae5d228fdd1",
+      "name": "Entrada da etapa",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "0a334a5b-0fe1-45b0-8b96-3bc4fe15e8d4",
+      "name": "Busca serviços",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/servicos?barbearia_id=eq.{{ $json.barbearia_id }}&select=id,sku,nome,preco,duracao_min&order=nome.asc",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "04d3938e-3493-4fd1-bd8a-8679f24f0624",
+      "name": "Monta menu e valida escolha",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const e = $('Entrada da etapa').first().json;\nconst s = e.sessao || {};\nconst servicos = $input.all().map(i => i.json).filter(x => x.id);\nconst aguardando = Boolean(s.aguardando_resposta);\nconst menu = servicos.map((x, i) => (i + 1) + '. ' + x.nome + ' — R$ ' + Number(x.preco || 0).toFixed(2).replace('.', ',')).join('\\n');\n\n// Saudação com o primeiro nome (\"meu nome é ana trentin\" -> \"Ana\")\nconst primeiroNome = String(e.nome_cliente || '')\n  .trim()\n  .replace(/^(oi|olá|ola)[,!.\\s]+/i, '')\n  .replace(/^(meu nome é|meu nome e|me chamo|aqui é|aqui e|sou o|sou a|sou|é o|é a)\\s+/i, '')\n  .split(/\\s+/)[0]\n  .replace(/[^\\p{L}'-]/gu, '');\nconst nomeBonito = primeiroNome ? primeiroNome.charAt(0).toUpperCase() + primeiroNome.slice(1).toLowerCase() : '';\nconst saudacao = !nomeBonito ? '' : e.nome_recem_informado ? 'Prazer, ' + nomeBonito + '! 😊' : 'Oi, ' + nomeBonito + '! 👋 Que bom te ver de novo.';\n\nlet valido = false;\nlet selecionados = [];\nif (aguardando) {\n  const texto = String(e.mensagem_texto || '').trim();\n  const numeros = (texto.match(/\\d+/g) || []).map(n => parseInt(n, 10));\n  if (numeros.length > 0 && numeros.every(n => n >= 1 && n <= servicos.length)) {\n    selecionados = [...new Set(numeros)].map(n => servicos[n - 1]);\n    valido = true;\n  }\n}\n\nreturn [{ json: { aguardando, valido, menu, saudacao, selecionados_ids: selecionados.map(x => x.id) } }];"
+      }
+    },
+    {
+      "id": "c32ba8a6-2cd1-42bc-91ba-c55b9a844c90",
+      "name": "O que fazer?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "renameOutput": true,
+              "outputKey": "Mostrar serviços",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.aguardando }}",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    },
+                    "rightValue": ""
+                  }
+                ]
+              }
+            },
+            {
+              "renameOutput": true,
+              "outputKey": "Escolha válida",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.valido }}",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "rightValue": ""
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Não entendi"
+        }
+      }
+    },
+    {
+      "id": "893ecb8e-a0c4-464a-a329-62859a3f4394",
+      "name": "Busca mensagem - Escolha de Serviço",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        -200
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/fluxo_mensagens?barbearia_id=eq.{{ $('Entrada da etapa').first().json.barbearia_id }}&etapa=eq.{{ encodeURIComponent('Escolha de Serviço') }}&mensagem=not.like.%5B*&select=mensagem&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "33c68df4-42a9-44e0-92f3-ed291dfef30b",
+      "name": "Envia WhatsApp - menu de serviços",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1120,
+        -200
+      ],
+      "parameters": {
+        "mode": "each",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "U9nMESK4Zb5NPZZ0",
+          "cachedResultName": "Corte Certo - Enviar WhatsApp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "instancia": "={{ $('Entrada da etapa').first().json.instancia }}",
+            "numero": "={{ $('Entrada da etapa').first().json.telefone }}",
+            "texto": "={{ ($('Monta menu e valida escolha').first().json.saudacao ? $('Monta menu e valida escolha').first().json.saudacao + '\\n\\n' : '') + ($json.mensagem || 'Qual serviço você deseja? Responda com o número (pode escolher mais de um, ex: 1, 3):') + '\\n\\n' + $('Monta menu e valida escolha').first().json.menu }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "instancia",
+              "displayName": "instancia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "numero",
+              "displayName": "numero",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "cf22f2df-b508-44d8-af54-6680f395bb4b",
+      "name": "Marca aguardando resposta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        -200
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/sessoes?id_cliente=eq.{{ $('Entrada da etapa').first().json.id_cliente }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ etapa_atual: '00201', aguardando_resposta: true }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "c26fb947-0eee-4298-928c-4a6dfb91e433",
+      "name": "Salva serviços e avança etapa",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        0
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/sessoes?id_cliente=eq.{{ $('Entrada da etapa').first().json.id_cliente }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ servicos_selecionados: $json.selecionados_ids, etapa_atual: '00301', aguardando_resposta: false }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "53f9f36b-f502-4e49-95b7-3a5720dc11b9",
+      "name": "Prepara próxima etapa",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const e = $('Entrada da etapa').first().json;\nconst ids = $('Monta menu e valida escolha').first().json.selecionados_ids;\nreturn [{ json: { ...e, sessao: { ...(e.sessao || {}), servicos_selecionados: ids, etapa_atual: '00301', aguardando_resposta: false } } }];"
+      }
+    },
+    {
+      "id": "dbf9e59a-cc6c-4600-a8e2-16b2d30bbb91",
+      "name": "Chama Etapa 00301 - Profissional",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1340,
+        0
+      ],
+      "parameters": {
+        "mode": "once",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "kQG08NWypUcIfJV5",
+          "cachedResultName": "Corte Certo - Etapa 00301 - Escolha do profissional"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "c2bf0bae-e50e-4b34-9562-9b3217475577",
+      "name": "Busca mensagem - Não entendi",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        200
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/fluxo_mensagens?barbearia_id=eq.{{ $('Entrada da etapa').first().json.barbearia_id }}&etapa=eq.{{ encodeURIComponent('Não entendi a resposta') }}&mensagem=not.like.%5B*&select=mensagem&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "a2fe4905-86bc-4843-b2f5-166c892d1d99",
+      "name": "Envia WhatsApp - não entendi",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1120,
+        200
+      ],
+      "parameters": {
+        "mode": "each",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "U9nMESK4Zb5NPZZ0",
+          "cachedResultName": "Corte Certo - Enviar WhatsApp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "instancia": "={{ $('Entrada da etapa').first().json.instancia }}",
+            "numero": "={{ $('Entrada da etapa').first().json.telefone }}",
+            "texto": "={{ ($json.mensagem || 'Desculpe, não entendi 😅') + '\\n\\nResponda com o número do serviço:\\n' + $('Monta menu e valida escolha').first().json.menu }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "instancia",
+              "displayName": "instancia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "numero",
+              "displayName": "numero",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "f320bff4-dfd8-4965-94e5-3219ef376c35",
+      "name": "Sticky Note 050a637d",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -96
+      ],
+      "parameters": {
+        "content": "## Etapa 00201 - Escolha de Serviço\nMostra o menu de serviços (pode escolher vários: \"1, 3\"), salva `servicos_selecionados` na sessão e chama a etapa 00301.",
+        "color": 5,
+        "width": 608,
+        "height": 224
+      }
+    }
+  ],
+  "connections": {
+    "Entrada da etapa": {
+      "main": [
+        [
+          {
+            "node": "Busca serviços",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca serviços": {
+      "main": [
+        [
+          {
+            "node": "Monta menu e valida escolha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monta menu e valida escolha": {
+      "main": [
+        [
+          {
+            "node": "O que fazer?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "O que fazer?": {
+      "main": [
+        [
+          {
+            "node": "Busca mensagem - Escolha de Serviço",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Salva serviços e avança etapa",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Busca mensagem - Não entendi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca mensagem - Escolha de Serviço": {
+      "main": [
+        [
+          {
+            "node": "Envia WhatsApp - menu de serviços",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envia WhatsApp - menu de serviços": {
+      "main": [
+        [
+          {
+            "node": "Marca aguardando resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salva serviços e avança etapa": {
+      "main": [
+        [
+          {
+            "node": "Prepara próxima etapa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepara próxima etapa": {
+      "main": [
+        [
+          {
+            "node": "Chama Etapa 00301 - Profissional",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca mensagem - Não entendi": {
+      "main": [
+        [
+          {
+            "node": "Envia WhatsApp - não entendi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  },
+  "active": false,
+  "description": "Etapa 00201 do bot: menu de serviços, validação da escolha e avanço para a escolha do profissional."
+}

@@ -1,0 +1,828 @@
+{
+  "id": "zJkTduneYLgZSiLB",
+  "name": "Barbozap - Agendador (Lembretes, NPS e Follow-up)",
+  "active": true,
+  "isArchived": false,
+  "versionId": "feb6ad5a-86c2-49d6-9131-f91176061487",
+  "createdAt": "2026-10-13T23:31:47.811Z",
+  "updatedAt": "2026-10-17T22:19:48.174Z",
+  "description": "A cada 15 min envia lembretes (24h e 1h antes), pedido de NPS e mensagens de follow-up/recorrência; marca clientes perdidos.",
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "errorWorkflow": "LO9MFNlWYRaCsKz8"
+  },
+  "tags": [],
+  "parentFolderId": "BoAyeDqZ8dyqPVtm",
+  "nodes": [
+    {
+      "id": "1bbbfac4-1911-458a-a4fe-772016b2e8c8",
+      "name": "A cada 15 minutos",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "2dafa757-2125-4efb-8618-a59050c871fe",
+      "name": "Busca atendimentos próximos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        260,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/atendimentos?data_agend=gte.{{ $now.setZone('America/Sao_Paulo').minus({ days: 1 }).toFormat('yyyy-MM-dd') }}&data_agend=lte.{{ $now.setZone('America/Sao_Paulo').plus({ days: 1 }).toFormat('yyyy-MM-dd') }}&select=id,barbearia_id,data_agend,horario,duracao_atend,compareceu,aviso_1dia_enviado,aviso_1hora_enviado,nps_solicitado,clientes(telefone,nome)",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "196abeb0-8fe7-4701-81aa-75fb00e70d20",
+      "name": "Busca mensagens de lembrete",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://jzqiqrymqbzullysukja.supabase.co/rest/v1/fluxo_mensagens",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "etapa",
+              "value": "in.(\"Aviso um dia antes\",\"Aviso uma hora antes\",\"NPS atendimento\")"
+            },
+            {
+              "name": "select",
+              "value": "barbearia_id,etapa,mensagem"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "1bdfbd58-aedb-488a-a130-9f53efb51843",
+      "name": "Busca instâncias (lembretes)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://jzqiqrymqbzullysukja.supabase.co/rest/v1/barbearias?whatsapp_barbearia=not.is.null&status_fluxo=eq.Sim&select=id,whatsapp_barbearia",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "executeOnce": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "7db078ae-068c-4d91-9d21-cfc749628239",
+      "name": "Monta lembretes e NPS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const ZONA = 'America/Sao_Paulo';\n// Textos usados quando a barbearia não preencheu a mensagem em Mensagens > Fluxo.\nconst PADRAO = {\n  'Aviso um dia antes': 'Oi {nome}! Passando para lembrar do seu horário amanhã ({data}) às {horario}. Até lá! 💈',\n  'Aviso uma hora antes': 'Oi {nome}! Seu horário é daqui a pouco, às {horario}. Te esperamos! 💈',\n  // A resposta (1 a 5, mesma escala do CRM) é salva pelo Roteador em atendimentos.nps\n  'NPS atendimento': 'Oi {nome}! Obrigado pela visita hoje 🙏\\nDe 1 a 5, que nota você dá para o seu atendimento? Responda só com o número.'\n};\nconst agora = DateTime.now().setZone(ZONA);\nconst atends = $('Busca atendimentos próximos').all().map(i => i.json).filter(a => a.id);\n// Mensagens ainda com o texto-modelo \"[Escreva aqui...]\" contam como não preenchidas\nconst msgs = $('Busca mensagens de lembrete').all().map(i => i.json).filter(m => m.mensagem && !/^\\s*\\[/.test(m.mensagem));\nconst barbs = $input.all().map(i => i.json).filter(b => b.id);\n\nconst mensagem = (barb, etapa) => (msgs.find(m => String(m.barbearia_id) === String(barb) && m.etapa === etapa) || {}).mensagem || PADRAO[etapa];\nconst instancia = (barb) => (barbs.find(b => String(b.id) === String(barb)) || {}).whatsapp_barbearia;\n\nconst saida = [];\nfor (const a of atends) {\n  const tel = a.clientes && a.clientes.telefone;\n  const inst = instancia(a.barbearia_id);\n  if (!tel || !inst || !a.horario) continue;\n\n  const inicio = DateTime.fromISO(a.data_agend + 'T' + String(a.horario).slice(0, 8), { zone: ZONA });\n  const fim = inicio.plus({ minutes: Number(a.duracao_atend) || 30 });\n  const ate = inicio.diff(agora, 'minutes').minutes;\n  const desde = agora.diff(fim, 'minutes').minutes;\n  const nome = String((a.clientes && a.clientes.nome) || '').split(' ')[0];\n  const preenche = (t) => t\n    .replace(/\\{\\{?\\s*nome\\s*\\}?\\}/gi, nome)\n    .replace(/\\{\\{?\\s*(horario|hora)\\s*\\}?\\}/gi, inicio.toFormat('HH:mm'))\n    .replace(/\\{\\{?\\s*data\\s*\\}?\\}/gi, inicio.toFormat('dd/MM'))\n    .replace(/Oi !/g, 'Oi!');\n  const adiciona = (campo, etapa) => {\n    const m = mensagem(a.barbearia_id, etapa);\n    if (m) saida.push({ json: { id_atend: a.id, campo, instancia: inst, numero: tel, texto: preenche(m) } });\n  };\n\n  if (!a.aviso_1dia_enviado && ate >= 23 * 60 && ate <= 25 * 60) adiciona('aviso_1dia_enviado', 'Aviso um dia antes');\n  if (!a.aviso_1hora_enviado && ate >= 45 && ate <= 75) adiciona('aviso_1hora_enviado', 'Aviso uma hora antes');\n  if (a.compareceu === true && !a.nps_solicitado && desde >= 60 && desde <= 180) adiciona('nps_solicitado', 'NPS atendimento');\n}\n\nreturn saida;"
+      }
+    },
+    {
+      "id": "5498fdd8-335b-4e0c-a00e-75b340ccee3b",
+      "name": "Envia WhatsApp - lembrete",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1140,
+        0
+      ],
+      "parameters": {
+        "mode": "each",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "U9nMESK4Zb5NPZZ0",
+          "cachedResultName": "Corte Certo - Enviar WhatsApp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "instancia": "={{ $json.instancia }}",
+            "numero": "={{ $json.numero }}",
+            "texto": "={{ $json.texto }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "instancia",
+              "displayName": "instancia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "numero",
+              "displayName": "numero",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "88cacf03-287e-4f40-bd19-b259be146ebc",
+      "name": "Marca lembrete como enviado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1360,
+        0
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/atendimentos?id=eq.{{ $('Monta lembretes e NPS').item.json.id_atend }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ [$('Monta lembretes e NPS').item.json.campo]: true }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "5cc860a0-397a-4a57-a282-748ec978a779",
+      "name": "Busca atendimentos de ontem",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        260,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/atendimentos?data_agend=eq.{{ $now.setZone('America/Sao_Paulo').minus({ days: 1 }).toFormat('yyyy-MM-dd') }}&compareceu=eq.true&select=id_cliente,barbearia_id,atendimento_servicos(servicos(recorrencia)),clientes(status,data_ult_agend)",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "65e8278f-1db4-4170-9073-5b61946064b7",
+      "name": "Busca prazos (início)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://jzqiqrymqbzullysukja.supabase.co/rest/v1/prazos_followup?select=barbearia_id,id_msg,prazo_flu",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "5e5a42a7-61bd-41f9-a519-6aca1b7dd381",
+      "name": "Calcula início do follow-up",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const ZONA = 'America/Sao_Paulo';\nconst ontem = DateTime.now().setZone(ZONA).minus({ days: 1 }).toFormat('yyyy-MM-dd');\nconst atends = $('Busca atendimentos de ontem').all().map(i => i.json).filter(a => a.id_cliente);\nconst prazos = $input.all().map(i => i.json).filter(p => p.id_msg != null);\n\nconst vistos = new Set();\nconst saida = [];\nfor (const a of atends) {\n  if (vistos.has(a.id_cliente)) continue;\n  vistos.add(a.id_cliente);\n  const c = a.clientes || {};\n  if (['follow-up', 'perdido', 'falar_com_humano'].includes(c.status)) continue;\n\n  const recs = (a.atendimento_servicos || []).map(s => s.servicos && s.servicos.recorrencia).filter(Boolean).map(Number);\n  const recorrencia = recs.length ? Math.min(...recs) : 30;\n  const p = prazos.find(x => String(x.barbearia_id) === String(a.barbearia_id) && Number(x.id_msg) === 1);\n  const prazo = Number(p && p.prazo_flu) || 1;\n  const base = DateTime.fromISO(c.data_ult_agend || ontem, { zone: ZONA });\n\n  saida.push({ json: { id_cliente: a.id_cliente, body: {\n    status: 'follow-up',\n    ciclo_followup_atual: 0,\n    recorrencia_followup: recorrencia,\n    data_proximo_followup: base.plus({ days: Math.round(prazo * recorrencia) }).toFormat('yyyy-MM-dd')\n  } } });\n}\nreturn saida;"
+      }
+    },
+    {
+      "id": "c578f532-5a50-4d6b-b760-557b4871bd47",
+      "name": "Coloca cliente em follow-up",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        300
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/clientes?id=eq.{{ $json.id_cliente }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "8a3abf3c-bb9f-4c4b-9291-a1bc1a841c45",
+      "name": "Horário comercial? (10h-19h)",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        260,
+        600
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $now.setZone('America/Sao_Paulo').hour >= 10 && $now.setZone('America/Sao_Paulo').hour < 19 }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "b39f7b40-32bd-4fb5-a9fd-fe4b481cffc0",
+      "name": "Busca clientes com follow-up hoje",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        600
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/clientes?status=eq.follow-up&data_proximo_followup=lte.{{ $now.setZone('America/Sao_Paulo').toFormat('yyyy-MM-dd') }}&select=id,barbearia_id,telefone,nome,ciclo_followup_atual,data_ult_agend,recorrencia_followup",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "87ce49d6-85ba-46a0-97bb-540d6d803253",
+      "name": "Busca prazos (ciclo)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        600
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://jzqiqrymqbzullysukja.supabase.co/rest/v1/prazos_followup?select=barbearia_id,id_msg,prazo_flu",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "f12d2915-e73d-4b3a-b51e-e64dfc105124",
+      "name": "Busca mensagens de follow-up",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        600
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://jzqiqrymqbzullysukja.supabase.co/rest/v1/fluxo_followup?select=barbearia_id,id_msg,mensagem",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "14428885-b1d7-44af-a74e-0df098461465",
+      "name": "Busca instâncias (follow-up)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1140,
+        600
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://jzqiqrymqbzullysukja.supabase.co/rest/v1/barbearias?whatsapp_barbearia=not.is.null&status_fluxo=eq.Sim&select=id,whatsapp_barbearia",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "bce94896-b075-48f5-96bd-e94e305ffc04",
+      "name": "Calcula ciclo do follow-up",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        600
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const ZONA = 'America/Sao_Paulo';\nconst hoje = DateTime.now().setZone(ZONA).startOf('day');\nconst clientes = $('Busca clientes com follow-up hoje').all().map(i => i.json).filter(c => c.id);\nconst prazos = $('Busca prazos (ciclo)').all().map(i => i.json).filter(p => p.id_msg != null);\nconst msgs = $('Busca mensagens de follow-up').all().map(i => i.json).filter(m => m.mensagem && !/^\\s*\\[/.test(m.mensagem));\n// Só barbearias com o fluxo ligado (vem filtrado em \"Busca instâncias (follow-up)\")\nconst barbs = $input.all().map(i => i.json).filter(b => b.id);\n\nconst saida = [];\nfor (const c of clientes) {\n  const inst = (barbs.find(b => String(b.id) === String(c.barbearia_id)) || {}).whatsapp_barbearia;\n  // Fluxo desligado (teste acabou, bloqueada ou o dono desligou): pausa o follow-up\n  // sem avançar o ciclo; quando religar, o cliente continua de onde parou.\n  if (!inst) continue;\n\n  const pb = prazos.filter(p => String(p.barbearia_id) === String(c.barbearia_id)).sort((a, b) => Number(a.id_msg) - Number(b.id_msg));\n  const total = pb.length;\n  const prox = (Number(c.ciclo_followup_atual) || 0) + 1;\n\n  if (prox > total) {\n    saida.push({ json: { id_cliente: c.id, patch: { status: 'perdido', data_proximo_followup: null }, enviar: false } });\n    continue;\n  }\n\n  const msg = (msgs.find(m => String(m.barbearia_id) === String(c.barbearia_id) && Number(m.id_msg) === prox) || {}).mensagem;\n\n  // Próxima data: prazo do ciclo seguinte x recorrência. No último ciclo, volta em 7 dias para marcar como perdido.\n  let proxData = hoje.plus({ days: 7 });\n  if (prox < total && c.data_ult_agend && c.recorrencia_followup) {\n    const seguinte = pb.find(p => Number(p.id_msg) === prox + 1);\n    if (seguinte && seguinte.prazo_flu) {\n      proxData = DateTime.fromISO(c.data_ult_agend, { zone: ZONA }).plus({ days: Math.round(Number(seguinte.prazo_flu) * Number(c.recorrencia_followup)) });\n    }\n  }\n  if (proxData <= hoje) proxData = hoje.plus({ days: 1 });\n\n  const nome = String(c.nome || '').split(' ')[0];\n  saida.push({ json: {\n    id_cliente: c.id,\n    patch: { ciclo_followup_atual: prox, data_proximo_followup: proxData.toFormat('yyyy-MM-dd') },\n    enviar: Boolean(msg && c.telefone),\n    instancia: inst,\n    numero: c.telefone || '',\n    texto: String(msg || '').replace(/\\{\\{?\\s*nome\\s*\\}?\\}/gi, nome)\n  } });\n}\nreturn saida;"
+      }
+    },
+    {
+      "id": "a7c1fb02-7184-4781-9a7a-fe90bd3b8327",
+      "name": "Atualiza ciclo do cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1580,
+        600
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/clientes?id=eq.{{ $json.id_cliente }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.patch) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "Vo6zz7XjdgV1XEmo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "a9fb4046-2fcf-4fd8-b734-bde7c0a5e6e8",
+      "name": "Tem mensagem para enviar?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1800,
+        600
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $('Calcula ciclo do follow-up').item.json.enviar }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "33b20ab1-ca24-47de-b558-af4060c99ea3",
+      "name": "Envia WhatsApp - follow-up",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2020,
+        600
+      ],
+      "parameters": {
+        "mode": "each",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "U9nMESK4Zb5NPZZ0",
+          "cachedResultName": "Corte Certo - Enviar WhatsApp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "instancia": "={{ $('Calcula ciclo do follow-up').item.json.instancia }}",
+            "numero": "={{ $('Calcula ciclo do follow-up').item.json.numero }}",
+            "texto": "={{ $('Calcula ciclo do follow-up').item.json.texto }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "instancia",
+              "displayName": "instancia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "numero",
+              "displayName": "numero",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "7f586e5e-eb7a-4c0c-9a02-c5111a66d5bc",
+      "name": "Sticky Note 3ee78506",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        224,
+        -96
+      ],
+      "parameters": {
+        "content": "## Lembretes e NPS\nA cada 15 min: aviso ~24h antes, aviso ~1h antes e pedido de NPS 1-3h depois do atendimento (só se `compareceu = true`).\n\nMensagens vêm de `fluxo_mensagens` (etapas *Aviso um dia antes*, *Aviso uma hora antes*, *NPS atendimento*). Aceitam `{nome}`, `{horario}` e `{data}`.",
+        "color": 4,
+        "width": 1264,
+        "height": 224
+      }
+    },
+    {
+      "id": "290cac31-4b71-41c4-9764-2e5a3505e305",
+      "name": "Sticky Note 7445094f",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        224,
+        208
+      ],
+      "parameters": {
+        "content": "## Follow-up\n1. Quem compareceu ontem entra em follow-up (data = recorrência do serviço x prazo do ciclo 001). O banco também faz isso de 15 em 15 min (`processar_atendimentos_passados`).\n2. Das 10h às 19h, envia a mensagem do ciclo de quem chegou na data; depois do último ciclo, marca como *perdido*.\n\n**Só barbearias com o fluxo ligado** (`status_fluxo = Sim`): com o fluxo desligado o follow-up fica pausado e os lembretes/NPS não saem.",
+        "color": 6,
+        "width": 1920,
+        "height": 528
+      }
+    }
+  ],
+  "connections": {
+    "A cada 15 minutos": {
+      "main": [
+        [
+          {
+            "node": "Busca atendimentos próximos",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Busca atendimentos de ontem",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Horário comercial? (10h-19h)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca atendimentos próximos": {
+      "main": [
+        [
+          {
+            "node": "Busca mensagens de lembrete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca mensagens de lembrete": {
+      "main": [
+        [
+          {
+            "node": "Busca instâncias (lembretes)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca instâncias (lembretes)": {
+      "main": [
+        [
+          {
+            "node": "Monta lembretes e NPS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monta lembretes e NPS": {
+      "main": [
+        [
+          {
+            "node": "Envia WhatsApp - lembrete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envia WhatsApp - lembrete": {
+      "main": [
+        [
+          {
+            "node": "Marca lembrete como enviado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca atendimentos de ontem": {
+      "main": [
+        [
+          {
+            "node": "Busca prazos (início)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca prazos (início)": {
+      "main": [
+        [
+          {
+            "node": "Calcula início do follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcula início do follow-up": {
+      "main": [
+        [
+          {
+            "node": "Coloca cliente em follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Horário comercial? (10h-19h)": {
+      "main": [
+        [
+          {
+            "node": "Busca clientes com follow-up hoje",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca clientes com follow-up hoje": {
+      "main": [
+        [
+          {
+            "node": "Busca prazos (ciclo)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca prazos (ciclo)": {
+      "main": [
+        [
+          {
+            "node": "Busca mensagens de follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca mensagens de follow-up": {
+      "main": [
+        [
+          {
+            "node": "Busca instâncias (follow-up)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca instâncias (follow-up)": {
+      "main": [
+        [
+          {
+            "node": "Calcula ciclo do follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcula ciclo do follow-up": {
+      "main": [
+        [
+          {
+            "node": "Atualiza ciclo do cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualiza ciclo do cliente": {
+      "main": [
+        [
+          {
+            "node": "Tem mensagem para enviar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem mensagem para enviar?": {
+      "main": [
+        [
+          {
+            "node": "Envia WhatsApp - follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  }
+}

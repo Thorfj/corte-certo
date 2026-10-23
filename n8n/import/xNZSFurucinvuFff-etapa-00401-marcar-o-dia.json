@@ -1,0 +1,495 @@
+{
+  "id": "xNZSFurucinvuFff",
+  "name": "Barbozap - Etapa 00401 - Marcar o dia",
+  "nodes": [
+    {
+      "id": "3eb21c33-c652-4987-bc40-2076048dccec",
+      "name": "Entrada da etapa",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "66ad6443-2e28-4d5d-9c32-ec865073843a",
+      "name": "Interpreta o dia",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const MAX_DIAS = 60;\nconst e = $('Entrada da etapa').first().json;\nconst s = e.sessao || {};\nconst txt = String(e.mensagem_texto || '').trim().toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');\nconst hoje = DateTime.now().setZone('America/Sao_Paulo').startOf('day');\nconst semana = { domingo: 7, segunda: 1, terca: 2, quarta: 3, quinta: 4, sexta: 5, sabado: 6 };\n\nlet d = null;\nif (/depois de amanha/.test(txt)) d = hoje.plus({ days: 2 });\nelse if (/\\bamanha\\b/.test(txt)) d = hoje.plus({ days: 1 });\nelse if (/\\bhoje\\b/.test(txt)) d = hoje;\nelse {\n  const m = txt.match(/(\\d{1,2})\\s*[\\/\\-.]\\s*(\\d{1,2})(?:\\s*[\\/\\-.]\\s*(\\d{2,4}))?/);\n  if (m) {\n    const ano = m[3] ? Number(m[3].length === 2 ? '20' + m[3] : m[3]) : hoje.year;\n    d = DateTime.fromObject({ year: ano, month: Number(m[2]), day: Number(m[1]) }, { zone: 'America/Sao_Paulo' });\n    if (!m[3] && d.isValid && d < hoje) d = d.plus({ years: 1 });\n  } else {\n    const nome = Object.keys(semana).find(k => txt.includes(k));\n    if (nome) d = hoje.plus({ days: (semana[nome] - hoje.weekday + 7) % 7 });\n  }\n}\n\nconst valido = Boolean(d && d.isValid && d >= hoje && d <= hoje.plus({ days: MAX_DIAS }));\nreturn [{ json: { aguardando: Boolean(s.aguardando_resposta), valido, dia: valido ? d.toFormat('yyyy-MM-dd') : null } }];"
+      }
+    },
+    {
+      "id": "bffc27ec-cea9-4cc0-bca5-bb8e5539969e",
+      "name": "O que fazer?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "renameOutput": true,
+              "outputKey": "Perguntar o dia",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.aguardando }}",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    },
+                    "rightValue": ""
+                  }
+                ]
+              }
+            },
+            {
+              "renameOutput": true,
+              "outputKey": "Dia válido",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.valido }}",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "rightValue": ""
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Não entendi"
+        }
+      }
+    },
+    {
+      "id": "047d36cc-d35c-4d03-897d-02e841ca1aba",
+      "name": "Busca mensagem - Marcar o dia",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        -200
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/fluxo_mensagens?barbearia_id=eq.{{ $('Entrada da etapa').first().json.barbearia_id }}&etapa=eq.{{ encodeURIComponent('Marcar o dia') }}&mensagem=not.like.%5B*&select=mensagem&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "2704ab62-008a-451f-a94c-54d84bb221a0",
+      "name": "Envia WhatsApp - pergunta o dia",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        900,
+        -200
+      ],
+      "parameters": {
+        "mode": "each",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "U9nMESK4Zb5NPZZ0",
+          "cachedResultName": "Corte Certo - Enviar WhatsApp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "instancia": "={{ $('Entrada da etapa').first().json.instancia }}",
+            "numero": "={{ $('Entrada da etapa').first().json.telefone }}",
+            "texto": "={{ $json.mensagem || 'Para qual dia você quer agendar? 📅\\nPode responder com a data (ex: 25/10), \"hoje\", \"amanhã\" ou o dia da semana.' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "instancia",
+              "displayName": "instancia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "numero",
+              "displayName": "numero",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "079b1dd5-930f-4cb6-aa69-cb41ba1181a3",
+      "name": "Marca aguardando resposta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        -200
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/sessoes?id_cliente=eq.{{ $('Entrada da etapa').first().json.id_cliente }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ etapa_atual: '00401', aguardando_resposta: true }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "40976dde-3461-419c-86ba-ca6b280800f2",
+      "name": "Salva dia e avança etapa",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        0
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/sessoes?id_cliente=eq.{{ $('Entrada da etapa').first().json.id_cliente }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ dia_selecionado: $json.dia, etapa_atual: '00501', aguardando_resposta: false }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "0c9c4852-951b-44fd-bf85-6226ee91903f",
+      "name": "Prepara próxima etapa",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const e = $('Entrada da etapa').first().json;\nconst dia = $('Interpreta o dia').first().json.dia;\nreturn [{ json: { ...e, sessao: { ...(e.sessao || {}), dia_selecionado: dia, etapa_atual: '00501', aguardando_resposta: false } } }];"
+      }
+    },
+    {
+      "id": "2b599cf4-8710-4451-b5c3-bcc3e05519d5",
+      "name": "Chama Etapa 00501 - Horário",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1120,
+        0
+      ],
+      "parameters": {
+        "mode": "once",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "bDdDwzBEiP0pQ5HU",
+          "cachedResultName": "Corte Certo - Etapa 00501 - Marcar o Horário"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "b3ca3036-488d-4bad-9444-403b24af5b09",
+      "name": "Busca mensagem - Não entendi",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        200
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/fluxo_mensagens?barbearia_id=eq.{{ $('Entrada da etapa').first().json.barbearia_id }}&etapa=eq.{{ encodeURIComponent('Não entendi a resposta') }}&mensagem=not.like.%5B*&select=mensagem&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "2eea1b6e-73df-413d-8692-5082a7536131",
+      "name": "Envia WhatsApp - não entendi",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        900,
+        200
+      ],
+      "parameters": {
+        "mode": "each",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "U9nMESK4Zb5NPZZ0",
+          "cachedResultName": "Corte Certo - Enviar WhatsApp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "instancia": "={{ $('Entrada da etapa').first().json.instancia }}",
+            "numero": "={{ $('Entrada da etapa').first().json.telefone }}",
+            "texto": "={{ ($json.mensagem || 'Desculpe, não entendi 😅') + '\\n\\nMe diga o dia assim: 25/10, \"amanhã\" ou \"sexta\" (até 60 dias à frente).' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "instancia",
+              "displayName": "instancia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "numero",
+              "displayName": "numero",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "b05e7573-06cb-478c-b250-b35549b00fb6",
+      "name": "Sticky Note e2b9cf6e",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -96
+      ],
+      "parameters": {
+        "content": "## Etapa 00401 - Marcar o dia\nPergunta o dia, entende `25/10`, `25/10/2026`, `hoje`, `amanhã`, `depois de amanhã` e dias da semana. Com um dia válido, salva na sessão e chama a etapa 00501.",
+        "color": 5,
+        "width": 384,
+        "height": 224
+      }
+    }
+  ],
+  "connections": {
+    "Entrada da etapa": {
+      "main": [
+        [
+          {
+            "node": "Interpreta o dia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Interpreta o dia": {
+      "main": [
+        [
+          {
+            "node": "O que fazer?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "O que fazer?": {
+      "main": [
+        [
+          {
+            "node": "Busca mensagem - Marcar o dia",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Salva dia e avança etapa",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Busca mensagem - Não entendi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca mensagem - Marcar o dia": {
+      "main": [
+        [
+          {
+            "node": "Envia WhatsApp - pergunta o dia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envia WhatsApp - pergunta o dia": {
+      "main": [
+        [
+          {
+            "node": "Marca aguardando resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salva dia e avança etapa": {
+      "main": [
+        [
+          {
+            "node": "Prepara próxima etapa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepara próxima etapa": {
+      "main": [
+        [
+          {
+            "node": "Chama Etapa 00501 - Horário",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca mensagem - Não entendi": {
+      "main": [
+        [
+          {
+            "node": "Envia WhatsApp - não entendi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  },
+  "active": false,
+  "description": "Etapa 00401 do bot: pergunta e interpreta o dia desejado e chama a etapa de horário."
+}

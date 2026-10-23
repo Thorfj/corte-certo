@@ -1,0 +1,425 @@
+{
+  "id": "u3DDkroH1esFGqZQ",
+  "name": "Barbozap - Google OAuth Retorno",
+  "nodes": [
+    {
+      "id": "760f4e1b-41f9-42f1-ad89-6b4ccb3f217e",
+      "name": "Webhook - Retorno OAuth",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "google-oauth-retorno",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "fca4f737-507c-4a24-a41b-19167ffa7f0c"
+    },
+    {
+      "id": "1eb0ac26-513f-47cd-8e75-391f1b1593ea",
+      "name": "Lê parâmetros do retorno",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "code",
+              "name": "code",
+              "value": "={{ $json.query.code || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "bid",
+              "name": "barbearia_id",
+              "value": "={{ (() => { try { return JSON.parse($json.query.state).b; } catch (e) { return $json.query.state || ''; } })() }}",
+              "type": "string"
+            },
+            {
+              "id": "ret",
+              "name": "retorno",
+              "value": "={{ (() => { let r = ''; try { r = JSON.parse($json.query.state).r || ''; } catch (e) {} return /^https?:\\/\\//.test(r) ? r.split('?')[0] : 'https://barbozap.com.br/app/configuracoes/'; })() }}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "e30a1705-3caa-4b76-bba3-1b17e34c920d",
+      "name": "Usuário autorizou?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.code }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              },
+              "rightValue": ""
+            },
+            {
+              "leftValue": "={{ $json.barbearia_id }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "50fbf5bd-7fd1-4e4a-bae9-32fbeb0cc02a",
+      "name": "Troca código por token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        -100
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://oauth2.googleapis.com/token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "code",
+              "value": "={{ $json.code }}"
+            },
+            {
+              "name": "grant_type",
+              "value": "authorization_code"
+            },
+            {
+              "name": "redirect_uri",
+              "value": "https://barbozap.com.br/oauth/google.html"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "HZUQFduxSc1N6hai",
+          "name": "Google Clooud Calendar"
+        }
+      }
+    },
+    {
+      "id": "eac9dc0f-1fe5-4e76-ad75-24663a942799",
+      "name": "Extrai e-mail do id_token",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        -100
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "let email = null;\ntry {\n  const parte = String($json.id_token || '').split('.')[1].replace(/-/g, '+').replace(/_/g, '/');\n  const texto = typeof Buffer !== 'undefined' ? Buffer.from(parte, 'base64').toString('utf8') : atob(parte);\n  email = JSON.parse(texto).email || null;\n} catch (e) {}\n\nreturn { json: {\n  email,\n  access_token: $json.access_token,\n  refresh_token: $json.refresh_token,\n  expires_at: new Date(Date.now() + (Number($json.expires_in) || 3600) * 1000).toISOString()\n} };"
+      }
+    },
+    {
+      "id": "aff5a15b-9a3d-4fc6-b4c9-cfdad4a68de7",
+      "name": "Salva token (upsert)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        -100
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://jzqiqrymqbzullysukja.supabase.co/rest/v1/google_calendar_tokens?on_conflict=barbearia_id",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ barbearia_id: $('Lê parâmetros do retorno').first().json.barbearia_id, access_token: $json.access_token, refresh_token: $json.refresh_token || undefined, expires_at: $json.expires_at }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "fe21d9cf-5200-416c-b245-cfb3b0bf6944",
+      "name": "Atualiza status da barbearia",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        -100
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://jzqiqrymqbzullysukja.supabase.co/rest/v1/barbearias?id=eq.{{ $('Lê parâmetros do retorno').first().json.barbearia_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ google_calendar_status: 'conectado', google_calendar_email: $('Extrai e-mail do id_token').first().json.email }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "eeWaHhqRAzcaAHzJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "id": "d1fe3709-7eb1-4c00-9f0c-1381f087411a",
+      "name": "Redireciona para o CRM (sucesso)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1540,
+        -100
+      ],
+      "parameters": {
+        "respondWith": "redirect",
+        "redirectURL": "={{ $('Lê parâmetros do retorno').first().json.retorno }}?google=conectado",
+        "options": {}
+      }
+    },
+    {
+      "id": "ed944424-d1ab-4463-8a79-4e8ed8a6c30c",
+      "name": "Redireciona para o CRM (erro)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        880,
+        160
+      ],
+      "parameters": {
+        "respondWith": "redirect",
+        "redirectURL": "={{ $('Lê parâmetros do retorno').first().json.retorno }}?google=erro",
+        "options": {}
+      }
+    },
+    {
+      "id": "2f8aa281-24aa-4f96-aa99-fe1284907d10",
+      "name": "Sticky Note ecd79188",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -96
+      ],
+      "parameters": {
+        "content": "## Google OAuth - Retorno\nO Google devolve para `https://barbozap.com.br/oauth/google.html`, que repassa `code` e `state` para este webhook.\n\nTroca o código por tokens (o `redirect_uri` precisa ser o mesmo usado no Iniciar), salva em `google_calendar_tokens` e marca a barbearia como conectada.",
+        "color": 4,
+        "width": 608,
+        "height": 224
+      }
+    },
+    {
+      "id": "df223f3d-0c0b-4a57-a667-b86ea68b3fcd",
+      "name": "Cria agendas dos profissionais",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1540,
+        100
+      ],
+      "parameters": {
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": false
+        },
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "Barbozap - Criar agendas dos profissionais",
+          "mode": "id",
+          "value": "ztT9jpz4sfvsyMJ9"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "barbearia_id",
+              "id": "barbearia_id",
+              "required": false,
+              "type": "string"
+            }
+          ],
+          "value": {
+            "barbearia_id": "={{ String($('Lê parâmetros do retorno').first().json.barbearia_id) }}"
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Webhook - Retorno OAuth": {
+      "main": [
+        [
+          {
+            "node": "Lê parâmetros do retorno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lê parâmetros do retorno": {
+      "main": [
+        [
+          {
+            "node": "Usuário autorizou?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Usuário autorizou?": {
+      "main": [
+        [
+          {
+            "node": "Troca código por token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Redireciona para o CRM (erro)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Troca código por token": {
+      "main": [
+        [
+          {
+            "node": "Extrai e-mail do id_token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Redireciona para o CRM (erro)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrai e-mail do id_token": {
+      "main": [
+        [
+          {
+            "node": "Salva token (upsert)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salva token (upsert)": {
+      "main": [
+        [
+          {
+            "node": "Atualiza status da barbearia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualiza status da barbearia": {
+      "main": [
+        [
+          {
+            "node": "Redireciona para o CRM (sucesso)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Cria agendas dos profissionais",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "errorWorkflow": "LO9MFNlWYRaCsKz8"
+  },
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  },
+  "active": false,
+  "description": "Recebe o retorno do OAuth do Google, salva os tokens da barbearia e volta para a tela de configurações do CRM."
+}

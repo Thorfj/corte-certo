@@ -71,7 +71,10 @@ Problemas resolvidos na virada:
 
 ## Otimizações para depois
 
-- "Obter Access Token Válido (Google Calendar)": guardar o token e só renovar quando vencer.
+- [x] Sincronização do Google Calendar: o sub-fluxo de token (que já só renova quando falta
+  menos de 5 min para vencer) passou a ser chamado uma vez por barbearia, e não uma vez por
+  agenda (nós "Barbearias únicas" e "Junta token às agendas", 23/10). Feito direto no n8n da
+  VPS; o JSON em `n8n/import/` é a versão anterior.
 - Sincronização do Google Calendar: avaliar passar de 30 para 60 minutos.
 
 ## De-para de IDs (preencher na importação)

@@ -53,7 +53,7 @@ const ETAPAS_ENCERRADAS = ["fechado_ganho", "perdido"];
 const ETAPAS_SAFRA = ["novo_lead", "contato_feito"];
 const NA_FILA = "Na fila do n8n";
 const SAFRA_MAX = 30;
-const SAFRA_URL = "https://cortecerto.app.n8n.cloud/webhook/safra-prospeccao";
+const SAFRA_URL = "https://n8n.srv2088418.hstgr.cloud/webhook/safra-prospeccao";
 
 let leadsCache = [];
 let mensagensCache = [];
@@ -1123,7 +1123,7 @@ function initModal() {
 // Fala com o n8n (workflow "Barbozap - WhatsApp da prospecção"), que confere se o
 // usuário é da equipe interna e usa sempre a instância "prospeccao" da Evolution,
 // sem webhook. A chave da Evolution nunca passa pelo navegador.
-const WHATSAPP_URL = "https://cortecerto.app.n8n.cloud/webhook/whatsapp-prospeccao";
+const WHATSAPP_URL = "https://n8n.srv2088418.hstgr.cloud/webhook/whatsapp-prospeccao";
 const WHATSAPP_POLL_MS = 4000; // confere se o QR já foi lido
 const WHATSAPP_QR_RENOVA_MS = 35000; // o QR da Evolution expira em ~40s
 const WHATSAPP_QR_LIMITE_MS = 180000; // depois de 3 min sem ler, para e pede para tentar de novo

@@ -10,6 +10,17 @@
 
 const BLOG_POSTS = [
   {
+    slug: "link-na-bio-barbearia",
+    title: "Link na bio que agenda: como montar a página da sua barbearia",
+    excerpt:
+      "O cliente viu seu corte no Instagram e quis marcar. Se ele não achar como em dez segundos, desiste. Veja o que colocar na sua página e onde divulgar o link.",
+    category: "materiais",
+    categoryLabel: "Materiais",
+    date: "28 out 2026",
+    readTime: "3 min",
+    featured: false,
+  },
+  {
     slug: "horario-vazio-agenda",
     title: "Quanto custa um horário vazio na sua agenda",
     excerpt:

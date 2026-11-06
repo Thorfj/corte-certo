@@ -4,23 +4,45 @@
    Depende de global.css (tokens + header/footer/botões).
    ============================================================ */
 
+/* a luz do hero passa da borda da tela: corta sem criar rolagem lateral */
+main {
+  overflow-x: clip;
+}
+
 /* ---------- HERO ---------- */
 .hero {
-  padding-top: 64px;
-  padding-bottom: 48px;
+  padding-top: 80px;
+  padding-bottom: 80px;
+  position: relative;
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
   gap: 56px;
   align-items: center;
 }
+/* luz verde atrás do celular */
+.hero::before {
+  content: "";
+  position: absolute;
+  top: -40px;
+  right: -200px;
+  width: 640px;
+  height: 640px;
+  z-index: -1;
+  background: radial-gradient(circle at 60% 40%, rgba(37, 211, 102, 0.28), rgba(15, 138, 79, 0.1) 45%, transparent 70%);
+  filter: blur(10px);
+  pointer-events: none;
+}
 .hero h1 {
-  font-size: 48px;
-  line-height: 1.08;
+  font-size: 58px;
+  line-height: 1.02;
   margin: 18px 0 20px;
 }
 .hero h1 em {
   font-style: normal;
-  color: var(--green);
+  background: linear-gradient(90deg, var(--green), var(--whatsapp));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 .hero p.lead {
   font-size: 18px;
@@ -49,12 +71,22 @@
   justify-content: center;
 }
 .phone {
+  /* a conversa mantém as cores clássicas do WhatsApp */
+  --green: #17493c;
+  --green-dark: #0e2f27;
+  --cream-2: #efe8d9;
+  --ink: #24211d;
+  --muted: #726c5f;
+  --line: #dcd4c3;
+  --radius: 14px;
   width: 290px;
   height: 530px;
-  background: var(--green-dark);
-  border-radius: 38px;
+  background: #111;
+  border-radius: 44px;
   padding: 12px;
-  box-shadow: 0 30px 60px -20px rgba(23, 73, 60, 0.45);
+  box-shadow:
+    0 40px 80px -30px rgba(15, 26, 23, 0.45),
+    0 0 0 8px #f1f3f2;
   position: relative;
 }
 .phone-notch {
@@ -64,7 +96,7 @@
   transform: translateX(-50%);
   width: 90px;
   height: 18px;
-  background: var(--green-dark);
+  background: #111;
   border-radius: 0 0 12px 12px;
   z-index: 2;
 }
@@ -255,9 +287,9 @@
 }
 .stat-card {
   background: #fff;
-  border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 20px;
+  box-shadow: var(--shadow-card);
 }
 .stat-card .label {
   font-size: 12.5px;
@@ -265,10 +297,10 @@
   margin-bottom: 8px;
 }
 .stat-card .value {
-  font-family: var(--font-mono);
-  font-size: 26px;
-  font-weight: 500;
-  color: var(--green);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
 }
 
 /* ---------- FEATURES (ticket cards) ---------- */
@@ -290,8 +322,8 @@
 .ticket {
   background: #fff;
   border-radius: var(--radius);
-  border: 1px solid var(--line);
-  padding: 22px 20px 24px;
+  box-shadow: var(--shadow-card);
+  padding: 22px 20px 24px 24px;
   position: relative;
   overflow: hidden;
 }
@@ -299,26 +331,26 @@
   content: "";
   position: absolute;
   top: 0;
+  bottom: 0;
   left: 0;
-  right: 0;
-  height: 4px;
+  width: 4px;
 }
 .ticket.c1::before {
-  background: var(--brick);
-}
-.ticket.c2::before {
   background: var(--green);
 }
+.ticket.c2::before {
+  background: var(--whatsapp);
+}
 .ticket.c3::before {
-  background: #c99a3d;
+  background: #f2a541;
 }
 .ticket.c4::before {
-  background: #3e6e8e;
+  background: #4f7cff;
 }
 .ticket .tnum {
-  font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--muted);
+  font-weight: 600;
+  color: var(--green);
   margin-bottom: 14px;
   display: block;
 }
@@ -359,7 +391,7 @@
 .step {
   position: relative;
   background: #fff;
-  border: 1px solid var(--line);
+  box-shadow: var(--shadow-card);
   border-radius: var(--radius);
   padding: 20px 18px 22px;
 }
@@ -367,15 +399,13 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #fff;
-  border: 1.5px solid var(--green);
-  color: var(--green);
+  background: var(--green);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-mono);
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 700;
   margin-bottom: 16px;
   position: relative;
   z-index: 1;
@@ -427,7 +457,8 @@
 }
 .pricing-card {
   background: #fff;
-  border: 1px solid var(--line);
+  border: 2px solid var(--green);
+  box-shadow: 0 30px 70px -30px rgba(15, 138, 79, 0.45);
   border-radius: var(--radius);
   max-width: 400px;
   width: 100%;
@@ -435,15 +466,6 @@
   position: relative;
   overflow: hidden;
   text-align: left;
-}
-.pricing-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: var(--green);
 }
 .pricing-name {
   font-family: var(--font-mono);
@@ -465,8 +487,9 @@
   font-weight: 500;
 }
 .pricing-price .amount {
-  font-family: var(--font-display);
-  font-size: 46px;
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
   color: var(--ink);
   line-height: 1;
 }
@@ -502,10 +525,13 @@
 
 /* ---------- CTA BAND ---------- */
 .cta-band {
-  background: var(--green-dark);
+  background: linear-gradient(120deg, var(--green), var(--green-deep));
   color: #fff;
   padding: 72px 0;
   text-align: center;
+  border-radius: 28px;
+  max-width: calc(var(--page-max) - 2 * var(--page-pad));
+  margin: 0 auto 72px;
 }
 .cta-band h2 {
   color: #fff;
@@ -514,17 +540,14 @@
   margin: 0 auto 14px;
 }
 .cta-band p {
-  color: #c9d8d2;
+  color: rgba(255, 255, 255, 0.82);
   margin-bottom: 30px;
   font-size: 16px;
 }
 .cta-band .btn-primary {
   background: #fff;
-  color: var(--green-dark);
-  border-color: #fff;
-}
-.cta-band .btn-primary:hover {
-  background: var(--cream);
+  color: var(--green-deep);
+  box-shadow: none;
 }
 
 /* ---------- RESPONSIVO ---------- */
@@ -537,7 +560,7 @@
     text-align: center;
   }
   .hero h1 {
-    font-size: 36px;
+    font-size: 44px;
     margin: 16px 0 16px;
   }
   .hero p.lead {
@@ -620,6 +643,7 @@
   /* cta band */
   .cta-band {
     padding: 56px 0;
+    margin: 0 var(--page-pad) 56px;
   }
   .cta-band h2 {
     font-size: 26px;
@@ -631,7 +655,7 @@
     padding-bottom: 32px;
   }
   .hero h1 {
-    font-size: 28px;
+    font-size: 36px;
     margin: 14px 0 14px;
   }
   .hero p.lead {
@@ -718,6 +742,14 @@
 
   .cta-band {
     padding: 44px 0;
+    margin: 0 16px 48px;
+    border-radius: 22px;
+  }
+  .hero::before {
+    width: 420px;
+    height: 420px;
+    top: -20px;
+    right: -160px;
   }
   .cta-band h2 {
     font-size: 22px;

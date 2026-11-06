@@ -219,7 +219,7 @@
   padding: 34px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: #faf7f0;
+  background: var(--cream-2);
 }
 .quick-links-header {
   display: flex;

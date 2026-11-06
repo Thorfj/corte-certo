@@ -1,30 +1,32 @@
 :root {
   /* Cores de marca */
-  --brand: #0f6e56;
-  --brand-dark: #085041;
-  --brand-light: #d8f0e6;
+  --brand: #0f8a4f;
+  --brand-dark: #0a6b3c;
+  --brand-light: #e8f6ee;
+  --brand-gradient: linear-gradient(135deg, #16a35e, #0f8a4f);
 
   /* Superfícies */
-  --bg-sidebar: #f7f2e9;
-  --bg-page: #faf7f0;
+  --bg-sidebar: #ffffff;
+  --bg-page: #f6f8f7;
   --bg-card: #ffffff;
 
   /* Texto */
-  --text-primary: #1c1c1a;
-  --text-secondary: #6b6a63;
-  --text-muted: #a3a196;
+  --text-primary: #0f1a17;
+  --text-secondary: #5d6b66;
+  --text-muted: #9aa5a0;
   --text-on-brand: #ffffff;
 
   /* Bordas e sombras */
-  --border: rgba(28, 28, 26, 0.08);
-  --border-strong: rgba(28, 28, 26, 0.14);
+  --border: rgba(15, 26, 23, 0.07);
+  --border-strong: rgba(15, 26, 23, 0.14);
   --shadow-card:
-    0 1px 2px rgba(28, 28, 26, 0.06), 0 1px 8px rgba(28, 28, 26, 0.04);
+    0 1px 2px rgba(15, 26, 23, 0.04), 0 10px 28px -16px rgba(15, 26, 23, 0.16);
+  --shadow-btn: 0 6px 16px -6px rgba(15, 138, 79, 0.5);
 
   /* Raios */
   --radius-sm: 8px;
   --radius-md: 12px;
-  --radius-lg: 16px;
+  --radius-lg: 18px;
   --radius-pill: 999px;
 
   /* Espaçamento */
@@ -109,8 +111,8 @@ button {
 .logo-icon {
   width: 36px;
   height: 36px;
-  border-radius: var(--radius-sm);
-  background: var(--brand-dark);
+  border-radius: 10px;
+  background: var(--brand-gradient);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -119,7 +121,8 @@ button {
 }
 
 .logo-name {
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   font-size: var(--font-size-base);
 }
 
@@ -154,7 +157,7 @@ button {
 .nav-item.active {
   background: var(--brand-light);
   color: var(--brand-dark);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .nav-item i {
@@ -189,8 +192,9 @@ button {
    Página / cabeçalho
    ------------------------------------------------------------ */
 .page-title {
-  font-size: var(--font-size-xl);
-  font-weight: 600;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
   margin: 0 0 var(--space-lg);
 }
 
@@ -259,9 +263,10 @@ button {
 }
 
 .btn-primary {
-  background: var(--brand);
-  border-color: var(--brand);
+  background: var(--brand-gradient);
+  border-color: transparent;
   color: var(--text-on-brand);
+  box-shadow: var(--shadow-btn);
 }
 
 .btn-primary:hover {
@@ -386,13 +391,15 @@ button {
    Ativado via <html data-theme="dark">
    ------------------------------------------------------------ */
 :root[data-theme="dark"] {
-  --brand: #1c9c7b;
-  --brand-dark: #12a683;
-  --brand-light: rgba(28, 156, 123, 0.18);
+  --brand: #22b566;
+  --brand-dark: #3fd282;
+  --brand-light: rgba(34, 181, 102, 0.16);
+  --brand-gradient: linear-gradient(135deg, #22b566, #12914f);
+  --shadow-btn: none;
 
-  --bg-sidebar: #1a1d1c;
-  --bg-page: #121413;
-  --bg-card: #1e211f;
+  --bg-sidebar: #131a17;
+  --bg-page: #0f1513;
+  --bg-card: #18201c;
 
   --text-primary: #f2f1ec;
   --text-secondary: #a9a89f;

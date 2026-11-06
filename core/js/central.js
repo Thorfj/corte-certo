@@ -328,7 +328,7 @@ function renderizarLista() {
       <tr data-id="${esc(l.id)}">
         <td class="col-sel"><input type="checkbox" class="sel-lead" data-id="${esc(l.id)}"
           ${selecionados.has(String(l.id)) ? "checked" : ""} ${podeSafra ? "" : "disabled"}
-          title="${podeSafra ? "Incluir na safra" : "Só leads em Novo ou Contatado, com telefone, fora de outra safra (parcerias ficam de fora)"}"></td>
+          title="${podeSafra ? "Incluir na safra" : "Só leads em Novo ou Contatado, com telefone, fora de outra safra"}"></td>
         <td><span class="lt-nome">${esc(l.nome_barbearia)}</span>
           ${l.endereco ? `<span class="lt-sub">${esc(l.endereco)}</span>` : ""}
           ${l.lista ? `<span class="tag tag-lista">${esc(l.lista)}</span>` : ""}</td>
@@ -361,14 +361,8 @@ function renderizarLista() {
 }
 
 // ---------- seleção e safra ----------
-// parcerias (escolas de barbeiro etc.) não recebem os roteiros feitos para barbearia
 function podeEntrarNaSafra(lead) {
-  return (
-    ETAPAS_SAFRA.includes(lead.status) &&
-    lead.origem !== "parceria" &&
-    lead.proximo_passo !== NA_FILA &&
-    !!lead.telefone
-  );
+  return ETAPAS_SAFRA.includes(lead.status) && lead.proximo_passo !== NA_FILA && !!lead.telefone;
 }
 
 function atualizarSelecao() {
@@ -448,9 +442,10 @@ function initSafra() {
     let novos = 0;
     lista.innerHTML = leads
       .map((l) => {
-        // primeiro contato: reveza A/B/C dentro da safra; contatado: follow-up do dia 3 ou 7
+        // primeiro contato: reveza A/B/C dentro da safra; contatado: follow-up do dia 3 ou 7;
+        // parcerias (escolas) recebem os roteiros de parceria
         const roteiro =
-          l.status === "novo_lead" && primeiros.length
+          l.status === "novo_lead" && primeiros.length && l.origem !== "parceria"
             ? primeiros[novos++ % primeiros.length]
             : roteiroSugerido(l);
         const opcoes = mensagensCache
@@ -806,6 +801,11 @@ function preencherMensagem(texto, lead) {
 
 // roteiro sugerido para a etapa do lead
 function roteiroSugerido(lead) {
+  if (lead.origem === "parceria") {
+    const parceria = mensagensCache.filter((m) => /^parceria/i.test(m.etapa));
+    // convite para quem ainda não foi contatado; proposta depois que a escola responde
+    return lead.status === "novo_lead" ? parceria[0] : lead.status === "respondeu" ? parceria[1] : null;
+  }
   const primeiros = mensagensCache.filter((m) => /primeiro contato/i.test(m.etapa));
   if (lead.status === "novo_lead" && primeiros.length) {
     // reparte A/B/C entre os leads de forma estável (mesmo lead, mesma versão)

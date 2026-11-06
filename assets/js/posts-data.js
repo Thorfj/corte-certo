@@ -10,6 +10,17 @@
 
 const BLOG_POSTS = [
   {
+    slug: "agenda-dezembro-barbearia",
+    title: "Dezembro tá chegando: como preparar a agenda pro mês mais cheio do ano",
+    excerpt:
+      "Todo mundo quer cortar na mesma semana, e quem deixa pra organizar em cima da hora perde cliente e paciência. Veja o que fazer ainda em novembro.",
+    category: "agendamento",
+    categoryLabel: "Agendamento",
+    date: "06 nov 2026",
+    readTime: "3 min",
+    featured: false,
+  },
+  {
     slug: "link-na-bio-barbearia",
     title: "Link na bio que agenda: como montar a página da sua barbearia",
     excerpt:

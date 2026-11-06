@@ -903,7 +903,7 @@ async function carregarAssinatura() {
 
   // Card: assinatura
   document.getElementById("pg-plano").textContent =
-    "Barbozap — R$ 69,00/mês";
+    "Barbozap — R$ 67,00/mês";
   document.getElementById("pg-status-raw").textContent =
     data.subscription_status || "—";
   document.getElementById("pg-proximo-vencimento").textContent =

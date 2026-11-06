@@ -469,8 +469,11 @@
     align-items: start;
   }
 
+  /* relative (e não static): mantém o círculo decorativo (::after)
+     preso ao painel; com static ele vazava e criava rolagem lateral */
   .results-panel {
-    position: static;
+    position: relative;
+    top: auto;
   }
 }
 

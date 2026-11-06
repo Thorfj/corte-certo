@@ -20,7 +20,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_lqY19MJcqfYcVAABzRgiNg_6h4DIWUO";
 const CRM_ATENDIMENTOS_URL = "/app/atendimentos/";
 
 // TODO: ajustar se quiser outro contato de suporte
-const SUPORTE_WHATSAPP_URL = "https://wa.me/5541999428022";
+const SUPORTE_WHATSAPP_URL = "https://wa.me/554137952535";
 
 document.addEventListener("DOMContentLoaded", () => {
   const step1Form = document.getElementById("tgFormStep1");

@@ -43,7 +43,7 @@ window.BASE = "";
         <div class="foot-col">
           <h5>Empresa</h5>
           <a href="${BASE}/blog/">Blog</a>
-          <a href="https://wa.me/5541999428022" target="_blank">Falar no WhatsApp</a>
+          <a href="https://wa.me/554137952535" target="_blank">Falar no WhatsApp</a>
         </div>
         <div class="foot-col">
           <h5>Legal</h5>

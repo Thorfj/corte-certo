@@ -627,6 +627,12 @@ button {
   color: var(--text-secondary);
   background: rgba(28, 28, 26, 0.06);
 }
+.tag.tag-lista {
+  display: table;
+  margin: 4px 0 0;
+  background: var(--brand-light);
+  color: var(--brand-dark);
+}
 .atrasado {
   color: #b3261e;
   font-weight: 500;

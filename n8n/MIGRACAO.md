@@ -66,7 +66,7 @@ Problemas resolvidos na virada:
 - [ ] 6. Testes: mensagem no WhatsApp da barbearia de teste (thorfj@gmail.com, "barbearia da
       analu") até marcar um horário; conexão do WhatsApp na Central; status na tela de
       Configurações do CRM; uma safra de 1 lead; lembrete do agendador.
-- [ ] 7. Uma semana sem problemas → cancelar o n8n Cloud.
+- [x] 7. n8n Cloud cancelado em 23/10; reembolso pedido (pedido #82642170-172814599, R$ 161,45, cobrado em 22/10, prazo da política: 05/11).
 - [x] 8. Backups: snapshot das duas VPS (n8n e Evolution) feito em 23/10 após a virada; tirar um novo antes de mexer em qualquer servidor.
 
 ## Otimizações para depois

@@ -105,7 +105,7 @@
 
 /* ---------- CTA final (mesmo padrão da home) ---------- */
 .post-cta {
-  background: var(--green-dark);
+  background: linear-gradient(120deg, var(--green), var(--green-deep));
   color: #fff;
   padding: 64px 0;
   text-align: center;
@@ -117,17 +117,14 @@
   margin: 0 auto 14px;
 }
 .post-cta p {
-  color: #c9d8d2;
+  color: rgba(255, 255, 255, 0.82);
   margin-bottom: 26px;
   font-size: 16px;
 }
 .post-cta .btn-primary {
   background: #fff;
-  color: var(--green-dark);
-  border-color: #fff;
-}
-.post-cta .btn-primary:hover {
-  background: var(--cream);
+  color: var(--green-deep);
+  box-shadow: none;
 }
 
 /* ---------- responsivo ---------- */

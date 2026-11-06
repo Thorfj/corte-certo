@@ -55,7 +55,7 @@
 }
 .featured-card {
   background: #fff;
-  border: 1px solid var(--line);
+  box-shadow: var(--shadow-card);
   border-radius: var(--radius);
   overflow: hidden;
   display: grid;
@@ -103,7 +103,7 @@
 }
 .post-card {
   background: #fff;
-  border: 1px solid var(--line);
+  box-shadow: var(--shadow-card);
   border-radius: var(--radius);
   overflow: hidden;
   display: flex;

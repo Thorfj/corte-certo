@@ -59,7 +59,7 @@ let leadsCache = [];
 let mensagensCache = [];
 let meuNome = "";
 const selecionados = new Set();
-const filtros = { busca: "", status: "", bairro: "", hoje: false };
+const filtros = { busca: "", status: "", bairro: "", lista: "", hoje: false };
 
 // ---------- utilitários ----------
 function esc(valor) {
@@ -205,6 +205,7 @@ async function carregarLeads() {
 
   leadsCache = data || [];
   atualizarFiltroBairros();
+  atualizarFiltroListas();
   renderizarTudo();
 }
 
@@ -231,6 +232,10 @@ function initFiltros() {
     filtros.bairro = e.target.value;
     renderizarLista();
   });
+  document.getElementById("fLista").addEventListener("change", (e) => {
+    filtros.lista = e.target.value;
+    renderizarLista();
+  });
   document.getElementById("fHoje").addEventListener("click", (e) => {
     filtros.hoje = !filtros.hoje;
     e.currentTarget.classList.toggle("active", filtros.hoje);
@@ -250,11 +255,28 @@ function atualizarFiltroBairros() {
   filtros.bairro = select.value;
 }
 
+// listas = de qual safra de busca o lead veio (coluna leads.lista)
+function atualizarFiltroListas() {
+  const select = document.getElementById("fLista");
+  const atual = select.value;
+  const listas = [...new Set(leadsCache.map((l) => l.lista).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b, "pt-BR"),
+  );
+  select.innerHTML = '<option value="">Todas as listas</option>';
+  listas.forEach((nome) => select.add(new Option(nome, nome)));
+  select.value = listas.includes(atual) ? atual : "";
+  filtros.lista = select.value;
+  document.getElementById("ldListaOpcoes").innerHTML = listas
+    .map((nome) => `<option value="${esc(nome)}"></option>`)
+    .join("");
+}
+
 function leadsFiltrados() {
   const buscaDigitos = filtros.busca.replace(/\D/g, "");
   return leadsCache.filter((l) => {
     if (filtros.status && l.status !== filtros.status) return false;
     if (filtros.bairro && l.bairro !== filtros.bairro) return false;
+    if (filtros.lista && l.lista !== filtros.lista) return false;
     if (filtros.hoje && !leadParaHoje(l)) return false;
     if (filtros.busca) {
       const texto = [l.nome_barbearia, l.bairro, l.nome_contato, l.instagram]
@@ -308,8 +330,10 @@ function renderizarLista() {
           ${selecionados.has(String(l.id)) ? "checked" : ""} ${podeSafra ? "" : "disabled"}
           title="${podeSafra ? "Incluir na safra" : "Só leads em Novo ou Contatado, fora de outra safra"}"></td>
         <td><span class="lt-nome">${esc(l.nome_barbearia)}</span>
-          ${l.endereco ? `<span class="lt-sub">${esc(l.endereco)}</span>` : ""}</td>
-        <td>${esc(l.bairro || "")}</td>
+          ${l.endereco ? `<span class="lt-sub">${esc(l.endereco)}</span>` : ""}
+          ${l.lista ? `<span class="tag tag-lista">${esc(l.lista)}</span>` : ""}</td>
+        <td>${esc(l.bairro || "")}
+          ${l.cidade && l.cidade !== "Curitiba" ? `<span class="lt-sub">${esc(l.cidade)}</span>` : ""}</td>
         <td class="nowrap">${esc(formatarTelefone(l.telefone))}
           ${l.tipo_telefone === "Fixo" ? '<span class="tag">fixo</span>' : ""}</td>
         <td><span class="status-badge" data-status="${esc(l.status)}">${esc(stageLabel(l.status))}</span></td>
@@ -903,6 +927,7 @@ function initModal() {
     document.getElementById("ldInstagram").value = lead.instagram || "";
     document.getElementById("ldContato").value = lead.nome_contato || "";
     document.getElementById("ldOrigem").value = lead.origem || "outro";
+    document.getElementById("ldLista").value = lead.lista || "";
     statusSelect.value = lead.status || "novo_lead";
     document.getElementById("ldDataProximo").value = lead.data_proximo_passo || "";
     document.getElementById("ldProximo").value = lead.proximo_passo || "";
@@ -1079,6 +1104,7 @@ function initModal() {
       instagram: valor("ldInstagram"),
       nome_contato: valor("ldContato"),
       origem: document.getElementById("ldOrigem").value,
+      lista: valor("ldLista"),
       status: statusSelect.value,
       proximo_passo: valor("ldProximo"),
       data_proximo_passo: valor("ldDataProximo"),

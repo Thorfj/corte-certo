@@ -46,6 +46,9 @@
         <select id="fBairro" class="toolbar-input">
           <option value="">Todos os bairros</option>
         </select>
+        <select id="fLista" class="toolbar-input">
+          <option value="">Todas as listas</option>
+        </select>
         <button class="chip" id="fHoje" type="button">Para hoje <span id="fHojeQtd">0</span></button>
       </div>
       <p class="text-secondary toolbar-info" id="leadsInfo"></p>
@@ -346,6 +349,11 @@
               <option value="evento">Evento</option>
               <option value="outro">Outro</option>
             </select>
+          </div>
+          <div class="field">
+            <label for="ldLista">Lista</label>
+            <input type="text" id="ldLista" list="ldListaOpcoes" placeholder="Ex.: Curitiba (out/26)">
+            <datalist id="ldListaOpcoes"></datalist>
           </div>
         </div>
         <div class="field-row">

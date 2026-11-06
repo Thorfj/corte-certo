@@ -1,5 +1,5 @@
 const defaults = {
-  monthlyPrice: 69.0,
+  monthlyPrice: 67.0,
   clients: 10,
   asaasCost: 2.0,
   taxRate: 6.0,

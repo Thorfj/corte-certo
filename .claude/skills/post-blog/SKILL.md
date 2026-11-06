@@ -33,7 +33,7 @@ evitando os temas que já existem em `assets/js/posts-data.js`, e espere a escol
 - NPS de 1 a 5 depois do atendimento; follow-ups personalizados (quantidade configurável).
 - Painel: Atendimentos, Agenda (de todos os profissionais), Contatos (histórico,
   NPS médio, status) e Relatórios (faturamento, atendimentos, clientes, NPS).
-- Plano único: R$69/mês, atendimentos e agenda ilimitados, funcionários
+- Plano único: R$67/mês, atendimentos e agenda ilimitados, funcionários
   ilimitados. Teste de 14 dias grátis, sem cartão. CTA sempre para `/teste-gratis/`.
 
 ## 3. Tom e estilo

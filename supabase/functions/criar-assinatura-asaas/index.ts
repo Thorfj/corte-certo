@@ -15,7 +15,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const VALOR_PLANO = 69.0;
+const VALOR_PLANO = 67.0;
 const CICLO_PLANO = "MONTHLY";
 const DESCRICAO_PLANO = "Barbozap — plano mensal";
 

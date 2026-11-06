@@ -328,7 +328,7 @@ function renderizarLista() {
       <tr data-id="${esc(l.id)}">
         <td class="col-sel"><input type="checkbox" class="sel-lead" data-id="${esc(l.id)}"
           ${selecionados.has(String(l.id)) ? "checked" : ""} ${podeSafra ? "" : "disabled"}
-          title="${podeSafra ? "Incluir na safra" : "Só leads em Novo ou Contatado, fora de outra safra"}"></td>
+          title="${podeSafra ? "Incluir na safra" : "Só leads em Novo ou Contatado, com telefone, fora de outra safra (parcerias ficam de fora)"}"></td>
         <td><span class="lt-nome">${esc(l.nome_barbearia)}</span>
           ${l.endereco ? `<span class="lt-sub">${esc(l.endereco)}</span>` : ""}
           ${l.lista ? `<span class="tag tag-lista">${esc(l.lista)}</span>` : ""}</td>
@@ -361,8 +361,14 @@ function renderizarLista() {
 }
 
 // ---------- seleção e safra ----------
+// parcerias (escolas de barbeiro etc.) não recebem os roteiros feitos para barbearia
 function podeEntrarNaSafra(lead) {
-  return ETAPAS_SAFRA.includes(lead.status) && lead.proximo_passo !== NA_FILA && !!lead.telefone;
+  return (
+    ETAPAS_SAFRA.includes(lead.status) &&
+    lead.origem !== "parceria" &&
+    lead.proximo_passo !== NA_FILA &&
+    !!lead.telefone
+  );
 }
 
 function atualizarSelecao() {

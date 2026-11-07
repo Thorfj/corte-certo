@@ -29,6 +29,7 @@ Eles foram migrados dos JSONs do Google Drive, corrigidos para rodar no n8n Clou
 | Safra pela Central | Webhook `POST /webhook/safra-prospeccao` (Central Interna > Leads > Montar safra) | `m6QVZjtYD6pKADJT` |
 | Safra de prospecção (formulário, **despublicado**) | Formulário `/form/safra-prospeccao` | `w7S7TVhqwdZs4xrU` |
 | WhatsApp da prospecção | Webhook `POST /webhook/whatsapp-prospeccao` (Central Interna > WhatsApp) | `PeWxnjnK1sr15em3` |
+| Assistente do dono (IA) | Webhook `POST /webhook/assistente-dono` (mensagens recebidas no 41 3795-2535) | `ygqxrNnqlgyXsi4S` |
 
 Fluxo do bot: `00101 nome → 00201 serviços → 00301 profissional → 00401 dia → 00501 horário → atendimento criado`.
 Ao concluir, a sessão fica com `etapa_atual = 'concluido'` e a próxima mensagem do cliente recomeça em 00201.
@@ -101,6 +102,24 @@ resposta), registra a linha em `safras_prospeccao`, responde para a Central e se
   A aba **WhatsApp** da Central lista as últimas safras.
 - Se a execução parar no meio, os leads restantes ficam com o próximo passo "Na fila do n8n".
 - A instância é a `prospeccao`. Conecte pela aba **WhatsApp** da Central: o workflow *WhatsApp da prospecção* só aceita
-  usuários da `equipe_interna`, usa sempre essa instância e a deixa **sem webhook** (o Roteador do bot nunca recebe as
-  respostas dos prospects). Nunca use a instância de uma barbearia.
+  usuários da `equipe_interna` e usa sempre essa instância. O webhook dela aponta para o **Assistente do dono**
+  (`/webhook/assistente-dono`), nunca para o Roteador do bot: prospects não recebem resposta automática. Nunca use a
+  instância de uma barbearia.
 - O formulário antigo (*Safra de prospecção*, `/form/safra-prospeccao`) ficou despublicado; usava o mesmo laço de envio.
+
+## Assistente do dono (IA no WhatsApp)
+
+O dono da barbearia manda mensagem para o **(41) 3795-2535** (instância `prospeccao`, a mesma da prospecção) e uma IA
+(Claude Haiku 5.5, credencial *Anthropic Barbozap*) responde com os dados da barbearia dele.
+
+- **Quem é atendido:** `assistente_identificar(telefone)` procura a barbearia cujo `barbearias.whatsapp` (o "Seu WhatsApp"
+  do cadastro) bate com o remetente, comparando DDD + 8 últimos dígitos (o WhatsApp às vezes manda sem o 9). Quem não é
+  dono cadastrado é ignorado em silêncio, sem gastar IA (é o caso dos prospects).
+- **Ferramentas (RPCs só leitura, migration `20261107000000_assistente_ia.sql`):** `assistente_resumo` (período),
+  `assistente_agenda` (dia), `assistente_pendentes`, `assistente_clientes` (sumidos, novos, mais_frequentes, busca) e
+  `assistente_info`. Só a service role executa. O `p_barbearia_id` vem sempre do nó *Identifica barbearia*, nunca da IA;
+  a IA só escolhe a ferramenta e as datas.
+- **Memória:** últimas 10 mensagens por telefone (memória do n8n; zera se o n8n reiniciar).
+- **Resposta:** pelo sub-workflow *Enviar WhatsApp*, na instância `prospeccao`.
+- **Webhook:** o *WhatsApp da prospecção* recria/reconecta a instância já apontando para `/webhook/assistente-dono`.
+

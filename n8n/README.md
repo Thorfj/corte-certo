@@ -133,9 +133,9 @@ O dono da barbearia manda mensagem para o **(41) 3795-2535** (instância `prospe
   quem está no webhook da instância `prospeccao`). Ignora donos de barbearia cadastrados
   (`assistente_identificar`), guarda a mensagem em `prospeccao_respostas`, espera 90 s (o lead
   costuma mandar várias mensagens seguidas), busca a conversa na Evolution (pelo `@lid` e pelo
-  número) e pede à IA (Claude Opus 5.5, credencial "Anthropic Barbozap", esforço baixo, saída em
+  número) e pede à IA (Claude Haiku 5.5, credencial "Anthropic Barbozap", esforço baixo, saída em
   JSON) a classificação, o resumo, o próximo passo e a resposta sugerida. Atualiza o lead pelo
-  `registrar_lead_safra` (etapa só avança) e manda e-mail para o Thor quando o lead está quente.
+  `registrar_lead_safra` (etapa só avança) e avisa o Thor no WhatsApp (41 99942-8022) quando o lead está quente.
   Respostas automáticas das barbearias ficam como `ignorada`. Mensagens enviadas pelo próprio
   número marcam a conversa como respondida.
 - **Barbozap - Responder lead pela Central** (`IhnQiGYolGS99Sj9`, `/webhook/prospeccao-responder`):

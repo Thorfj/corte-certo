@@ -7,7 +7,7 @@
   <title>Central Interna — Barbozap</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/central.css?v=20261107">
+  <link rel="stylesheet" href="../css/central.css?v=20261107b">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="icon" href="/favicon.ico" sizes="48x48">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -29,6 +29,7 @@
 
     <div class="tabs">
       <button class="tab-btn active" data-tab="leads">Leads</button>
+      <button class="tab-btn" data-tab="respostas">Respostas <span class="tab-qtd hidden" id="respostasQtd"></span></button>
       <button class="tab-btn" data-tab="funil">Funil</button>
       <button class="tab-btn" data-tab="mensagens">Mensagens</button>
       <button class="tab-btn" data-tab="whatsapp">WhatsApp</button>
@@ -101,6 +102,16 @@
     </div>
 
     <!-- ===================== ABA: WHATSAPP DA PROSPECÇÃO ===================== -->
+    <!-- ===================== ABA: RESPOSTAS (IA) ===================== -->
+    <div class="tab-panel" id="tab-respostas">
+      <div class="report-head resp-topo">
+        <p class="text-secondary" id="respostasInfo">Carregando respostas...</p>
+        <button type="button" class="btn" id="respostasAtualizar">Atualizar</button>
+      </div>
+      <div id="respostasLista"></div>
+      <p class="text-secondary resp-rodape" id="respostasAutomaticas"></p>
+    </div>
+
     <div class="tab-panel" id="tab-whatsapp">
       <div class="wa-card">
         <div class="wa-head">
@@ -435,7 +446,7 @@
     </div>
   </div>
 
-  <script src="../js/central.js?v=20261107"></script>
+  <script src="../js/central.js?v=20261107b"></script>
 </body>
 
 </html>

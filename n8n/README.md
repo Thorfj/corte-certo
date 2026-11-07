@@ -125,3 +125,18 @@ O dono da barbearia manda mensagem para o **(41) 3795-2535** (instância `prospe
 - **Resposta:** pelo sub-workflow *Enviar WhatsApp*, na instância `prospeccao`.
 - **Webhook:** o *WhatsApp da prospecção* recria/reconecta a instância já apontando para `/webhook/assistente-dono`.
 
+
+## Respostas da prospecção com IA (07/11/2026)
+
+- **Barbozap - Respostas da prospecção (IA)** (`SEYwwZsO026lTU4n`, `/webhook/prospeccao-mensagem`):
+  recebe os eventos do WhatsApp da prospecção (repassados pelo **Assistente do dono**, que é
+  quem está no webhook da instância `prospeccao`). Ignora donos de barbearia cadastrados
+  (`assistente_identificar`), guarda a mensagem em `prospeccao_respostas`, espera 90 s (o lead
+  costuma mandar várias mensagens seguidas), busca a conversa na Evolution (pelo `@lid` e pelo
+  número) e pede à IA (Claude Opus 5.5, credencial "Anthropic Barbozap", esforço baixo, saída em
+  JSON) a classificação, o resumo, o próximo passo e a resposta sugerida. Atualiza o lead pelo
+  `registrar_lead_safra` (etapa só avança) e manda e-mail para o Thor quando o lead está quente.
+  Respostas automáticas das barbearias ficam como `ignorada`. Mensagens enviadas pelo próprio
+  número marcam a conversa como respondida.
+- **Barbozap - Responder lead pela Central** (`IhnQiGYolGS99Sj9`, `/webhook/prospeccao-responder`):
+  a aba **Respostas** da Central envia por aqui a resposta revisada; só equipe interna.

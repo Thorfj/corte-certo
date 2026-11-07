@@ -363,6 +363,140 @@ main {
   color: var(--muted);
 }
 
+/* ---------- ASSISTENTE COM IA ---------- */
+.ia {
+  display: grid;
+  grid-template-columns: 1fr 0.9fr;
+  gap: 56px;
+  align-items: center;
+  padding-top: 8px;
+  padding-bottom: 80px;
+}
+.ia h2 {
+  font-size: 34px;
+  line-height: 1.12;
+  margin: 12px 0 14px;
+}
+.ia-texto > p {
+  color: var(--muted);
+  font-size: 16px;
+  max-width: 500px;
+}
+.ia-exemplos {
+  list-style: none;
+  margin: 22px 0 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ia-exemplos li {
+  background: #fff;
+  border-radius: var(--radius-pill);
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: var(--shadow-card);
+}
+.ia-exemplos li::before {
+  content: "“";
+  color: var(--green);
+  font-weight: 700;
+  margin-right: 2px;
+}
+.ia-exemplos li::after {
+  content: "”";
+  color: var(--green);
+  font-weight: 700;
+  margin-left: 2px;
+}
+.ia-texto .ia-nota {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--green);
+}
+
+.ia-chat {
+  background: #fff;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 30px 70px -30px rgba(15, 26, 23, 0.35);
+  max-width: 440px;
+  width: 100%;
+  justify-self: center;
+}
+.ia-chat-topo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #16a35e, var(--green));
+  color: #fff;
+}
+.ia-chat-topo strong {
+  display: block;
+  font-size: 14.5px;
+}
+.ia-chat-topo small {
+  font-size: 12px;
+  opacity: 0.85;
+}
+.ia-chat-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex: none;
+}
+.ia-chat-corpo {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--cream-2);
+}
+.ia-msg {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.ia-msg-dono {
+  align-self: flex-end;
+  background: #d9fdd3;
+  border-bottom-right-radius: 4px;
+}
+.ia-msg-bot {
+  align-self: flex-start;
+  background: #fff;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 1px 2px rgba(15, 26, 23, 0.06);
+}
+
+@media (max-width: 960px) {
+  .ia {
+    grid-template-columns: 1fr;
+    gap: 36px;
+    padding-bottom: 64px;
+  }
+  .ia h2 {
+    font-size: 28px;
+  }
+}
+@media (max-width: 520px) {
+  .ia h2 {
+    font-size: 24px;
+  }
+  .ia-msg {
+    font-size: 13.5px;
+  }
+}
+
 /* ---------- HOW IT WORKS (fluxo da conversa) ---------- */
 .how {
   background: var(--green-panel);

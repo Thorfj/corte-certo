@@ -14,10 +14,14 @@ const defaultCosts = [
   { name: "Domínio", value: 180.0, type: "ano" },
   { name: "WhatsApp", value: 30.0, type: "fixo" },
   { name: "Claude", value: 120.0, type: "fixo" },
+  // IA que lê as respostas da prospecção (Claude Haiku 5.5): 30 leads por dia útil = ~660 por mês,
+  // ~40% respondem (com respostas automáticas) e ~2 leituras por conversa = ~530 chamadas x R$ 0,005
+  { name: "IA prospecção (Claude Haiku)", value: 3.0, type: "fixo" },
   // API da IA do Assistente do dono (Claude Haiku 5.5), cobrada por uso: estimativa por barbearia
   { name: "Claude Console (IA do assistente)", value: 4.0, type: "cliente" },
 ];
 const CUSTO_IA = defaultCosts[defaultCosts.length - 1];
+const CUSTO_IA_PROSPECCAO = defaultCosts.find((c) => c.name.startsWith("IA prospecção"));
 const COSTS_KEY = "barbozap-calculadora-custos-v3";
 const costList = document.getElementById("costList");
 const costBreakdown = document.getElementById("costBreakdown");
@@ -28,6 +32,8 @@ function loadCosts() {
     if (Array.isArray(saved)) {
       // listas salvas antes do assistente de IA ganham o custo do Claude Console
       if (!saved.some((c) => String(c.name || "").startsWith("Claude Console"))) saved.push({ ...CUSTO_IA });
+      // listas salvas antes da IA da prospecção ganham esse custo
+      if (!saved.some((c) => String(c.name || "").startsWith("IA prospecção"))) saved.push({ ...CUSTO_IA_PROSPECCAO });
       return saved;
     }
   } catch (err) {

@@ -663,6 +663,18 @@ button {
   border-bottom: none;
   padding-bottom: 0;
 }
+.pp-dica-assistente {
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.pp-dica-assistente a {
+  color: var(--brand-dark);
+  font-weight: 600;
+  white-space: nowrap;
+}
 .pp-check {
   flex: 0 0 22px;
   height: 22px;

@@ -361,6 +361,9 @@
           )
           .join("")}
       </ol>
+      <p class="pp-dica-assistente">💬 Dica: pergunte sobre a sua barbearia no WhatsApp
+        <a href="https://wa.me/554137952535?text=Oi" target="_blank" rel="noopener">(41) 3795-2535</a>.
+        O Assistente Barbozap responde com os seus números.</p>
     `;
     card.querySelector(".pp-fechar").addEventListener("click", () => {
       try {

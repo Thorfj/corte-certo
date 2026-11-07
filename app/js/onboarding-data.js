@@ -123,6 +123,12 @@ const ONBOARDING_PASSOS = {
   ],
   "configuracoes": [
     {
+      selector: "#card-assistente",
+      titulo: "Assistente no WhatsApp",
+      texto:
+        "Mande uma mensagem para o (41) 3795-2535 e pergunte sobre a sua barbearia: faturamento, agenda, quem não pagou. Ele reconhece você pelo \"Seu WhatsApp (dono)\".",
+    },
+    {
       selector: "#card-whatsapp",
       titulo: "WhatsApp do bot",
       texto:

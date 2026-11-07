@@ -120,6 +120,8 @@ O dono da barbearia manda mensagem para o **(41) 3795-2535** (instância `prospe
   `assistente_info`. Só a service role executa. O `p_barbearia_id` vem sempre do nó *Identifica barbearia*, nunca da IA;
   a IA só escolhe a ferramenta e as datas.
 - **Memória:** últimas 10 mensagens por telefone (memória do n8n; zera se o n8n reiniciar).
+- **Raciocínio estendido desligado** (`thinkingMode: disabled` no nó do Claude): com ele ligado, a API recusava o histórico
+  remontado pelo n8n ("Invalid `signature` in `thinking` block"). Para consultas simples ele não faz falta.
 - **Resposta:** pelo sub-workflow *Enviar WhatsApp*, na instância `prospeccao`.
 - **Webhook:** o *WhatsApp da prospecção* recria/reconecta a instância já apontando para `/webhook/assistente-dono`.
 

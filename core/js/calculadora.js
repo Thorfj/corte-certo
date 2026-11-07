@@ -14,7 +14,10 @@ const defaultCosts = [
   { name: "Domínio", value: 180.0, type: "ano" },
   { name: "WhatsApp", value: 30.0, type: "fixo" },
   { name: "Claude", value: 120.0, type: "fixo" },
+  // API da IA do Assistente do dono (Claude Haiku 5.5), cobrada por uso: estimativa por barbearia
+  { name: "Claude Console (IA do assistente)", value: 4.0, type: "cliente" },
 ];
+const CUSTO_IA = defaultCosts[defaultCosts.length - 1];
 const COSTS_KEY = "barbozap-calculadora-custos-v3";
 const costList = document.getElementById("costList");
 const costBreakdown = document.getElementById("costBreakdown");
@@ -22,7 +25,11 @@ const costBreakdown = document.getElementById("costBreakdown");
 function loadCosts() {
   try {
     const saved = JSON.parse(localStorage.getItem(COSTS_KEY));
-    if (Array.isArray(saved)) return saved;
+    if (Array.isArray(saved)) {
+      // listas salvas antes do assistente de IA ganham o custo do Claude Console
+      if (!saved.some((c) => String(c.name || "").startsWith("Claude Console"))) saved.push({ ...CUSTO_IA });
+      return saved;
+    }
   } catch (err) {
     // sem armazenamento disponível: usa o exemplo
   }

@@ -802,9 +802,10 @@ function preencherMensagem(texto, lead) {
 // roteiro sugerido para a etapa do lead
 function roteiroSugerido(lead) {
   if (lead.origem === "parceria") {
-    const parceria = mensagensCache.filter((m) => /^parceria/i.test(m.etapa));
-    // convite para quem ainda não foi contatado; proposta depois que a escola responde
-    return lead.status === "novo_lead" ? parceria[0] : lead.status === "respondeu" ? parceria[1] : null;
+    // convite para quem ainda não foi contatado, follow-up para quem não respondeu,
+    // proposta depois que a escola responde
+    const etapa = { novo_lead: /convite/i, contato_feito: /follow-up/i, respondeu: /proposta/i }[lead.status];
+    return etapa ? mensagensCache.find((m) => /^parceria/i.test(m.etapa) && etapa.test(m.etapa)) : null;
   }
   const primeiros = mensagensCache.filter((m) => /primeiro contato/i.test(m.etapa));
   if (lead.status === "novo_lead" && primeiros.length) {

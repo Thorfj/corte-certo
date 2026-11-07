@@ -179,6 +179,7 @@ function initTabs() {
       document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
       if (btn.dataset.tab === "relatorios") carregarRelatorios();
       if (btn.dataset.tab === "comercial") carregarComercial();
+      if (btn.dataset.tab === "respostas") carregarRespostas();
       if (btn.dataset.tab === "whatsapp") {
         atualizarStatusWhatsapp();
         carregarSafras();
@@ -1152,6 +1153,178 @@ function initModal() {
   });
 }
 
+// ---------- respostas da prospecção (lidas pela IA no n8n) ----------
+// O n8n ("Barbozap - Respostas da prospecção (IA)") grava cada resposta em prospeccao_respostas
+// com a classificação e a sugestão. Aqui o Thor revisa, edita e envia, ou marca como tratada.
+const RESPONDER_URL = "https://n8n.srv2088418.hstgr.cloud/webhook/prospeccao-responder";
+const CATEGORIAS_RESPOSTA = {
+  interesse: "Tem interesse",
+  chamar_depois: "Pediu para chamar depois",
+  passou_contato: "Passou outro contato",
+  ja_usa_sistema: "Já usa sistema",
+  agora_nao: "Agora não",
+  sem_interesse: "Sem interesse",
+  nao_entendeu: "Não entendeu",
+  numero_errado: "Número errado",
+  audio_ou_midia: "Áudio ou mídia",
+  resposta_automatica: "Resposta automática",
+  outro: "Outro",
+};
+const ORDEM_PRIORIDADE = { alta: 0, media: 1, baixa: 2 };
+let respostasCache = [];
+
+async function carregarRespostas() {
+  const lista = document.getElementById("respostasLista");
+  const { data, error } = await supabaseCentral
+    .from("prospeccao_respostas")
+    .select("*")
+    .eq("status", "nova")
+    .not("classificada_em", "is", null)
+    .order("recebida_em", { ascending: false })
+    .limit(60);
+  if (error) {
+    console.error(error);
+    document.getElementById("respostasInfo").textContent = "Erro ao carregar as respostas.";
+    return;
+  }
+  respostasCache = (data || []).sort(
+    (a, b) =>
+      (ORDEM_PRIORIDADE[a.prioridade] ?? 3) - (ORDEM_PRIORIDADE[b.prioridade] ?? 3) ||
+      new Date(b.recebida_em) - new Date(a.recebida_em),
+  );
+  atualizarContadorRespostas();
+  renderizarRespostas(lista);
+
+  const seteDias = new Date(Date.now() - 7 * 864e5).toISOString();
+  const { count } = await supabaseCentral
+    .from("prospeccao_respostas")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "ignorada")
+    .eq("humano", false)
+    .gte("recebida_em", seteDias);
+  document.getElementById("respostasAutomaticas").textContent = count
+    ? `A IA deixou de fora ${count} ${count === 1 ? "resposta automática" : "respostas automáticas"} nos últimos 7 dias (menus, links de agendamento, "responderemos em breve").`
+    : "";
+}
+
+function atualizarContadorRespostas() {
+  const el = document.getElementById("respostasQtd");
+  el.textContent = respostasCache.length;
+  el.classList.toggle("hidden", !respostasCache.length);
+  document.getElementById("respostasInfo").textContent = respostasCache.length
+    ? `${respostasCache.length} ${respostasCache.length === 1 ? "conversa esperando" : "conversas esperando"} resposta. A IA leu cada uma e sugeriu o que mandar: revise, ajuste se quiser e envie.`
+    : "Nenhuma resposta esperando por você. Quando um lead responder no WhatsApp da prospecção, ela aparece aqui em até 2 minutos.";
+}
+
+function renderizarRespostas(lista) {
+  lista.innerHTML = respostasCache
+    .map((r) => {
+      const lead = leadsCache.find((l) => String(l.id) === String(r.lead_id));
+      const nome = lead ? lead.nome_barbearia : r.nome_whatsapp || formatarTelefone(r.telefone);
+      const sub = [
+        lead ? null : "fora do CRM",
+        formatarTelefone(r.telefone),
+        lead ? stageLabel(lead.status) : null,
+        formatarDataHora(r.recebida_em),
+      ].filter(Boolean);
+      return `
+      <div class="resp-card" data-id="${esc(r.id)}" data-prioridade="${esc(r.prioridade || "")}">
+        <div class="resp-head">
+          <div>
+            <span class="lt-nome">${esc(nome)}</span>
+            <span class="lt-sub">${esc(sub.join(" · "))}</span>
+          </div>
+          <div class="resp-tags">
+            ${r.prioridade === "alta" ? '<span class="resp-tag resp-quente">🔥 Quente</span>' : ""}
+            <span class="resp-tag">${esc(CATEGORIAS_RESPOSTA[r.categoria] || r.categoria || "")}</span>
+          </div>
+        </div>
+        <p class="resp-resumo">${esc(r.resumo || "")}</p>
+        <details class="resp-conversa">
+          <summary>Ver a conversa</summary>
+          <pre>${esc(r.conversa || r.texto || "")}</pre>
+        </details>
+        <label class="resp-label" for="resp-texto-${esc(r.id)}">Resposta sugerida</label>
+        <textarea class="resp-texto" id="resp-texto-${esc(r.id)}" rows="5">${esc(r.sugestao_resposta || "")}</textarea>
+        <p class="modal-error resp-erro"></p>
+        <div class="resp-acoes">
+          <button type="button" class="btn btn-primary resp-enviar">Enviar pelo WhatsApp</button>
+          <button type="button" class="btn resp-feito" title="Você já respondeu direto no celular">Já respondi</button>
+          <button type="button" class="btn resp-ignorar">Ignorar</button>
+          ${lead ? '<button type="button" class="btn resp-lead">Abrir lead</button>' : ""}
+        </div>
+      </div>`;
+    })
+    .join("");
+
+  lista.querySelectorAll(".resp-card").forEach((card) => {
+    const r = respostasCache.find((x) => String(x.id) === card.dataset.id);
+    card.querySelector(".resp-enviar").addEventListener("click", () => enviarResposta(card, r));
+    card.querySelector(".resp-feito").addEventListener("click", () => tratarResposta(card, r, "respondida"));
+    card.querySelector(".resp-ignorar").addEventListener("click", () => tratarResposta(card, r, "ignorada"));
+    const abrir = card.querySelector(".resp-lead");
+    if (abrir)
+      abrir.addEventListener("click", () =>
+        window.abrirModalEdicao(leadsCache.find((l) => String(l.id) === String(r.lead_id))),
+      );
+  });
+}
+
+function mostrarErroResposta(card, msg) {
+  const el = card.querySelector(".resp-erro");
+  el.textContent = msg || "";
+  el.classList.toggle("show", Boolean(msg));
+}
+
+function tirarResposta(card, r) {
+  respostasCache = respostasCache.filter((x) => x.id !== r.id);
+  card.remove();
+  atualizarContadorRespostas();
+}
+
+async function enviarResposta(card, r) {
+  const texto = card.querySelector(".resp-texto").value.trim();
+  if (!texto) return mostrarErroResposta(card, "Escreva a mensagem antes de enviar.");
+  const botoes = card.querySelectorAll("button");
+  botoes.forEach((b) => (b.disabled = true));
+  mostrarErroResposta(card, "");
+  try {
+    const {
+      data: { session },
+    } = await supabaseCentral.auth.getSession();
+    const resp = await fetch(RESPONDER_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session?.access_token || ""}`,
+      },
+      body: JSON.stringify({ resposta_id: r.id, texto }),
+    });
+    const dados = await resp.json().catch(() => ({}));
+    if (!resp.ok || dados.erro) throw new Error(dados.erro || "Não foi possível enviar agora.");
+    tirarResposta(card, r);
+    carregarLeads().catch(console.error);
+  } catch (err) {
+    console.error(err);
+    mostrarErroResposta(card, err.message);
+    botoes.forEach((b) => (b.disabled = false));
+  }
+}
+
+async function tratarResposta(card, r, status) {
+  // marca a conversa inteira (mensagens seguidas do mesmo número)
+  const { error } = await supabaseCentral
+    .from("prospeccao_respostas")
+    .update({ status, tratada_em: new Date().toISOString() })
+    .eq("telefone", r.telefone)
+    .in("status", ["nova", "agrupada"]);
+  if (error) {
+    console.error(error);
+    return mostrarErroResposta(card, "Não foi possível salvar. Tente de novo.");
+  }
+  tirarResposta(card, r);
+}
+
 // ---------- WhatsApp da prospecção ----------
 // Fala com o n8n (workflow "Barbozap - WhatsApp da prospecção"), que confere se o
 // usuário é da equipe interna e usa sempre a instância "prospeccao" da Evolution,
@@ -1260,6 +1433,9 @@ function initWhatsapp() {
     mostrarAvisoSafra("Marque os leads na lista (a caixinha do topo marca os visíveis) e clique em Montar safra.");
   });
   document.getElementById("safrasAtualizar").addEventListener("click", () => carregarSafras());
+  document.getElementById("respostasAtualizar").addEventListener("click", () =>
+    carregarRespostas().catch(console.error),
+  );
 
   conectarBtn.addEventListener("click", async () => {
     mostrarErroWhatsapp("");
@@ -1740,6 +1916,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const ok = await checarAcesso();
     if (!ok) return;
     await Promise.all([carregarLeads(), carregarMensagens()]);
+    // contador da aba Respostas; o link do e-mail de lead quente abre direto nela
+    if (location.hash === "#respostas") document.querySelector('.tab-btn[data-tab="respostas"]').click();
+    else carregarRespostas().catch(console.error);
   } catch (err) {
     mostrarErroFatal("Falha ao carregar a página — " + (err.message || err));
   }

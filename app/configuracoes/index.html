@@ -51,8 +51,9 @@
                 <input type="email" id="g-email">
               </div>
               <div class="field">
-                <label for="g-whatsapp">WhatsApp da barbearia</label>
-                <input type="text" id="g-whatsapp">
+                <label for="g-whatsapp">Seu WhatsApp (dono)</label>
+                <input type="text" id="g-whatsapp" placeholder="(41) 99999-0000">
+                <p class="field-hint">É por esse número que o Assistente Barbozap reconhece você. Não é o número do bot.</p>
               </div>
             </div>
             <p class="modal-error" id="g-erro"></p>
@@ -83,6 +84,26 @@
               <i data-lucide="link" style="width:16px;height:16px"></i> Conectar com Google
             </a>
           </div>
+        </div>
+
+        <div class="card form-card assistente-card" id="card-assistente" style="margin-top:20px">
+          <p class="card-section-title">Assistente no WhatsApp</p>
+          <p class="text-secondary card-section-desc">Pergunte sobre a sua barbearia pelo WhatsApp e a inteligência artificial responde na hora, com os seus dados.</p>
+          <div class="assistente-linha">
+            <div>
+              <p class="assistente-numero">(41) 3795-2535</p>
+              <p class="field-hint" id="assistente-dono">Ele responde ao seu WhatsApp cadastrado acima.</p>
+            </div>
+            <a class="btn btn-primary" id="assistente-abrir-btn" href="https://wa.me/554137952535?text=Oi" target="_blank" rel="noopener">
+              <i data-lucide="message-circle" style="width:16px;height:16px"></i> Abrir conversa
+            </a>
+          </div>
+          <ul class="assistente-exemplos">
+            <li>Quanto faturei essa semana?</li>
+            <li>Como está a agenda de amanhã?</li>
+            <li>Quem ainda não pagou?</li>
+            <li>Quais clientes sumiram?</li>
+          </ul>
         </div>
 
         <div class="card form-card hidden" id="card-whatsapp" style="margin-top:20px">

@@ -96,9 +96,21 @@ async function carregarGeral() {
   document.getElementById("g-empresa").value = data.empresa || "";
   document.getElementById("g-email").value = data.email || "";
   document.getElementById("g-whatsapp").value = data.whatsapp || "";
+  mostrarDonoDoAssistente(data.whatsapp);
 
   atualizarStatusPlano(data);
   await configurarAparenciaEGoogle(data);
+}
+
+// ---------------- ABA GERAL — Assistente no WhatsApp ----------------
+// O assistente (n8n "Assistente do dono") só responde ao barbearias.whatsapp,
+// o campo "Seu WhatsApp (dono)" acima.
+function mostrarDonoDoAssistente(numero) {
+  const el = document.getElementById("assistente-dono");
+  el.textContent = numero
+    ? `Ele responde só ao seu WhatsApp cadastrado: ${formatarTelefone(numero)}.`
+    : "Preencha \"Seu WhatsApp (dono)\" acima para o assistente reconhecer você.";
+  el.classList.toggle("assistente-alerta", !numero);
 }
 
 // ---------------- ABA GERAL — Aparência (tema) ----------------
@@ -439,6 +451,7 @@ document.getElementById("form-geral").addEventListener("submit", async (e) => {
       .eq("id", barbeariaId);
 
     if (error) throw error;
+    mostrarDonoDoAssistente(document.getElementById("g-whatsapp").value.trim());
 
     sucessoEl.style.display = "block";
     setTimeout(() => {

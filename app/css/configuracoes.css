@@ -416,3 +416,36 @@
 .texto-mudo {
   color: var(--text-muted);
 }
+
+/* Assistente no WhatsApp */
+.assistente-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.assistente-numero {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.assistente-alerta {
+  color: #a35f00;
+}
+.assistente-exemplos {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.assistente-exemplos li {
+  font-size: 12.5px;
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--brand-light);
+  color: var(--brand-dark);
+}

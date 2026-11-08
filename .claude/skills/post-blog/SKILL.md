@@ -70,8 +70,11 @@ Não crie categoria nova sem combinar com o usuário (exigiria CSS em
    (ex.: `fidelizar-clientes-barbearia`). Copie o esqueleto de um post existente e troque:
    - `<title>`: `<Título> — Blog Barbozap`
    - Inclua no `<head>`, logo após o `<title>`:
-     `<meta name="description" content="<excerpt>">`
-   - Capa: `<div class="post-cover cat-<category> post-cover-banner"><span><categoryLabel></span></div>`
+     `<meta name="description" content="<excerpt>">` e
+     `<meta property="og:image" content="https://barbozap.com.br/assets/img/blog/<slug>-1280.jpg">`
+   - Capa com foto (veja o item 3): copie o `<div class="post-cover ... post-cover-banner">`
+     de um post existente, com o `<img class="post-cover-img" ...>` dentro, e troque
+     a categoria e o slug nos caminhos da imagem.
    - `post-meta`: `<data> · <N> min de leitura` (data no formato `22 jul 2026`,
      mês abreviado minúsculo; use a data de hoje)
    - `<h1>` com o título e o texto dentro de `<div class="post-body">`.
@@ -81,9 +84,21 @@ Não crie categoria nova sem combinar com o usuário (exigiria CSS em
 2. **`assets/js/posts-data.js`** — adicione a entrada **no topo** do array
    `BLOG_POSTS` (ordem: mais recente primeiro), com `slug`, `title`, `excerpt`
    (1–2 frases, até ~160 caracteres, que dão vontade de clicar), `category`,
-   `categoryLabel`, `date`, `readTime` (`"N min"`, ~200 palavras/min) e
+   `categoryLabel`, `date`, `readTime` (`"N min"`, ~200 palavras/min),
+   `image: "/assets/img/blog/<slug>"` (sem tamanho nem extensão) e
    `featured: false`. Só mude `featured` se o usuário pedir (só um post pode ser destaque).
-3. Opcional: em um ou dois posts antigos relacionados, troque um link do
+3. **Foto da capa** em `assets/img/blog/`:
+   - Use uma foto do Unsplash (licença livre para uso comercial), baixada de
+     `images.unsplash.com/photo-<id>?w=1600&q=90&fm=jpg`. Não use fotos de
+     `plus.unsplash.com` (pagas) e não repita uma foto que outro post já usa
+     (veja `assets/img/blog/CREDITOS.md`).
+   - Olhe a foto antes de usar: tem que ser de barbearia, combinar com o tema
+     e não mostrar marca ou logo em destaque.
+   - Gere `<slug>-1280.jpg` (qualidade ~78) e `<slug>-640.jpg` (qualidade ~74),
+     em paisagem (recorte para 3:2 se vier em retrato), com Pillow.
+   - Acrescente uma linha na tabela de `assets/img/blog/CREDITOS.md`.
+   - Se a rede bloquear o Unsplash, avise o usuário em vez de publicar sem foto.
+4. Opcional: em um ou dois posts antigos relacionados, troque um link do
    "Continue lendo" para apontar para o novo post, se fizer mais sentido.
 
 ## 6. Revisão antes de entregar
@@ -92,6 +107,7 @@ Não crie categoria nova sem combinar com o usuário (exigiria CSS em
 - [ ] Ortografia e acentuação revisadas; HTML válido (tags fechadas).
 - [ ] `node -e "eval(require('fs').readFileSync('assets/js/posts-data.js','utf8')+';console.log(BLOG_POSTS.length)')"` roda sem erro.
 - [ ] Todos os links do "Continue lendo" existem em `blog/`.
+- [ ] As duas versões da foto existem e aparecem na capa do post e no card do blog.
 - [ ] Contagem de palavras bate com o `readTime`.
 
 ## 7. Entrega

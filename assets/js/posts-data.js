@@ -4,6 +4,8 @@
    Pra publicar um post novo:
      1) adicione uma entrada aqui
      2) crie o arquivo HTML correspondente em /blog/<slug>/index.html
+     3) coloque a foto da capa em /assets/img/blog/<slug>-1280.jpg e
+        <slug>-640.jpg, e aponte "image" pra elas (sem o -1280/-640)
    O blog.js lê esta lista e gera a listagem sozinho — não precisa
    editar blog.html na mão.
    ============================================================ */
@@ -11,6 +13,7 @@
 const BLOG_POSTS = [
   {
     slug: "agenda-dezembro-barbearia",
+    image: "/assets/img/blog/agenda-dezembro-barbearia",
     title: "Dezembro tá chegando: como preparar a agenda pro mês mais cheio do ano",
     excerpt:
       "Todo mundo quer cortar na mesma semana, e quem deixa pra organizar em cima da hora perde cliente e paciência. Veja o que fazer ainda em novembro.",
@@ -22,6 +25,7 @@ const BLOG_POSTS = [
   },
   {
     slug: "link-na-bio-barbearia",
+    image: "/assets/img/blog/link-na-bio-barbearia",
     title: "Link na bio que agenda: como montar a página da sua barbearia",
     excerpt:
       "O cliente viu seu corte no Instagram e quis marcar. Se ele não achar como em dez segundos, desiste. Veja o que colocar na sua página e onde divulgar o link.",
@@ -33,6 +37,7 @@ const BLOG_POSTS = [
   },
   {
     slug: "horario-vazio-agenda",
+    image: "/assets/img/blog/horario-vazio-agenda",
     title: "Quanto custa um horário vazio na sua agenda",
     excerpt:
       "Cadeira parada não aparece no caixa, mas pesa no fim do mês. Faça a conta da sua barbearia e veja onde estão os buracos e como preencher.",
@@ -44,6 +49,7 @@ const BLOG_POSTS = [
   },
   {
     slug: "cliente-que-sumiu",
+    image: "/assets/img/blog/cliente-que-sumiu",
     title: "O cliente que sumiu: como trazer de volta quem não voltou mais",
     excerpt:
       "Ele cortava todo mês e, de repente, parou. Na maioria das vezes não foi briga, foi esquecimento. Veja como chamar esse cliente de volta sem parecer chato.",
@@ -55,6 +61,7 @@ const BLOG_POSTS = [
   },
   {
     slug: "reduzir-faltas-barbearia",
+    image: "/assets/img/blog/reduzir-faltas-barbearia",
     title: "5 jeitos simples de reduzir as faltas na sua barbearia",
     excerpt:
       "Lembrete automático é só o começo. Veja outras táticas que diminuem o “esqueci que tinha marcado” sem precisar cobrar multa.",
@@ -66,6 +73,7 @@ const BLOG_POSTS = [
   },
   {
     slug: "nps-o-que-conta",
+    image: "/assets/img/blog/nps-o-que-conta",
     title:
       "NPS de 1 a 5: o que esse número realmente conta sobre sua barbearia",
     excerpt:
@@ -78,6 +86,7 @@ const BLOG_POSTS = [
   },
   {
     slug: "tempo-perdido-respondendo-horario",
+    image: "/assets/img/blog/tempo-perdido-respondendo-horario",
     title: "Quanto tempo você perde respondendo “qual horário você tem?”",
     excerpt:
       "Fizemos as contas: em uma barbearia de porte médio, essa pergunta sozinha pode consumir mais de uma hora por dia do profissional.",
@@ -89,6 +98,7 @@ const BLOG_POSTS = [
   },
   {
     slug: "agenda-varios-profissionais",
+    image: "/assets/img/blog/agenda-varios-profissionais",
     title: "Como organizar a agenda de mais de um profissional sem bagunça",
     excerpt:
       "Quando a barbearia cresce e ganha um segundo ou terceiro profissional, a agenda no papel começa a rachar. Veja o que muda.",
@@ -100,6 +110,7 @@ const BLOG_POSTS = [
   },
   {
     slug: "veja-o-bot-funcionando",
+    image: "/assets/img/blog/veja-o-bot-funcionando",
     title:
       "Você não precisa confiar na nossa palavra — teste o bot com as próprias mãos",
     excerpt:

@@ -258,6 +258,18 @@ header {
   padding: 5px 10px;
   border-radius: 999px;
 }
+/* foto da capa (opcional): cobre as listras da categoria, que ficam de fundo
+   enquanto a imagem carrega ou se ela faltar */
+.post-cover-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.post-cover span {
+  z-index: 1;
+}
 .cat-agendamento {
   background: repeating-linear-gradient(
     -45deg,

@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Veja o bot do Barbozap funcionando de verdade — Blog Barbozap</title>
+  <meta property="og:image" content="https://barbozap.com.br/assets/img/blog/veja-o-bot-funcionando-1280.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -192,8 +193,17 @@
       background: repeating-linear-gradient(-45deg, #3e6e8e 0 10px, #dce7ec 10px 20px);
     }
 
+    .post-cover-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
     .post-cover-banner span {
       position: absolute;
+      z-index: 1;
       bottom: 24px;
       left: 50%;
       transform: translateX(-50%);
@@ -476,7 +486,7 @@
   </header>
 
   <main>
-    <div class="post-cover-banner"><span>Materiais</span></div>
+    <div class="post-cover-banner"><img class="post-cover-img" src="/assets/img/blog/veja-o-bot-funcionando-1280.jpg" srcset="/assets/img/blog/veja-o-bot-funcionando-640.jpg 640w, /assets/img/blog/veja-o-bot-funcionando-1280.jpg 1280w" sizes="100vw" alt="" fetchpriority="high"><span>Materiais</span></div>
 
     <article class="post-article wrap">
       <a href="/blog/" class="post-back">← Voltar para o blog</a>

@@ -13,10 +13,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const postUrl = (slug) => `/blog/${slug}/`;
 
+  // capa: listras da categoria de fundo + foto por cima (se o post tiver)
+  function coverHTML(post, sizes) {
+    const img = post.image
+      ? `<img class="post-cover-img" src="${post.image}-640.jpg"
+           srcset="${post.image}-640.jpg 640w, ${post.image}-1280.jpg 1280w"
+           sizes="${sizes}" alt="" loading="lazy">`
+      : "";
+    return `<div class="post-cover cat-${post.category}">${img}<span>${post.categoryLabel}</span></div>`;
+  }
+
   function featuredCardHTML(post) {
     return `
       <a href="${postUrl(post.slug)}" class="featured-card" data-category="${post.category}">
-        <div class="post-cover cat-${post.category}"><span>${post.categoryLabel}</span></div>
+        ${coverHTML(post, "(max-width: 960px) 100vw, 560px")}
         <div class="featured-body">
           <span class="post-meta">${post.date} · ${post.readTime}</span>
           <h2>${post.title}</h2>
@@ -30,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function cardHTML(post) {
     return `
       <a href="${postUrl(post.slug)}" class="post-card" data-category="${post.category}">
-        <div class="post-cover cat-${post.category}"><span>${post.categoryLabel}</span></div>
+        ${coverHTML(post, "(max-width: 520px) 100vw, (max-width: 960px) 50vw, 380px")}
         <div class="post-body">
           <span class="post-meta">${post.date} · ${post.readTime}</span>
           <h3>${post.title}</h3>

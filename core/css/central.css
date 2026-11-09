@@ -1312,3 +1312,33 @@ button {
     justify-content: flex-start;
   }
 }
+
+/* safra em andamento: barra de progresso */
+.safra-progresso {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 190px;
+}
+.safra-progresso-barra {
+  flex: 1;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(15, 26, 23, 0.08);
+  overflow: hidden;
+}
+.safra-progresso-barra span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand-gradient, var(--brand));
+  transition: width 0.4s ease;
+}
+.safra-progresso-texto {
+  font-size: 12.5px;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+.safra-progresso-texto strong {
+  color: var(--text-primary);
+}

@@ -557,8 +557,13 @@ const SAFRA_STATUS = {
   cancelada: "Cancelada",
 };
 
+// enquanto alguma safra estiver enviando, a lista se atualiza sozinha
+const SAFRAS_ATUALIZA_MS = 30000;
+let safrasTimer = null;
+
 async function carregarSafras() {
   const body = document.getElementById("safrasBody");
+  clearTimeout(safrasTimer);
   const { data, error } = await supabaseCentral
     .from("safras_prospeccao")
     .select("id, criado_em, status, total, resumo")
@@ -573,6 +578,15 @@ async function carregarSafras() {
     body.innerHTML = '<tr><td colspan="5" class="loading">Nenhuma safra ainda.</td></tr>';
     return;
   }
+  // quantos leads de cada safra em andamento o n8n já processou (lead_atividades)
+  const progresso = new Map();
+  const enviando = data.filter((s) => s.status === "enviando").map((s) => s.id);
+  if (enviando.length) {
+    const { data: prog, error: erroProg } = await supabaseCentral.rpc("safras_progresso", { p_ids: enviando });
+    if (erroProg) console.error(erroProg);
+    (prog || []).forEach((p) => progresso.set(Number(p.safra_id), p.processados));
+  }
+
   body.innerHTML = data
     .map((s) => {
       const r = s.resumo || {};
@@ -583,18 +597,33 @@ async function carregarSafras() {
         r.pulado ? `${r.pulado} ${r.pulado === 1 ? "pulado" : "pulados"}` : "",
         r.erro ? `${r.erro} com erro` : "",
       ].filter(Boolean);
-      const resultado =
-        s.status === "enviando" ? "Em andamento" : partes.join(" · ") || (s.status === "concluida" ? "—" : "");
+      let resultado = partes.join(" · ") || (s.status === "concluida" ? "—" : "");
+      if (s.status === "enviando") {
+        const feitos = Math.min(progresso.get(Number(s.id)) || 0, s.total || 0);
+        const pct = s.total ? Math.round((feitos / s.total) * 100) : 0;
+        resultado = `<div class="safra-progresso" title="${feitos} de ${s.total} leads processados">
+            <div class="safra-progresso-barra"><span style="width:${pct}%"></span></div>
+            <span class="safra-progresso-texto"><strong>${pct}%</strong> · ${feitos} de ${esc(s.total)}</span>
+          </div>`;
+      } else {
+        resultado = esc(resultado);
+      }
       return `
       <tr>
         <td>${esc(s.id)}</td>
         <td class="nowrap">${esc(formatarDataHora(s.criado_em))}</td>
         <td><span class="safra-status" data-status="${esc(s.status)}">${esc(SAFRA_STATUS[s.status] || s.status)}</span></td>
         <td>${esc(s.total ?? "—")}</td>
-        <td>${esc(resultado)}</td>
+        <td>${resultado}</td>
       </tr>`;
     })
     .join("");
+
+  if (enviando.length && !document.hidden) {
+    safrasTimer = setTimeout(() => {
+      if (document.getElementById("tab-whatsapp").classList.contains("active")) carregarSafras();
+    }, SAFRAS_ATUALIZA_MS);
+  }
 }
 
 // ---------- kanban ----------

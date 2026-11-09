@@ -98,7 +98,10 @@ resposta), registra a linha em `safras_prospeccao`, responde para a Central e se
   já teve contato, procura respostas em `/chat/findMessages` (se respondeu, vira Respondeu e a mensagem não sai).
 - Resultado de cada lead: RPC `registrar_lead_safra` (atualiza o lead, etapa só avança, e grava `lead_atividades`).
 - Número sem WhatsApp: o lead vai para **Perdido** com o motivo "Sem WhatsApp" (sem próximo passo).
-- Entre envios: 3 a 7 minutos. No fim: `safras_prospeccao` vira `concluida` e chega um e-mail com o resumo.
+- Entre envios: 3 a 7 minutos. No fim: `safras_prospeccao` vira `concluida`, chega um e-mail com o resumo e um
+  WhatsApp (instância `prospeccao`) para o Thor, 41 99942-8022 (nó *Avisa no WhatsApp do Thor*).
+- Progresso na Central: `safras_progresso(ids)` conta os leads da safra já registrados em `lead_atividades`
+  ("safra n8n #id"); a aba WhatsApp mostra a barra com % e se atualiza a cada 30 s enquanto houver safra enviando.
   A aba **WhatsApp** da Central lista as últimas safras.
 - Se a execução parar no meio, os leads restantes ficam com o próximo passo "Na fila do n8n".
 - A instância é a `prospeccao`. Conecte pela aba **WhatsApp** da Central: o workflow *WhatsApp da prospecção* só aceita

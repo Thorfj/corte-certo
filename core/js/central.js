@@ -180,7 +180,6 @@ function initTabs() {
       if (btn.dataset.tab === "relatorios") carregarRelatorios();
       if (btn.dataset.tab === "comercial") carregarComercial();
       if (btn.dataset.tab === "respostas") carregarRespostas();
-      if (btn.dataset.tab === "followup") renderizarFollowup();
       if (btn.dataset.tab === "whatsapp") {
         atualizarStatusWhatsapp();
         carregarSafras();
@@ -1226,6 +1225,7 @@ async function carregarRespostas() {
   );
   atualizarContadorRespostas();
   renderizarRespostas(lista);
+  renderizarFollowup();
 
   const seteDias = new Date(Date.now() - 7 * 864e5).toISOString();
   const { count } = await supabaseCentral
@@ -1240,9 +1240,7 @@ async function carregarRespostas() {
 }
 
 function atualizarContadorRespostas() {
-  const el = document.getElementById("respostasQtd");
-  el.textContent = respostasCache.length;
-  el.classList.toggle("hidden", !respostasCache.length);
+  atualizarContadorAba();
   document.getElementById("respostasInfo").textContent = respostasCache.length
     ? `${respostasCache.length} ${respostasCache.length === 1 ? "conversa esperando" : "conversas esperando"} resposta. A IA leu cada uma e sugeriu o que mandar: revise, ajuste se quiser e envie.`
     : "Nenhuma resposta esperando por você. Quando um lead responder no WhatsApp da prospecção, ela aparece aqui em até 2 minutos.";
@@ -1312,6 +1310,7 @@ function tirarResposta(card, r) {
   respostasCache = respostasCache.filter((x) => x.id !== r.id);
   card.remove();
   atualizarContadorRespostas();
+  renderizarFollowup();
 }
 
 async function enviarResposta(card, r) {
@@ -1366,6 +1365,7 @@ const filtroFollowup = { lista: "" };
 
 function precisaFollowup(l) {
   return (
+    !respostasCache.some((r) => String(r.lead_id) === String(l.id)) &&
     !!l.data_proximo_passo &&
     !!l.telefone &&
     !ETAPAS_ENCERRADAS.includes(l.status) &&
@@ -1400,11 +1400,20 @@ function diasDeAtraso(l) {
   return Math.round((hoje - data) / 864e5);
 }
 
-function atualizarContadorFollowup() {
-  const el = document.getElementById("followupQtd");
-  if (!el) return;
+function followupsDeHoje() {
   const hoje = hojeISO();
-  const n = leadsCache.filter((l) => precisaFollowup(l) && l.data_proximo_passo <= hoje).length;
+  return leadsCache.filter((l) => precisaFollowup(l) && l.data_proximo_passo <= hoje);
+}
+
+function atualizarContadorFollowup() {
+  atualizarContadorAba();
+}
+
+// o número na aba Respostas soma as respostas esperando e os follow-ups vencidos
+function atualizarContadorAba() {
+  const el = document.getElementById("respostasQtd");
+  if (!el) return;
+  const n = respostasCache.length + followupsDeHoje().length;
   el.textContent = n;
   el.classList.toggle("hidden", !n);
 }
@@ -1510,7 +1519,7 @@ function renderizarFollowup() {
     : `Nada agendado para os próximos ${FOLLOWUP_DIAS_ADIANTE} dias`;
   document.getElementById("followupProximosBox").classList.toggle("vazio", !proximos.length);
 
-  document.querySelectorAll("#tab-followup .fu-card").forEach((card) => {
+  document.querySelectorAll("#followupBox .fu-card").forEach((card) => {
     const l = leadsCache.find((x) => String(x.id) === card.dataset.id);
     const sel = card.querySelector(".fu-roteiro");
     const hint = () => {
@@ -2201,10 +2210,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!ok) return;
     await Promise.all([carregarLeads(), carregarMensagens()]);
     // contador da aba Respostas; o link do e-mail de lead quente abre direto nela
-    if (location.hash === "#respostas") document.querySelector('.tab-btn[data-tab="respostas"]').click();
+    // contador da aba Respostas (respostas + follow-ups do dia); o link do aviso de lead quente abre direto nela
+    if (location.hash === "#respostas" || location.hash === "#followup")
+      document.querySelector('.tab-btn[data-tab="respostas"]').click();
     else carregarRespostas().catch(console.error);
-    if (location.hash === "#followup") document.querySelector('.tab-btn[data-tab="followup"]').click();
-    atualizarContadorFollowup();
   } catch (err) {
     mostrarErroFatal("Falha ao carregar a página — " + (err.message || err));
   }

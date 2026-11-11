@@ -1401,8 +1401,19 @@ button {
   cursor: default;
 }
 @media (max-width: 600px) {
-  #tab-followup .resp-topo {
+  #followupBox .resp-topo {
     flex-direction: column;
     align-items: stretch;
   }
+}
+
+.fu-secao {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.fu-titulo {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 600;
 }

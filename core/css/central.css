@@ -1342,3 +1342,67 @@ button {
 .safra-progresso-texto strong {
   color: var(--text-primary);
 }
+
+/* aba Follow-up */
+#followupLista,
+.fu-roteiro,
+.fu-motivo {
+  font: inherit;
+  font-size: 13.5px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: inherit;
+  max-width: 100%;
+}
+.fu-roteiro {
+  width: 100%;
+  margin-bottom: 8px;
+}
+.fu-motivo {
+  width: 100%;
+  box-sizing: border-box;
+}
+.fu-card[data-atrasado="1"] {
+  border-left: 4px solid #b45309;
+}
+.resp-tag.fu-atrasado {
+  background: #fef3c7;
+  color: #92400e;
+}
+.fu-aviso {
+  font-size: 13px;
+  background: rgba(180, 83, 9, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin: 8px 0 0;
+}
+.fu-hint {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin: 6px 0 0;
+}
+.fu-perda {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+.fu-proximos {
+  margin-top: 22px;
+}
+.fu-proximos > summary {
+  cursor: pointer;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+.fu-proximos.vazio > summary {
+  color: var(--text-muted);
+  cursor: default;
+}
+@media (max-width: 600px) {
+  #tab-followup .resp-topo {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

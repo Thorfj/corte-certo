@@ -180,6 +180,7 @@ function initTabs() {
       if (btn.dataset.tab === "relatorios") carregarRelatorios();
       if (btn.dataset.tab === "comercial") carregarComercial();
       if (btn.dataset.tab === "respostas") carregarRespostas();
+      if (btn.dataset.tab === "followup") renderizarFollowup();
       if (btn.dataset.tab === "whatsapp") {
         atualizarStatusWhatsapp();
         carregarSafras();
@@ -214,6 +215,7 @@ function renderizarTudo() {
   renderizarLista();
   renderizarKanban();
   if (relatoriosCarregados) renderizarFunilResumo();
+  atualizarContadorFollowup();
 }
 
 // ---------- leads: lista com filtros ----------
@@ -817,7 +819,8 @@ function renderizarMensagens() {
 // troca as variáveis do roteiro pelos dados do lead
 function preencherMensagem(texto, lead) {
   let t = texto;
-  const contato = (lead.nome_contato || "").trim();
+  // "Wellington (direção)" vira "Wellington"
+  const contato = (lead.nome_contato || "").replace(/\s*\(.*?\)/g, "").trim();
   // sem nome do contato: "Oi, [nome]!" vira "Oi!"
   if (!contato) t = t.replace(/,?\s*\[nome\]/g, "");
   const bairro = (lead.bairro || "").split("/")[0].replace(/\s*\(.*?\)/g, "").trim();
@@ -1352,6 +1355,257 @@ async function tratarResposta(card, r, status) {
     return mostrarErroResposta(card, "Não foi possível salvar. Tente de novo.");
   }
   tirarResposta(card, r);
+}
+
+// ---------- follow-up ----------
+// Leads com o próximo passo vencendo: a mensagem já vem do roteiro certo para a etapa.
+// O Thor revisa e envia pelo WhatsApp da prospecção (mesmo webhook da aba Respostas,
+// com lead_id), ou dá o lead como perdido. Depois do envio o próximo passo é reagendado.
+const FOLLOWUP_DIAS_ADIANTE = 7;
+const filtroFollowup = { lista: "" };
+
+function precisaFollowup(l) {
+  return (
+    !!l.data_proximo_passo &&
+    !!l.telefone &&
+    !ETAPAS_ENCERRADAS.includes(l.status) &&
+    l.proximo_passo !== NA_FILA
+  );
+}
+
+// "Sem resposta: marcar como Perdido": os follow-ups já foram e ninguém respondeu
+function followupEsgotado(l) {
+  return /perdido/i.test(l.proximo_passo || "");
+}
+
+function roteiroFollowup(l) {
+  if (followupEsgotado(l)) return null;
+  if (l.status === "contato_feito") {
+    const r = roteiroSugerido(l);
+    if (r) return r;
+  }
+  return mensagensCache.find((m) => /cobrar retorno/i.test(m.etapa)) || null;
+}
+
+function proximoDepoisDoFollowup(roteiro) {
+  if (roteiro && roteiro.dias_proximo_passo != null && roteiro.proximo_passo) {
+    return { proximo_passo: roteiro.proximo_passo, data: hojeISO(roteiro.dias_proximo_passo) };
+  }
+  return { proximo_passo: "Cobrar retorno de novo", data: hojeISO(4) };
+}
+
+function diasDeAtraso(l) {
+  const hoje = new Date(hojeISO() + "T12:00:00");
+  const data = new Date(l.data_proximo_passo + "T12:00:00");
+  return Math.round((hoje - data) / 864e5);
+}
+
+function atualizarContadorFollowup() {
+  const el = document.getElementById("followupQtd");
+  if (!el) return;
+  const hoje = hojeISO();
+  const n = leadsCache.filter((l) => precisaFollowup(l) && l.data_proximo_passo <= hoje).length;
+  el.textContent = n;
+  el.classList.toggle("hidden", !n);
+}
+
+function initFollowup() {
+  const sel = document.getElementById("followupLista");
+  sel.addEventListener("change", () => {
+    filtroFollowup.lista = sel.value;
+    renderizarFollowup();
+  });
+}
+
+function cardFollowup(l) {
+  const atraso = diasDeAtraso(l);
+  const quando =
+    atraso > 0
+      ? `Atrasado ${atraso} ${atraso === 1 ? "dia" : "dias"} (${formatarData(l.data_proximo_passo)})`
+      : atraso === 0
+        ? "Hoje"
+        : formatarData(l.data_proximo_passo);
+  const esgotado = followupEsgotado(l);
+  const roteiro = roteiroFollowup(l);
+  const opcoes =
+    '<option value="">Escrever do zero</option>' +
+    mensagensCache
+      .map(
+        (m) =>
+          `<option value="${m.id}"${roteiro && m.id === roteiro.id ? " selected" : ""}>${esc(m.etapa)}</option>`,
+      )
+      .join("");
+  const contato = [l.nome_contato, formatarTelefone(l.telefone)].filter(Boolean).join(" · ");
+  const sub = [stageLabel(l.status), [l.bairro, l.cidade].filter(Boolean).join(", "), l.lista].filter(Boolean);
+  const motivo = l.status === "contato_feito" ? "Sem resposta aos follow-ups" : "Parou de responder";
+  return `
+    <div class="resp-card fu-card" data-id="${esc(l.id)}" data-atrasado="${atraso > 0 ? "1" : ""}">
+      <div class="resp-head">
+        <div>
+          <span class="lt-nome">${esc(l.nome_barbearia)}</span>
+          <span class="lt-sub">${esc(sub.join(" · "))}</span>
+        </div>
+        <div class="resp-tags">
+          <span class="resp-tag fu-quando${atraso > 0 ? " fu-atrasado" : ""}">${esc(quando)}</span>
+        </div>
+      </div>
+      <p class="resp-resumo"><strong>Contato:</strong> ${esc(contato || "—")}<br><strong>Próximo passo:</strong> ${esc(l.proximo_passo || "—")}</p>
+      ${esgotado ? '<p class="fu-aviso">Os follow-ups já foram enviados e ninguém respondeu. A sugestão é dar como perdido, mas dá para mandar mais uma mensagem se quiser.</p>' : ""}
+      <label class="resp-label" for="fu-roteiro-${esc(l.id)}">Mensagem</label>
+      <select class="fu-roteiro" id="fu-roteiro-${esc(l.id)}">${opcoes}</select>
+      <textarea class="resp-texto fu-texto" rows="6" aria-label="Texto do follow-up">${esc(roteiro ? preencherMensagem(roteiro.texto, l) : "")}</textarea>
+      <p class="fu-hint"></p>
+      <p class="modal-error resp-erro"></p>
+      <div class="resp-acoes">
+        <button type="button" class="btn${esgotado ? "" : " btn-primary"} fu-enviar">Enviar pelo WhatsApp</button>
+        <button type="button" class="btn${esgotado ? " btn-primary" : ""} fu-perdido">Dar como perdido</button>
+        <button type="button" class="btn fu-lead">Abrir lead</button>
+      </div>
+      <div class="fu-perda hidden">
+        <label class="resp-label" for="fu-motivo-${esc(l.id)}">Motivo da perda</label>
+        <input type="text" class="fu-motivo" id="fu-motivo-${esc(l.id)}" value="${esc(motivo)}">
+        <div class="resp-acoes">
+          <button type="button" class="btn btn-primary fu-perda-ok">Confirmar perda</button>
+          <button type="button" class="btn fu-perda-cancelar">Cancelar</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderizarFollowup() {
+  const hoje = hojeISO();
+  const limite = hojeISO(FOLLOWUP_DIAS_ADIANTE);
+  const todos = leadsCache.filter(precisaFollowup);
+
+  // listas que têm follow-up, para o filtro
+  const sel = document.getElementById("followupLista");
+  const listas = [...new Set(todos.map((l) => l.lista).filter(Boolean))].sort();
+  if (filtroFollowup.lista && !listas.includes(filtroFollowup.lista)) filtroFollowup.lista = "";
+  sel.innerHTML =
+    '<option value="">Todas as listas</option>' +
+    listas.map((x) => `<option${x === filtroFollowup.lista ? " selected" : ""}>${esc(x)}</option>`).join("");
+
+  const base = todos.filter((l) => !filtroFollowup.lista || l.lista === filtroFollowup.lista);
+  const ordem = (a, b) =>
+    a.data_proximo_passo.localeCompare(b.data_proximo_passo) ||
+    String(a.nome_barbearia).localeCompare(String(b.nome_barbearia));
+  const vencidos = base.filter((l) => l.data_proximo_passo <= hoje).sort(ordem);
+  const proximos = base
+    .filter((l) => l.data_proximo_passo > hoje && l.data_proximo_passo <= limite)
+    .sort(ordem);
+
+  const atrasados = vencidos.filter((l) => l.data_proximo_passo < hoje).length;
+  document.getElementById("followupInfo").textContent = vencidos.length
+    ? `${vencidos.length} ${vencidos.length === 1 ? "follow-up para hoje" : "follow-ups para hoje"}` +
+      (atrasados ? ` (${atrasados} ${atrasados === 1 ? "atrasado" : "atrasados"})` : "") +
+      ". A mensagem já vem do roteiro da etapa: revise, envie ou dê como perdido."
+    : "Nenhum follow-up para hoje. 🎉";
+
+  const hojeEl = document.getElementById("followupLista_hoje");
+  hojeEl.innerHTML = vencidos.map(cardFollowup).join("");
+  const proxEl = document.getElementById("followupLista_proximos");
+  proxEl.innerHTML = proximos.map(cardFollowup).join("");
+  document.getElementById("followupProximosTitulo").textContent = proximos.length
+    ? `Próximos ${FOLLOWUP_DIAS_ADIANTE} dias (${proximos.length})`
+    : `Nada agendado para os próximos ${FOLLOWUP_DIAS_ADIANTE} dias`;
+  document.getElementById("followupProximosBox").classList.toggle("vazio", !proximos.length);
+
+  document.querySelectorAll("#tab-followup .fu-card").forEach((card) => {
+    const l = leadsCache.find((x) => String(x.id) === card.dataset.id);
+    const sel = card.querySelector(".fu-roteiro");
+    const hint = () => {
+      const r = mensagensCache.find((m) => String(m.id) === sel.value) || null;
+      const p = proximoDepoisDoFollowup(r);
+      card.querySelector(".fu-hint").textContent =
+        `Depois de enviar, o próximo passo fica "${p.proximo_passo}" em ${formatarData(p.data)}.`;
+    };
+    sel.addEventListener("change", () => {
+      const r = mensagensCache.find((m) => String(m.id) === sel.value);
+      card.querySelector(".fu-texto").value = r ? preencherMensagem(r.texto, l) : "";
+      hint();
+    });
+    hint();
+    card.querySelector(".fu-enviar").addEventListener("click", () => enviarFollowup(card, l));
+    card.querySelector(".fu-lead").addEventListener("click", () => window.abrirModalEdicao(l));
+    const perda = card.querySelector(".fu-perda");
+    card.querySelector(".fu-perdido").addEventListener("click", () => {
+      perda.classList.remove("hidden");
+      card.querySelector(".fu-motivo").focus();
+    });
+    card.querySelector(".fu-perda-cancelar").addEventListener("click", () => perda.classList.add("hidden"));
+    card.querySelector(".fu-perda-ok").addEventListener("click", () =>
+      darFollowupPerdido(card, l, card.querySelector(".fu-motivo").value.trim()),
+    );
+  });
+  atualizarContadorFollowup();
+}
+
+function tirarCardFollowup(card) {
+  card.remove();
+  renderizarLista();
+  renderizarKanban();
+  atualizarContadorFollowup();
+  const n = document.querySelectorAll("#followupLista_hoje .fu-card").length;
+  if (!n) document.getElementById("followupInfo").textContent = "Nenhum follow-up para hoje. 🎉";
+}
+
+async function enviarFollowup(card, l) {
+  const texto = card.querySelector(".fu-texto").value.trim();
+  if (!texto) return mostrarErroResposta(card, "Escreva a mensagem antes de enviar.");
+  const roteiro = mensagensCache.find((m) => String(m.id) === card.querySelector(".fu-roteiro").value) || null;
+  const prox = proximoDepoisDoFollowup(roteiro);
+  const botoes = card.querySelectorAll("button");
+  botoes.forEach((b) => (b.disabled = true));
+  mostrarErroResposta(card, "");
+  try {
+    const {
+      data: { session },
+    } = await supabaseCentral.auth.getSession();
+    const resp = await fetch(RESPONDER_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session?.access_token || ""}`,
+      },
+      body: JSON.stringify({
+        lead_id: l.id,
+        texto,
+        proximo_passo: prox.proximo_passo,
+        data_proximo_passo: prox.data,
+      }),
+    });
+    const dados = await resp.json().catch(() => ({}));
+    if (!resp.ok || dados.erro) throw new Error(dados.erro || "Não foi possível enviar agora.");
+    Object.assign(l, {
+      proximo_passo: prox.proximo_passo,
+      data_proximo_passo: prox.data,
+      ultimo_contato: new Date().toISOString(),
+    });
+    tirarCardFollowup(card);
+  } catch (err) {
+    console.error(err);
+    mostrarErroResposta(card, err.message);
+    botoes.forEach((b) => (b.disabled = false));
+  }
+}
+
+async function darFollowupPerdido(card, l, motivo) {
+  const botoes = card.querySelectorAll("button");
+  botoes.forEach((b) => (b.disabled = true));
+  const mudancas = {
+    status: "perdido",
+    motivo_perda: motivo || "Sem resposta aos follow-ups",
+    proximo_passo: null,
+    data_proximo_passo: null,
+  };
+  const { error } = await supabaseCentral.from("leads").update(mudancas).eq("id", l.id);
+  if (error) {
+    console.error(error);
+    botoes.forEach((b) => (b.disabled = false));
+    return mostrarErroResposta(card, "Não foi possível salvar. Tente de novo.");
+  }
+  Object.assign(l, mudancas);
+  tirarCardFollowup(card);
 }
 
 // ---------- WhatsApp da prospecção ----------
@@ -1940,6 +2194,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initWhatsapp();
   initSafra();
   initComercial();
+  initFollowup();
 
   try {
     const ok = await checarAcesso();
@@ -1948,6 +2203,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     // contador da aba Respostas; o link do e-mail de lead quente abre direto nela
     if (location.hash === "#respostas") document.querySelector('.tab-btn[data-tab="respostas"]').click();
     else carregarRespostas().catch(console.error);
+    if (location.hash === "#followup") document.querySelector('.tab-btn[data-tab="followup"]').click();
+    atualizarContadorFollowup();
   } catch (err) {
     mostrarErroFatal("Falha ao carregar a página — " + (err.message || err));
   }

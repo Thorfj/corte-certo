@@ -12,6 +12,18 @@
 
 const BLOG_POSTS = [
   {
+    slug: "perguntas-dono-barbearia",
+    image: "/assets/img/blog/perguntas-dono-barbearia",
+    title: "5 perguntas que todo dono de barbearia devia saber responder toda segunda",
+    excerpt:
+      "Faturamento, agenda, quem não pagou, quem sumiu e quem está sobrecarregado. Cinco números que cabem em dez minutos e mudam como você toca a semana.",
+    category: "gestao",
+    categoryLabel: "Gestão",
+    date: "11 nov 2026",
+    readTime: "3 min",
+    featured: false,
+  },
+  {
     slug: "agenda-dezembro-barbearia",
     image: "/assets/img/blog/agenda-dezembro-barbearia",
     title: "Dezembro tá chegando: como preparar a agenda pro mês mais cheio do ano",

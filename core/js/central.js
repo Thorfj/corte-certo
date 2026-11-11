@@ -1202,6 +1202,13 @@ const CATEGORIAS_RESPOSTA = {
   outro: "Outro",
 };
 const ORDEM_PRIORIDADE = { alta: 0, media: 1, baixa: 2 };
+// motivo sugerido ao dar o lead como perdido a partir da resposta dele
+const MOTIVO_PERDA_RESPOSTA = {
+  sem_interesse: "Sem interesse",
+  ja_usa_sistema: "Já usa outro sistema",
+  agora_nao: "Agora não é o momento",
+  numero_errado: "Número errado",
+};
 let respostasCache = [];
 
 async function carregarRespostas() {
@@ -1281,8 +1288,21 @@ function renderizarRespostas(lista) {
           <button type="button" class="btn btn-primary resp-enviar">Enviar pelo WhatsApp</button>
           <button type="button" class="btn resp-feito" title="Você já respondeu direto no celular">Já respondi</button>
           <button type="button" class="btn resp-ignorar">Ignorar</button>
+          ${lead && !ETAPAS_ENCERRADAS.includes(lead.status) ? '<button type="button" class="btn resp-perdido">Dar como perdido</button>' : ""}
           ${lead ? '<button type="button" class="btn resp-lead">Abrir lead</button>' : ""}
         </div>
+        ${
+          lead
+            ? `<div class="fu-perda hidden">
+          <label class="resp-label" for="resp-motivo-${esc(r.id)}">Motivo da perda</label>
+          <input type="text" class="fu-motivo" id="resp-motivo-${esc(r.id)}" value="${esc(MOTIVO_PERDA_RESPOSTA[r.categoria] || "")}" placeholder="Ex.: sem interesse, já usa outro sistema">
+          <div class="resp-acoes">
+            <button type="button" class="btn btn-primary resp-perda-ok">Confirmar perda</button>
+            <button type="button" class="btn resp-perda-cancelar">Cancelar</button>
+          </div>
+        </div>`
+            : ""
+        }
       </div>`;
     })
     .join("");
@@ -1292,6 +1312,18 @@ function renderizarRespostas(lista) {
     card.querySelector(".resp-enviar").addEventListener("click", () => enviarResposta(card, r));
     card.querySelector(".resp-feito").addEventListener("click", () => tratarResposta(card, r, "respondida"));
     card.querySelector(".resp-ignorar").addEventListener("click", () => tratarResposta(card, r, "ignorada"));
+    const perdido = card.querySelector(".resp-perdido");
+    if (perdido) {
+      const perda = card.querySelector(".fu-perda");
+      perdido.addEventListener("click", () => {
+        perda.classList.remove("hidden");
+        card.querySelector(".fu-motivo").focus();
+      });
+      card.querySelector(".resp-perda-cancelar").addEventListener("click", () => perda.classList.add("hidden"));
+      card.querySelector(".resp-perda-ok").addEventListener("click", () =>
+        darRespostaPerdida(card, r, card.querySelector(".fu-motivo").value.trim()),
+      );
+    }
     const abrir = card.querySelector(".resp-lead");
     if (abrir)
       abrir.addEventListener("click", () =>
@@ -1340,6 +1372,29 @@ async function enviarResposta(card, r) {
     mostrarErroResposta(card, err.message);
     botoes.forEach((b) => (b.disabled = false));
   }
+}
+
+// o lead respondeu que não quer: dá como perdido e tira a conversa da lista
+async function darRespostaPerdida(card, r, motivo) {
+  const botoes = card.querySelectorAll("button");
+  botoes.forEach((b) => (b.disabled = true));
+  const mudancas = {
+    status: "perdido",
+    motivo_perda: motivo || "Sem interesse",
+    proximo_passo: null,
+    data_proximo_passo: null,
+  };
+  const { error } = await supabaseCentral.from("leads").update(mudancas).eq("id", r.lead_id);
+  if (error) {
+    console.error(error);
+    botoes.forEach((b) => (b.disabled = false));
+    return mostrarErroResposta(card, "Não foi possível salvar. Tente de novo.");
+  }
+  const lead = leadsCache.find((l) => String(l.id) === String(r.lead_id));
+  if (lead) Object.assign(lead, mudancas);
+  renderizarLista();
+  renderizarKanban();
+  await tratarResposta(card, r, "ignorada");
 }
 
 async function tratarResposta(card, r, status) {

@@ -17,3 +17,4 @@ Cada post tem duas versões: `<slug>-1280.jpg` (topo do post) e
 | tempo-perdido-respondendo-horario | https://images.unsplash.com/photo-1534297635766-a262cdcb8ee4 |
 | agenda-varios-profissionais | https://images.unsplash.com/photo-1585747860715-2ba37e788b70 |
 | veja-o-bot-funcionando | https://images.unsplash.com/photo-1621605815971-fbc98d665033 |
+| perguntas-dono-barbearia | https://images.unsplash.com/photo-1610475680335-dafab5475150 |

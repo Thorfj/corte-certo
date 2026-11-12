@@ -1474,6 +1474,7 @@ function atualizarContadorAba() {
 }
 
 function initFollowup() {
+  document.getElementById("followupTodos").addEventListener("click", enviarTodosFollowups);
   const sel = document.getElementById("followupLista");
   sel.addEventListener("change", () => {
     filtroFollowup.lista = sel.value;
@@ -1567,6 +1568,7 @@ function renderizarFollowup() {
 
   const hojeEl = document.getElementById("followupLista_hoje");
   hojeEl.innerHTML = vencidos.map(cardFollowup).join("");
+  atualizarBotaoTodos(vencidos.length);
   const proxEl = document.getElementById("followupLista_proximos");
   proxEl.innerHTML = proximos.map(cardFollowup).join("");
   document.getElementById("followupProximosTitulo").textContent = proximos.length
@@ -1610,6 +1612,7 @@ function tirarCardFollowup(card) {
   renderizarKanban();
   atualizarContadorFollowup();
   const n = document.querySelectorAll("#followupLista_hoje .fu-card").length;
+  atualizarBotaoTodos(n);
   if (!n) document.getElementById("followupInfo").textContent = "Nenhum follow-up para hoje. 🎉";
 }
 
@@ -1646,10 +1649,143 @@ async function enviarFollowup(card, l) {
       ultimo_contato: new Date().toISOString(),
     });
     tirarCardFollowup(card);
+    return true;
   } catch (err) {
     console.error(err);
     mostrarErroResposta(card, err.message);
     botoes.forEach((b) => (b.disabled = false));
+    return false;
+  }
+}
+
+function atualizarBotaoTodos(n) {
+  const btn = document.getElementById("followupTodos");
+  if (!btn || btn.dataset.enviando) return;
+  btn.disabled = !n;
+  btn.textContent = n ? `Enviar todos (${n})` : "Enviar todos";
+}
+
+function avisoFollowup(msg) {
+  const el = document.getElementById("followupAviso");
+  el.textContent = msg || "";
+  el.classList.toggle("hidden", !msg);
+}
+
+// Envia de uma vez os follow-ups de hoje que estão na tela (respeita o filtro de lista).
+// Quem nunca respondeu (Contatado) vai como safra: o n8n manda um a cada 3 a 7 minutos e
+// reagenda o próximo passo pelo roteiro. Quem já respondeu sai na hora, um por um, pelo
+// mesmo envio do botão do card. Card sem mensagem (os de "dar como perdido") fica de fora.
+async function enviarTodosFollowups() {
+  const btn = document.getElementById("followupTodos");
+  const itens = [...document.querySelectorAll("#followupLista_hoje .fu-card")].map((card) => ({
+    card,
+    lead: leadsCache.find((x) => String(x.id) === card.dataset.id),
+    texto: card.querySelector(".fu-texto").value.trim(),
+    roteiro_id: Number(card.querySelector(".fu-roteiro").value) || null,
+  }));
+  const comTexto = itens.filter((i) => i.lead && i.texto);
+  const pulados = itens.length - comTexto.length;
+  const naSafra = comTexto.filter((i) => i.lead.status === "contato_feito");
+  const diretos = comTexto.filter((i) => i.lead.status !== "contato_feito");
+  if (!comTexto.length) {
+    avisoFollowup("Nenhum follow-up com mensagem para enviar. Os que sobraram são para dar como perdido.");
+    return;
+  }
+
+  const { data: rodando } = await supabaseCentral
+    .from("safras_prospeccao")
+    .select("id")
+    .eq("status", "enviando")
+    .limit(1);
+  const minutos = Math.max(1, Math.round(naSafra.length * 5));
+  const linhas = [`Enviar ${comTexto.length} ${comTexto.length === 1 ? "follow-up" : "follow-ups"}?`, ""];
+  if (naSafra.length)
+    linhas.push(
+      naSafra.length === 1
+        ? "• 1 vai como safra (sai em alguns minutos)."
+        : `• ${naSafra.length} vão como safra, um a cada 3 a 7 minutos (uns ${minutos} min no total).`,
+    );
+  if (diretos.length)
+    linhas.push(
+      diretos.length === 1
+        ? "• 1 de quem já respondeu sai agora."
+        : `• ${diretos.length} de quem já respondeu saem agora, um por um.`,
+    );
+  if (pulados)
+    linhas.push(
+      pulados === 1
+        ? "• 1 sem mensagem fica de fora (é para dar como perdido)."
+        : `• ${pulados} sem mensagem ficam de fora (são para dar como perdido).`,
+    );
+  if (rodando && rodando.length)
+    linhas.push(
+      "",
+      "Atenção: já tem uma safra enviando agora. As duas vão sair ao mesmo tempo pelo mesmo número.",
+    );
+  if (!window.confirm(linhas.join("\n"))) return;
+
+  btn.dataset.enviando = "1";
+  btn.disabled = true;
+  btn.textContent = "Enviando...";
+  avisoFollowup("");
+  const resumo = [];
+  try {
+    const { estado } = await chamarWhatsapp("status");
+    if (estado !== "open") {
+      throw new Error("O WhatsApp da prospecção não está conectado. Conecte na aba WhatsApp e tente de novo.");
+    }
+
+    if (naSafra.length) {
+      const {
+        data: { session },
+      } = await supabaseCentral.auth.getSession();
+      const resp = await fetch(SAFRA_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token || ""}`,
+        },
+        body: JSON.stringify({
+          itens: naSafra.map((i) => ({ lead_id: i.lead.id, roteiro_id: i.roteiro_id, texto: i.texto })),
+        }),
+      });
+      const dados = await resp.json().catch(() => ({}));
+      if (!resp.ok || dados.erro) throw new Error(dados.erro || "Não foi possível iniciar a safra agora.");
+      const ignorados = new Set((dados.ignorados || []).map((x) => String(x.lead_id || x.nome)));
+      naSafra.forEach((i) => {
+        if (ignorados.has(String(i.lead.id)) || ignorados.has(String(i.lead.nome_barbearia))) return;
+        i.lead.proximo_passo = NA_FILA;
+        i.card.remove();
+      });
+      resumo.push(
+        `Safra #${dados.safra_id} iniciada com ${dados.total} ${dados.total === 1 ? "follow-up" : "follow-ups"}; acompanhe na aba WhatsApp.`,
+      );
+      if ((dados.ignorados || []).length)
+        resumo.push(`Ficaram de fora da safra: ${dados.ignorados.map((x) => x.nome || "lead").join(", ")}.`);
+    }
+
+    let ok = 0;
+    for (const i of diretos) {
+      if (await enviarFollowup(i.card, i.lead)) ok += 1;
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+    if (diretos.length)
+      resumo.push(
+        `${ok} de ${diretos.length} ${diretos.length === 1 ? "mensagem enviada" : "mensagens enviadas"} para quem já respondeu` +
+          (ok < diretos.length ? " (as que falharam continuam na lista com o erro)." : "."),
+      );
+  } catch (err) {
+    console.error(err);
+    resumo.push(err.message);
+  } finally {
+    delete btn.dataset.enviando;
+    avisoFollowup(resumo.join(" "));
+    renderizarLista();
+    renderizarKanban();
+    atualizarBotaoTodos(document.querySelectorAll("#followupLista_hoje .fu-card").length);
+    atualizarContadorAba();
+    // o n8n marca os leads da safra como "Na fila do n8n" logo depois de responder
+    setTimeout(() => carregarLeads().catch(console.error), 2500);
   }
 }
 

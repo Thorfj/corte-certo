@@ -1417,3 +1417,18 @@ button {
   font-size: 17px;
   font-weight: 600;
 }
+
+.fu-topo-acoes {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+#followupAviso {
+  margin: 0 0 14px;
+}
+@media (max-width: 600px) {
+  .fu-topo-acoes > * {
+    flex: 1 1 100%;
+  }
+}

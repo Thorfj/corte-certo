@@ -1432,3 +1432,7 @@ button {
     flex: 1 1 100%;
   }
 }
+.safra-status[data-status="na_fila"] {
+  background: #e8eefc;
+  color: #2c4a8a;
+}

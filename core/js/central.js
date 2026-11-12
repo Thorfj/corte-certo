@@ -533,7 +533,8 @@ function initSafra() {
       renderizarLista();
       const ignorados = (dados.ignorados || []).map((i) => i.nome || "lead");
       mostrarAvisoSafra(
-        `Safra #${dados.safra_id} iniciada com ${dados.total} ${dados.total === 1 ? "lead" : "leads"}. ` +
+        `Safra #${dados.safra_id} criada com ${dados.total} ${dados.total === 1 ? "lead" : "leads"}. ` +
+          "Se outra safra estiver enviando, esta entra na fila e começa sozinha quando a outra terminar. " +
           "Os leads vão sendo atualizados aqui conforme as mensagens saem, e no fim chega o e-mail com o resumo." +
           (ignorados.length ? ` Ficaram de fora: ${ignorados.join(", ")}.` : ""),
       );
@@ -553,6 +554,7 @@ function initSafra() {
 
 const SAFRA_STATUS = {
   previa: "Prévia",
+  na_fila: "Na fila",
   enviando: "Enviando",
   concluida: "Concluída",
   cancelada: "Cancelada",
@@ -599,6 +601,7 @@ async function carregarSafras() {
         r.erro ? `${r.erro} com erro` : "",
       ].filter(Boolean);
       let resultado = partes.join(" · ") || (s.status === "concluida" ? "—" : "");
+      if (s.status === "na_fila") resultado = "Começa quando a safra da frente terminar";
       if (s.status === "enviando") {
         const feitos = Math.min(progresso.get(Number(s.id)) || 0, s.total || 0);
         const pct = s.total ? Math.round((feitos / s.total) * 100) : 0;
@@ -620,7 +623,8 @@ async function carregarSafras() {
     })
     .join("");
 
-  if (enviando.length && !document.hidden) {
+  // safra na fila começa sozinha quando a da frente termina: continua atualizando
+  if ((enviando.length || data.some((s) => s.status === "na_fila")) && !document.hidden) {
     safrasTimer = setTimeout(() => {
       if (document.getElementById("tab-whatsapp").classList.contains("active")) carregarSafras();
     }, SAFRAS_ATUALIZA_MS);
@@ -1695,7 +1699,7 @@ async function enviarTodosFollowups() {
   const { data: rodando } = await supabaseCentral
     .from("safras_prospeccao")
     .select("id")
-    .eq("status", "enviando")
+    .in("status", ["enviando", "na_fila"])
     .limit(1);
   const minutos = Math.max(1, Math.round(naSafra.length * 5));
   const linhas = [`Enviar ${comTexto.length} ${comTexto.length === 1 ? "follow-up" : "follow-ups"}?`, ""];
@@ -1720,7 +1724,7 @@ async function enviarTodosFollowups() {
   if (rodando && rodando.length)
     linhas.push(
       "",
-      "Atenção: já tem uma safra enviando agora. As duas vão sair ao mesmo tempo pelo mesmo número.",
+      "Já tem uma safra enviando: esta entra na fila e começa sozinha quando a outra terminar.",
     );
   if (!window.confirm(linhas.join("\n"))) return;
 
@@ -1758,7 +1762,9 @@ async function enviarTodosFollowups() {
         i.card.remove();
       });
       resumo.push(
-        `Safra #${dados.safra_id} iniciada com ${dados.total} ${dados.total === 1 ? "follow-up" : "follow-ups"}; acompanhe na aba WhatsApp.`,
+        `Safra #${dados.safra_id} criada com ${dados.total} ${dados.total === 1 ? "follow-up" : "follow-ups"}` +
+          (rodando && rodando.length ? ", na fila atrás da safra que está enviando" : "") +
+          "; acompanhe na aba WhatsApp.",
       );
       if ((dados.ignorados || []).length)
         resumo.push(`Ficaram de fora da safra: ${dados.ignorados.map((x) => x.nome || "lead").join(", ")}.`);

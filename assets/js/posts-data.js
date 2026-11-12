@@ -12,6 +12,18 @@
 
 const BLOG_POSTS = [
   {
+    slug: "ordem-de-chegada-ou-horario-marcado",
+    image: "/assets/img/blog/ordem-de-chegada-ou-horario-marcado",
+    title: "Ordem de chegada ou horário marcado? Dá pra ter os dois",
+    excerpt:
+      "A fila na porta parece sinal de movimento, mas esconde cliente que vai embora sem você ver. Veja como misturar fila e horário marcado sem bagunça.",
+    category: "agendamento",
+    categoryLabel: "Agendamento",
+    date: "12 nov 2026",
+    readTime: "3 min",
+    featured: false,
+  },
+  {
     slug: "perguntas-dono-barbearia",
     image: "/assets/img/blog/perguntas-dono-barbearia",
     title: "5 perguntas que todo dono de barbearia devia saber responder toda segunda",

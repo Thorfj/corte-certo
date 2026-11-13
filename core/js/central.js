@@ -1013,6 +1013,10 @@ function initModal() {
     if (roteiro?.dias_proximo_passo != null) {
       mudancas.proximo_passo = roteiro.proximo_passo;
       mudancas.data_proximo_passo = hojeISO(roteiro.dias_proximo_passo);
+    } else if (roteiro?.proximo_passo) {
+      // sem prazo (ex.: primeiro contato → "Aguardando resposta"): sem data de follow-up
+      mudancas.proximo_passo = roteiro.proximo_passo;
+      mudancas.data_proximo_passo = null;
     }
     return mudancas;
   }
@@ -1025,7 +1029,8 @@ function initModal() {
     if (m.status) partes.push(`o lead vai para <strong>${esc(stageLabel(m.status))}</strong>`);
     if (m.proximo_passo)
       partes.push(
-        `o próximo passo fica "${esc(m.proximo_passo)}" em ${esc(formatarData(m.data_proximo_passo))}`,
+        `o próximo passo fica "${esc(m.proximo_passo)}"` +
+          (m.data_proximo_passo ? ` em ${esc(formatarData(m.data_proximo_passo))}` : ""),
       );
     hint.innerHTML = partes.length
       ? `Ao abrir o WhatsApp, ${partes.join(" e ")}.`
@@ -1422,8 +1427,13 @@ async function tratarResposta(card, r, status) {
 const FOLLOWUP_DIAS_ADIANTE = 7;
 const filtroFollowup = { lista: "" };
 
+// Só quem já respondeu recebe follow-up: quem não respondeu ao primeiro contato não volta a
+// ser chamado (o número da prospecção caiu como spam com os follow-ups automáticos).
+const ETAPAS_SEM_FOLLOWUP = ["novo_lead", "contato_feito"];
+
 function precisaFollowup(l) {
   return (
+    !ETAPAS_SEM_FOLLOWUP.includes(l.status) &&
     !respostasCache.some((r) => String(r.lead_id) === String(l.id)) &&
     !!l.data_proximo_passo &&
     !!l.telefone &&

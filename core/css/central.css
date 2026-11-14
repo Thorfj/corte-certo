@@ -1436,3 +1436,77 @@ button {
   background: #e8eefc;
   color: #2c4a8a;
 }
+
+/* aba Conversas */
+#convPeriodo {
+  font: inherit;
+  font-size: 13.5px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: inherit;
+}
+#tab-conversas .metrics-grid {
+  margin-bottom: 18px;
+}
+.conv-taxa {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 150px;
+}
+.conv-taxa-barra,
+.conv-cat-barra {
+  flex: 1;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(15, 26, 23, 0.08);
+  overflow: hidden;
+}
+.conv-taxa-barra span,
+.conv-cat-barra span {
+  display: block;
+  height: 100%;
+  background: var(--brand, #0f8a4f);
+  border-radius: inherit;
+}
+.conv-taxa strong {
+  font-size: 13px;
+  min-width: 44px;
+  text-align: right;
+}
+.conv-cat {
+  display: grid;
+  grid-template-columns: minmax(150px, 220px) 1fr 40px;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 13.5px;
+}
+.conv-cat strong {
+  text-align: right;
+}
+.conv-resumo {
+  min-width: 260px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.conv-linha {
+  cursor: pointer;
+}
+.conv-linha:hover td {
+  background: rgba(15, 26, 23, 0.03);
+}
+@media (max-width: 600px) {
+  #tab-conversas .resp-topo {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .conv-cat {
+    grid-template-columns: 1fr 70px 30px;
+  }
+}
+#tab-conversas #convKpis {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}

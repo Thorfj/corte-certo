@@ -180,6 +180,7 @@ function initTabs() {
       if (btn.dataset.tab === "relatorios") carregarRelatorios();
       if (btn.dataset.tab === "comercial") carregarComercial();
       if (btn.dataset.tab === "respostas") carregarRespostas();
+      if (btn.dataset.tab === "conversas") carregarConversas();
       if (btn.dataset.tab === "whatsapp") {
         atualizarStatusWhatsapp();
         carregarSafras();
@@ -1824,6 +1825,167 @@ async function darFollowupPerdido(card, l, motivo) {
   tirarCardFollowup(card);
 }
 
+// ---------- conversas: relatório do WhatsApp da prospecção ----------
+// Calculado aqui no navegador a partir de lead_atividades (mensagens enviadas e mudanças de
+// etapa), prospeccao_respostas (respostas lidas pela IA) e da etapa atual dos leads.
+const ETAPAS_RESPONDEU = ["respondeu", "demo_agendada", "teste_gratis", "fechado_ganho"];
+let convDados = null;
+
+function initConversas() {
+  document.getElementById("convPeriodo").addEventListener("change", renderizarConversas);
+  document.getElementById("convAtualizar").addEventListener("click", () => {
+    convDados = null;
+    carregarConversas();
+  });
+}
+
+async function carregarConversas() {
+  if (convDados) return renderizarConversas();
+  document.getElementById("convInfo").textContent = "Carregando o relatório...";
+  const [ativ, resp] = await Promise.all([
+    supabaseCentral
+      .from("lead_atividades")
+      .select("lead_id, tipo, descricao, status_para, criado_em")
+      .in("tipo", ["mensagem", "status"])
+      .order("criado_em", { ascending: true })
+      .limit(10000),
+    supabaseCentral
+      .from("prospeccao_respostas")
+      .select("id, lead_id, telefone, nome_whatsapp, humano, categoria, prioridade, resumo, status, recebida_em")
+      .not("classificada_em", "is", null)
+      .order("recebida_em", { ascending: false })
+      .limit(5000),
+  ]);
+  if (ativ.error || resp.error) {
+    console.error(ativ.error || resp.error);
+    document.getElementById("convInfo").textContent = "Erro ao carregar o relatório.";
+    return;
+  }
+  convDados = { ativ: ativ.data || [], resp: resp.data || [] };
+  renderizarConversas();
+}
+
+function taxaHtml(resp, total) {
+  const pct = total ? (resp / total) * 100 : 0;
+  return `<div class="conv-taxa"><div class="conv-taxa-barra"><span style="width:${Math.min(100, pct).toFixed(1)}%"></span></div><strong>${pct.toFixed(pct && pct < 10 ? 1 : 0).replace(".", ",")}%</strong></div>`;
+}
+
+function renderizarConversas() {
+  if (!convDados) return;
+  const dias = Number(document.getElementById("convPeriodo").value);
+  const desde = dias ? new Date(Date.now() - dias * 864e5).toISOString() : "";
+  const leadPorId = new Map(leadsCache.map((l) => [String(l.id), l]));
+
+  // primeiro contato de cada lead (a primeira mensagem de roteiro de abertura)
+  const primeiro = new Map();
+  convDados.ativ.forEach((a) => {
+    if (a.tipo !== "mensagem" || primeiro.has(String(a.lead_id))) return;
+    if (!/^(Primeiro contato|Parceria escola – 1)/i.test(a.descricao || "")) return;
+    primeiro.set(String(a.lead_id), { roteiro: (a.descricao || "").split(" · ")[0], em: a.criado_em });
+  });
+
+  // quem respondeu (pessoa): etapa avançou para respondeu+, resposta humana lida pela IA, ou etapa atual
+  const respondeu = new Set();
+  convDados.ativ.forEach((a) => {
+    if (a.tipo === "status" && ETAPAS_RESPONDEU.includes(a.status_para)) respondeu.add(String(a.lead_id));
+  });
+  convDados.resp.forEach((r) => {
+    if (r.humano && r.lead_id) respondeu.add(String(r.lead_id));
+  });
+  leadsCache.forEach((l) => {
+    if (ETAPAS_RESPONDEU.includes(l.status)) respondeu.add(String(l.id));
+  });
+
+  const contatados = [...primeiro.entries()].filter(([, p]) => !desde || p.em >= desde);
+  const responderam = contatados.filter(([id]) => respondeu.has(id));
+  const respostasPeriodo = convDados.resp.filter((r) => !desde || r.recebida_em >= desde);
+  const robos = respostasPeriodo.filter((r) => r.humano === false).length;
+  const quentes = new Set(respostasPeriodo.filter((r) => r.humano && r.prioridade === "alta").map((r) => r.lead_id || r.telefone)).size;
+  const avancaram = contatados.filter(([id]) => ["teste_gratis", "fechado_ganho"].includes(leadPorId.get(id)?.status)).length;
+
+  document.getElementById("convInfo").textContent = contatados.length
+    ? `${contatados.length} ${contatados.length === 1 ? "primeiro contato" : "primeiros contatos"} no período, ${responderam.length} ${responderam.length === 1 ? "pessoa respondeu" : "pessoas responderam"}.`
+    : "Nenhum primeiro contato no período.";
+
+  const pct = contatados.length ? ((responderam.length / contatados.length) * 100).toFixed(1).replace(".", ",") : "0";
+  document.getElementById("convKpis").innerHTML = `
+    <div class="metric-card"><p class="metric-label">Primeiros contatos</p><p class="metric-value">${contatados.length}</p></div>
+    <div class="metric-card"><p class="metric-label">Responderam (pessoa)</p><p class="metric-value">${responderam.length}</p></div>
+    <div class="metric-card"><p class="metric-label">Taxa de resposta</p><p class="metric-value">${pct}%</p></div>
+    <div class="metric-card"><p class="metric-label">Respostas de robô</p><p class="metric-value">${robos}</p></div>
+    <div class="metric-card"><p class="metric-label">Leads quentes</p><p class="metric-value">${quentes}</p></div>
+    <div class="metric-card"><p class="metric-label">Teste grátis ou cliente</p><p class="metric-value">${avancaram}</p></div>`;
+
+  // por roteiro
+  const porRoteiro = new Map();
+  contatados.forEach(([id, p]) => {
+    const r = porRoteiro.get(p.roteiro) || { env: 0, resp: 0 };
+    r.env += 1;
+    if (respondeu.has(id)) r.resp += 1;
+    porRoteiro.set(p.roteiro, r);
+  });
+  document.getElementById("convRoteiros").innerHTML =
+    [...porRoteiro.entries()]
+      .sort((a, b) => b[1].resp / b[1].env - a[1].resp / a[1].env || b[1].env - a[1].env)
+      .map(([nome, r]) => `<tr><td>${esc(nome)}</td><td>${r.env}</td><td>${r.resp}</td><td>${taxaHtml(r.resp, r.env)}</td></tr>`)
+      .join("") || '<tr><td colspan="4" class="loading">Nada no período.</td></tr>';
+
+  // por lista
+  const porLista = new Map();
+  contatados.forEach(([id]) => {
+    const l = leadPorId.get(id);
+    const nome = l?.lista || "(sem lista)";
+    const x = porLista.get(nome) || { cont: 0, resp: 0, perd: 0 };
+    x.cont += 1;
+    if (respondeu.has(id)) x.resp += 1;
+    if (l?.status === "perdido") x.perd += 1;
+    porLista.set(nome, x);
+  });
+  document.getElementById("convListas").innerHTML =
+    [...porLista.entries()]
+      .sort((a, b) => b[1].cont - a[1].cont)
+      .map(([nome, x]) => `<tr><td>${esc(nome)}</td><td>${x.cont}</td><td>${x.resp}</td><td>${taxaHtml(x.resp, x.cont)}</td><td>${x.perd}</td></tr>`)
+      .join("") || '<tr><td colspan="5" class="loading">Nada no período.</td></tr>';
+
+  // categorias (só respostas de pessoas, a última de cada conversa)
+  const ultimaPorConversa = new Map();
+  respostasPeriodo.forEach((r) => {
+    const chave = r.lead_id || r.telefone;
+    if (r.humano && r.categoria && !ultimaPorConversa.has(chave)) ultimaPorConversa.set(chave, r);
+  });
+  const cats = new Map();
+  ultimaPorConversa.forEach((r) => cats.set(r.categoria, (cats.get(r.categoria) || 0) + 1));
+  const maxCat = Math.max(1, ...cats.values());
+  document.getElementById("convCategorias").innerHTML = cats.size
+    ? [...cats.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(
+          ([c, n]) => `<div class="conv-cat"><span class="conv-cat-nome">${esc(CATEGORIAS_RESPOSTA[c] || c)}</span><div class="conv-cat-barra"><span style="width:${((n / maxCat) * 100).toFixed(1)}%"></span></div><strong>${n}</strong></div>`,
+        )
+        .join("")
+    : '<p class="loading">Nenhuma resposta de pessoa no período.</p>';
+
+  // conversas recentes (pessoas)
+  const recentes = [...ultimaPorConversa.values()].slice(0, 40);
+  document.getElementById("convRecentes").innerHTML =
+    recentes
+      .map((r) => {
+        const l = leadPorId.get(String(r.lead_id));
+        const nome = l ? l.nome_barbearia : r.nome_whatsapp || formatarTelefone(r.telefone);
+        return `<tr${l ? ` class="conv-linha" data-lead="${esc(l.id)}"` : ""}>
+          <td class="nowrap">${esc(formatarDataHora(r.recebida_em))}</td>
+          <td>${esc(nome)}${l ? "" : ' <span class="text-secondary">(fora do CRM)</span>'}</td>
+          <td>${r.prioridade === "alta" ? "🔥 " : ""}${esc(CATEGORIAS_RESPOSTA[r.categoria] || r.categoria || "")}</td>
+          <td class="conv-resumo">${esc(r.resumo || "")}</td>
+          <td class="nowrap">${esc(l ? stageLabel(l.status) : "—")}</td>
+        </tr>`;
+      })
+      .join("") || '<tr><td colspan="5" class="loading">Nenhuma conversa no período.</td></tr>';
+  document.querySelectorAll("#convRecentes .conv-linha").forEach((tr) =>
+    tr.addEventListener("click", () => window.abrirModalEdicao(leadPorId.get(tr.dataset.lead))),
+  );
+}
+
 // ---------- WhatsApp da prospecção ----------
 // Fala com o n8n (workflow "Barbozap - WhatsApp da prospecção"), que confere se o
 // usuário é da equipe interna e usa sempre a instância "prospeccao" da Evolution,
@@ -2411,6 +2573,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initSafra();
   initComercial();
   initFollowup();
+  initConversas();
 
   try {
     const ok = await checarAcesso();

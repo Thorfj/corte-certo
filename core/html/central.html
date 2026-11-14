@@ -7,7 +7,7 @@
   <title>Central Interna — Barbozap</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/central.css?v=20261113">
+  <link rel="stylesheet" href="../css/central.css?v=20261114">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="icon" href="/favicon.ico" sizes="48x48">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -30,6 +30,7 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="leads">Leads</button>
       <button class="tab-btn" data-tab="respostas">Respostas <span class="tab-qtd hidden" id="respostasQtd"></span></button>
+      <button class="tab-btn" data-tab="conversas">Conversas</button>
       <button class="tab-btn" data-tab="funil">Funil</button>
       <button class="tab-btn" data-tab="mensagens">Mensagens</button>
       <button class="tab-btn" data-tab="whatsapp">WhatsApp</button>
@@ -131,6 +132,52 @@
           <div id="followupLista_proximos"></div>
         </details>
       </section>
+    </div>
+
+    <!-- ===================== ABA: CONVERSAS (relatório do WhatsApp da prospecção) ===================== -->
+    <div class="tab-panel" id="tab-conversas">
+      <div class="report-head resp-topo">
+        <p class="text-secondary" id="convInfo">Carregando o relatório...</p>
+        <div class="fu-topo-acoes">
+          <select id="convPeriodo" aria-label="Período do relatório">
+            <option value="7">Últimos 7 dias</option>
+            <option value="30" selected>Últimos 30 dias</option>
+            <option value="0">Desde o começo</option>
+          </select>
+          <button type="button" class="btn" id="convAtualizar">Atualizar</button>
+        </div>
+      </div>
+      <div class="metrics-grid" id="convKpis"></div>
+
+      <div class="report-block">
+        <p class="report-title">Por roteiro de primeiro contato</p>
+        <div class="table-scroll"><table class="leads-table conv-tabela">
+          <thead><tr><th>Roteiro</th><th>Enviados</th><th>Responderam</th><th>Taxa de resposta</th></tr></thead>
+          <tbody id="convRoteiros"></tbody>
+        </table></div>
+      </div>
+
+      <div class="report-block">
+        <p class="report-title">Por lista</p>
+        <div class="table-scroll"><table class="leads-table conv-tabela">
+          <thead><tr><th>Lista</th><th>Contatados</th><th>Responderam</th><th>Taxa de resposta</th><th>Perdidos</th></tr></thead>
+          <tbody id="convListas"></tbody>
+        </table></div>
+      </div>
+
+      <div class="report-block">
+        <p class="report-title">O que as pessoas responderam (leitura da IA)</p>
+        <div id="convCategorias"></div>
+      </div>
+
+      <div class="report-block">
+        <p class="report-title">Conversas recentes</p>
+        <div class="table-scroll"><table class="leads-table conv-tabela">
+          <thead><tr><th>Quando</th><th>Barbearia</th><th>Resposta</th><th>Resumo da IA</th><th>Etapa agora</th></tr></thead>
+          <tbody id="convRecentes"></tbody>
+        </table></div>
+        <p class="report-nota">Conta como resposta: o lead respondeu por escrito (lido pela IA) ou foi marcado em Respondeu, Demo, Teste grátis ou Fechado. Respostas automáticas de robôs de atendimento não contam. Se uma resposta não chegou ao sistema, marque o lead como Respondeu para ela entrar aqui.</p>
+      </div>
     </div>
 
     <div class="tab-panel" id="tab-whatsapp">
@@ -467,7 +514,7 @@
     </div>
   </div>
 
-  <script src="../js/central.js?v=20261113"></script>
+  <script src="../js/central.js?v=20261114"></script>
 </body>
 
 </html>

@@ -793,8 +793,9 @@ document
 
 
 // ---------- Retomar agendamento (cliente parou de responder no meio do agendamento) ----------
-// Até 3 mensagens em sequência; o tempo de cada uma conta a partir da anterior
-// (a 1ª, a partir da última resposta do cliente). Tempo vazio = mensagem desligada.
+// Uma mensagem por parada: 1ª parada do agendamento → 1ª mensagem, 2ª → 2ª, 3ª → 3ª.
+// O tempo conta da última resposta do cliente. Tempo vazio = desligada (a parada seguinte
+// recebe a próxima ligada).
 function textoTempo(min) {
   if (!min) return "";
   if (min % 1440 === 0) return `${min / 1440} ${min === 1440 ? "dia" : "dias"}`;
@@ -803,17 +804,15 @@ function textoTempo(min) {
 }
 
 function renderizarRetomada() {
-  const quando = ["sem resposta do cliente", "depois da 1ª", "depois da 2ª"];
-  let desligouAntes = false;
+  const quando = ["na 1ª parada", "na 2ª parada", "na 3ª parada"];
   document.getElementById("retomada-lista").innerHTML = [0, 1, 2]
     .map((i) => {
       const t = retomadaTempos[i];
       const msg = retomadaCache[i]?.mensagem;
-      const ativa = !!t && !desligouAntes;
-      if (!t) desligouAntes = true;
+      const ativa = !!t;
       return `<div class="retomada-item" style="padding:10px 0;border-top:${i ? "1px solid var(--border)" : "0"}">
         <p style="margin:0 0 6px;font-size:13px"><strong>${i + 1}ª mensagem</strong> · ${
-          ativa ? `${textoTempo(t)} ${quando[i]}` : '<span class="text-secondary">desligada</span>'
+          ativa ? `${textoTempo(t)} sem resposta, ${quando[i]}` : '<span class="text-secondary">desligada</span>'
         }</p>
         <div class="msg-preview">${msg ? esc(msg) : "<em>Sem mensagem configurada</em>"}</div>
       </div>`;

@@ -67,6 +67,8 @@ let fluxoCache = [];
 let atendimentoHumanoCache = null;
 let remarcarFaltaCache = null;
 let naoEntendiCache = null;
+let retomadaCache = null;
+let retomadaMinutos = null;
 
 function formatarCaptura(variavel) {
   if (!variavel) return null;
@@ -154,12 +156,20 @@ async function carregarFluxo() {
   const naoEntendiItem = fluxoCache.find(
     (m) => m.etapa === "Não entendi a resposta",
   );
+  const retomadaItem = fluxoCache.find((m) => m.etapa === "Retomar agendamento");
   const listaPrincipal = fluxoCache.filter(
     (m) =>
       m.etapa !== "Atendimento humano" &&
       m.etapa !== "Remarcar após falta" &&
-      m.etapa !== "Não entendi a resposta",
+      m.etapa !== "Não entendi a resposta" &&
+      m.etapa !== "Retomar agendamento",
   );
+
+  retomadaCache = retomadaItem || null;
+  document.getElementById("retomada-preview").innerHTML = retomadaItem
+    ? retomadaItem.mensagem || "<em>Sem mensagem configurada</em>"
+    : "<em>Não encontrado</em>";
+  carregarTempoRetomada(barbeariaId);
 
   atendimentoHumanoCache = atendimentoHumanoItem || null;
   document.getElementById("atendimento-humano-preview").innerHTML =
@@ -784,3 +794,76 @@ document
       `<tr><td colspan="2" class="empty">Erro: ${err.message}</td></tr>`;
   }
 })();
+
+
+// ---------- Retomar agendamento (cliente parou de responder no meio do agendamento) ----------
+function textoTempoRetomada(min) {
+  if (!min) return "Desligado: a mensagem não é enviada.";
+  const t = min % 60 === 0 ? `${min / 60} ${min === 60 ? "hora" : "horas"}` : `${min} minutos`;
+  return `Enviada depois de ${t} sem resposta do cliente.`;
+}
+
+async function carregarTempoRetomada(barbeariaId) {
+  const { data, error } = await supabaseClient
+    .from("barbearias")
+    .select("retomada_minutos")
+    .eq("id", barbeariaId)
+    .single();
+  retomadaMinutos = error ? null : data.retomada_minutos;
+  document.getElementById("retomada-tempo-texto").textContent = error
+    ? "Não foi possível carregar o tempo."
+    : textoTempoRetomada(retomadaMinutos);
+}
+
+document.getElementById("editar-retomada-btn").addEventListener("click", () => {
+  document.getElementById("rt-mensagem").value = retomadaCache?.mensagem || "";
+  const sel = document.getElementById("rt-minutos");
+  const valor = retomadaMinutos ? String(retomadaMinutos) : "";
+  if (valor && ![...sel.options].some((o) => o.value === valor)) {
+    sel.add(new Option(textoTempoRetomada(retomadaMinutos).replace("Enviada depois de ", "").replace(" sem resposta do cliente.", ""), valor));
+  }
+  sel.value = valor;
+  document.getElementById("rt-erro").style.display = "none";
+  document.getElementById("modal-retomada").classList.remove("hidden");
+});
+
+document.getElementById("form-retomada").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const mensagem = document.getElementById("rt-mensagem").value.trim();
+  const minutos = document.getElementById("rt-minutos").value;
+  const erroEl = document.getElementById("rt-erro");
+  const salvarBtn = document.getElementById("rt-salvar-btn");
+  erroEl.style.display = "none";
+
+  if (!mensagem) {
+    erroEl.textContent = "Essa mensagem é obrigatória.";
+    erroEl.style.display = "block";
+    return;
+  }
+  if (!retomadaCache) {
+    erroEl.textContent = 'Mensagem "Retomar agendamento" não encontrada no banco.';
+    erroEl.style.display = "block";
+    return;
+  }
+
+  salvarBtn.disabled = true;
+  salvarBtn.textContent = "Salvando...";
+  const barbeariaId = await obterBarbeariaId();
+  const [r1, r2] = await Promise.all([
+    supabaseClient.from("fluxo_mensagens").update({ mensagem }).eq("id", retomadaCache.id),
+    supabaseClient
+      .from("barbearias")
+      .update({ retomada_minutos: minutos ? Number(minutos) : null })
+      .eq("id", barbeariaId),
+  ]);
+
+  if (r1.error || r2.error) {
+    erroEl.textContent = "Erro ao salvar. Tente de novo.";
+    erroEl.style.display = "block";
+  } else {
+    document.getElementById("modal-retomada").classList.add("hidden");
+    await carregarFluxo();
+  }
+  salvarBtn.disabled = false;
+  salvarBtn.textContent = "Salvar";
+});

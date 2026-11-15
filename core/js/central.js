@@ -833,7 +833,19 @@ function preencherMensagem(texto, lead) {
     .replaceAll("[barbearia]", lead.nome_barbearia || "sua barbearia")
     .replaceAll("[bairro]", bairro || "região")
     .replaceAll("[seu nome]", meuNome || "[seu nome]")
-    .replaceAll("[Google/Instagram]", lead.instagram ? "Instagram" : "Google");
+    .replaceAll("[Google/Instagram]", lead.instagram ? "Instagram" : "Google")
+    // a safra recalcula a saudação na hora em que cada mensagem sai
+    .replace(/\[sauda[çc][ãa]o\]/gi, saudacaoAgora());
+}
+
+// bom dia (5h às 11h59), boa tarde (12h às 17h59) ou boa noite, pelo horário de Brasília
+function saudacaoAgora() {
+  const hora = Number(
+    new Intl.DateTimeFormat("pt-BR", { hour: "numeric", hourCycle: "h23", timeZone: "America/Sao_Paulo" }).format(new Date()),
+  );
+  if (hora >= 5 && hora < 12) return "Bom dia";
+  if (hora >= 12 && hora < 18) return "Boa tarde";
+  return "Boa noite";
 }
 
 // roteiro sugerido para a etapa do lead

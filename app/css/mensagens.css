@@ -222,3 +222,24 @@
 .flow-step.flow-step-final .flow-step-sub {
   color: #b3261e;
 }
+
+/* Retomar agendamento: listas de tempo e separação das 3 mensagens */
+.field select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+.retomada-bloco + .retomada-bloco {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  margin-top: 4px;
+}
+#modal-retomada .modal {
+  max-height: 90vh;
+  overflow-y: auto;
+}

@@ -67,8 +67,8 @@ let fluxoCache = [];
 let atendimentoHumanoCache = null;
 let remarcarFaltaCache = null;
 let naoEntendiCache = null;
-let retomadaCache = null;
-let retomadaMinutos = null;
+let retomadaCache = [null, null, null];
+let retomadaTempos = [null, null, null];
 
 function formatarCaptura(variavel) {
   if (!variavel) return null;
@@ -156,20 +156,16 @@ async function carregarFluxo() {
   const naoEntendiItem = fluxoCache.find(
     (m) => m.etapa === "Não entendi a resposta",
   );
-  const retomadaItem = fluxoCache.find((m) => m.etapa === "Retomar agendamento");
+  retomadaCache = [1, 2, 3].map((n) => fluxoCache.find((m) => m.etapa === `Retomar agendamento ${n}`) || null);
   const listaPrincipal = fluxoCache.filter(
     (m) =>
       m.etapa !== "Atendimento humano" &&
       m.etapa !== "Remarcar após falta" &&
       m.etapa !== "Não entendi a resposta" &&
-      m.etapa !== "Retomar agendamento",
+      !/^Retomar agendamento/.test(m.etapa),
   );
 
-  retomadaCache = retomadaItem || null;
-  document.getElementById("retomada-preview").innerHTML = retomadaItem
-    ? retomadaItem.mensagem || "<em>Sem mensagem configurada</em>"
-    : "<em>Não encontrado</em>";
-  carregarTempoRetomada(barbeariaId);
+  carregarTemposRetomada(barbeariaId);
 
   atendimentoHumanoCache = atendimentoHumanoItem || null;
   document.getElementById("atendimento-humano-preview").innerHTML =
@@ -797,51 +793,77 @@ document
 
 
 // ---------- Retomar agendamento (cliente parou de responder no meio do agendamento) ----------
-function textoTempoRetomada(min) {
-  if (!min) return "Desligado: a mensagem não é enviada.";
-  const t = min % 60 === 0 ? `${min / 60} ${min === 60 ? "hora" : "horas"}` : `${min} minutos`;
-  return `Enviada depois de ${t} sem resposta do cliente.`;
+// Até 3 mensagens em sequência; o tempo de cada uma conta a partir da anterior
+// (a 1ª, a partir da última resposta do cliente). Tempo vazio = mensagem desligada.
+function textoTempo(min) {
+  if (!min) return "";
+  if (min % 1440 === 0) return `${min / 1440} ${min === 1440 ? "dia" : "dias"}`;
+  if (min % 60 === 0) return `${min / 60} ${min === 60 ? "hora" : "horas"}`;
+  return `${min} minutos`;
 }
 
-async function carregarTempoRetomada(barbeariaId) {
+function renderizarRetomada() {
+  const quando = ["sem resposta do cliente", "depois da 1ª", "depois da 2ª"];
+  let desligouAntes = false;
+  document.getElementById("retomada-lista").innerHTML = [0, 1, 2]
+    .map((i) => {
+      const t = retomadaTempos[i];
+      const msg = retomadaCache[i]?.mensagem;
+      const ativa = !!t && !desligouAntes;
+      if (!t) desligouAntes = true;
+      return `<div class="retomada-item" style="padding:10px 0;border-top:${i ? "1px solid var(--border)" : "0"}">
+        <p style="margin:0 0 6px;font-size:13px"><strong>${i + 1}ª mensagem</strong> · ${
+          ativa ? `${textoTempo(t)} ${quando[i]}` : '<span class="text-secondary">desligada</span>'
+        }</p>
+        <div class="msg-preview">${msg ? esc(msg) : "<em>Sem mensagem configurada</em>"}</div>
+      </div>`;
+    })
+    .join("");
+}
+
+function esc(v) {
+  return String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+async function carregarTemposRetomada(barbeariaId) {
   const { data, error } = await supabaseClient
     .from("barbearias")
-    .select("retomada_minutos")
+    .select("retomada_tempos")
     .eq("id", barbeariaId)
     .single();
-  retomadaMinutos = error ? null : data.retomada_minutos;
-  document.getElementById("retomada-tempo-texto").textContent = error
-    ? "Não foi possível carregar o tempo."
-    : textoTempoRetomada(retomadaMinutos);
+  const t = (!error && Array.isArray(data.retomada_tempos) && data.retomada_tempos) || [];
+  retomadaTempos = [0, 1, 2].map((i) => (t[i] ? Number(t[i]) : null));
+  renderizarRetomada();
 }
 
 document.getElementById("editar-retomada-btn").addEventListener("click", () => {
-  document.getElementById("rt-mensagem").value = retomadaCache?.mensagem || "";
-  const sel = document.getElementById("rt-minutos");
-  const valor = retomadaMinutos ? String(retomadaMinutos) : "";
-  if (valor && ![...sel.options].some((o) => o.value === valor)) {
-    sel.add(new Option(textoTempoRetomada(retomadaMinutos).replace("Enviada depois de ", "").replace(" sem resposta do cliente.", ""), valor));
-  }
-  sel.value = valor;
+  [1, 2, 3].forEach((n) => {
+    document.getElementById(`rt-msg-${n}`).value = retomadaCache[n - 1]?.mensagem || "";
+    const sel = document.getElementById(`rt-tempo-${n}`);
+    const v = retomadaTempos[n - 1] ? String(retomadaTempos[n - 1]) : "";
+    if (v && ![...sel.options].some((o) => o.value === v)) sel.add(new Option(textoTempo(Number(v)), v));
+    sel.value = v;
+  });
   document.getElementById("rt-erro").style.display = "none";
   document.getElementById("modal-retomada").classList.remove("hidden");
 });
 
 document.getElementById("form-retomada").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const mensagem = document.getElementById("rt-mensagem").value.trim();
-  const minutos = document.getElementById("rt-minutos").value;
   const erroEl = document.getElementById("rt-erro");
   const salvarBtn = document.getElementById("rt-salvar-btn");
   erroEl.style.display = "none";
 
-  if (!mensagem) {
-    erroEl.textContent = "Essa mensagem é obrigatória.";
+  const tempos = [1, 2, 3].map((n) => Number(document.getElementById(`rt-tempo-${n}`).value) || null);
+  const msgs = [1, 2, 3].map((n) => document.getElementById(`rt-msg-${n}`).value.trim());
+  const faltando = [0, 1, 2].find((i) => tempos[i] && !msgs[i]);
+  if (faltando !== undefined) {
+    erroEl.textContent = `Escreva a ${faltando + 1}ª mensagem ou deixe ela desligada.`;
     erroEl.style.display = "block";
     return;
   }
-  if (!retomadaCache) {
-    erroEl.textContent = 'Mensagem "Retomar agendamento" não encontrada no banco.';
+  if (retomadaCache.some((m) => !m)) {
+    erroEl.textContent = "Mensagens de retomada não encontradas no banco.";
     erroEl.style.display = "block";
     return;
   }
@@ -849,15 +871,14 @@ document.getElementById("form-retomada").addEventListener("submit", async (e) =>
   salvarBtn.disabled = true;
   salvarBtn.textContent = "Salvando...";
   const barbeariaId = await obterBarbeariaId();
-  const [r1, r2] = await Promise.all([
-    supabaseClient.from("fluxo_mensagens").update({ mensagem }).eq("id", retomadaCache.id),
-    supabaseClient
-      .from("barbearias")
-      .update({ retomada_minutos: minutos ? Number(minutos) : null })
-      .eq("id", barbeariaId),
+  const resultados = await Promise.all([
+    ...retomadaCache.map((m, i) =>
+      msgs[i] ? supabaseClient.from("fluxo_mensagens").update({ mensagem: msgs[i] }).eq("id", m.id) : { error: null },
+    ),
+    supabaseClient.from("barbearias").update({ retomada_tempos: tempos }).eq("id", barbeariaId),
   ]);
 
-  if (r1.error || r2.error) {
+  if (resultados.some((r) => r.error)) {
     erroEl.textContent = "Erro ao salvar. Tente de novo.";
     erroEl.style.display = "block";
   } else {

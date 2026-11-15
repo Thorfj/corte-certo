@@ -132,6 +132,16 @@
           <div class="msg-preview" id="nao-entendi-preview" style="margin-bottom:16px">Carregando...</div>
           <button class="btn" id="editar-nao-entendi-btn">Editar mensagem</button>
         </div>
+
+        <div class="card" style="margin-top:16px">
+          <p class="card-title" style="margin:0 0 4px">Retomar agendamento</p>
+          <p class="text-secondary" style="margin:0 0 12px;font-size:13px">
+            Disparada quando o cliente começa a agendar pelo WhatsApp e para de responder no meio. Sai uma vez, depois do tempo que você escolher, só entre 8h e 21h. Use {nome} para o nome do cliente.
+          </p>
+          <p style="margin:0 0 10px;font-size:13px"><strong id="retomada-tempo-texto">Carregando...</strong></p>
+          <div class="msg-preview" id="retomada-preview" style="margin-bottom:16px">Carregando...</div>
+          <button class="btn" id="editar-retomada-btn">Editar mensagem e tempo</button>
+        </div>
       </div>
     </main>
   </div>
@@ -315,7 +325,41 @@
       </form>
     </div>
   </div>
-  <script src="/app/js/mensagens.js"></script>
+  <div class="modal-overlay hidden" id="modal-retomada">
+    <div class="modal">
+      <div class="modal-header">
+        <p class="modal-title">Retomar agendamento</p>
+        <button class="modal-close" data-close="modal-retomada">&times;</button>
+      </div>
+      <form id="form-retomada">
+        <div class="field">
+          <label for="rt-minutos">Enviar quando o cliente ficar sem responder por</label>
+          <select id="rt-minutos">
+            <option value="">Não enviar (desligado)</option>
+            <option value="5">5 minutos</option>
+            <option value="10">10 minutos</option>
+            <option value="15">15 minutos</option>
+            <option value="30">30 minutos</option>
+            <option value="60">1 hora</option>
+            <option value="120">2 horas</option>
+            <option value="240">4 horas</option>
+            <option value="720">12 horas</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="rt-mensagem">Mensagem enviada ao cliente *</label>
+          <textarea id="rt-mensagem" rows="5"></textarea>
+          <p class="text-secondary" style="margin:6px 0 0;font-size:12px">{nome} vira o primeiro nome do cliente. Se ele ainda não disse o nome, o {nome} some do texto.</p>
+        </div>
+        <p class="modal-error" id="rt-erro"></p>
+        <div class="modal-footer">
+          <button type="button" class="btn" data-close="modal-retomada">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="rt-salvar-btn">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script src="/app/js/mensagens.js?v=20261115"></script>
 </body>
 
 </html>

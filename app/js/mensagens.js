@@ -67,8 +67,9 @@ let fluxoCache = [];
 let atendimentoHumanoCache = null;
 let remarcarFaltaCache = null;
 let naoEntendiCache = null;
-let retomadaCache = [null, null, null];
-let retomadaTempos = [null, null, null];
+let retomadaCache = [];
+let retomadaTempos = [];
+const RETOMADA_MAX = 10;
 
 function formatarCaptura(variavel) {
   if (!variavel) return null;
@@ -156,7 +157,9 @@ async function carregarFluxo() {
   const naoEntendiItem = fluxoCache.find(
     (m) => m.etapa === "Não entendi a resposta",
   );
-  retomadaCache = [1, 2, 3].map((n) => fluxoCache.find((m) => m.etapa === `Retomar agendamento ${n}`) || null);
+  retomadaCache = fluxoCache
+    .filter((m) => /^Retomar agendamento \d+$/.test(m.etapa))
+    .sort((a, b) => Number(a.etapa.split(" ").pop()) - Number(b.etapa.split(" ").pop()));
   const listaPrincipal = fluxoCache.filter(
     (m) =>
       m.etapa !== "Atendimento humano" &&
@@ -804,17 +807,19 @@ function textoTempo(min) {
 }
 
 function renderizarRetomada() {
-  const quando = ["na 1ª parada", "na 2ª parada", "na 3ª parada"];
-  document.getElementById("retomada-lista").innerHTML = [0, 1, 2]
-    .map((i) => {
+  const lista = document.getElementById("retomada-lista");
+  if (!retomadaCache.length) {
+    lista.innerHTML = '<p class="text-secondary" style="margin:0;font-size:13px">Nenhuma mensagem: o cliente que parar de responder não recebe nada.</p>';
+    return;
+  }
+  lista.innerHTML = retomadaCache
+    .map((m, i) => {
       const t = retomadaTempos[i];
-      const msg = retomadaCache[i]?.mensagem;
-      const ativa = !!t;
       return `<div class="retomada-item" style="padding:10px 0;border-top:${i ? "1px solid var(--border)" : "0"}">
         <p style="margin:0 0 6px;font-size:13px"><strong>${i + 1}ª mensagem</strong> · ${
-          ativa ? `${textoTempo(t)} sem resposta, ${quando[i]}` : '<span class="text-secondary">desligada</span>'
+          t ? `${textoTempo(t)} sem resposta, na ${i + 1}ª parada` : '<span class="text-secondary">desligada</span>'
         }</p>
-        <div class="msg-preview">${msg ? esc(msg) : "<em>Sem mensagem configurada</em>"}</div>
+        <div class="msg-preview">${m.mensagem ? esc(m.mensagem) : "<em>Sem mensagem configurada</em>"}</div>
       </div>`;
     })
     .join("");
@@ -831,54 +836,106 @@ async function carregarTemposRetomada(barbeariaId) {
     .eq("id", barbeariaId)
     .single();
   const t = (!error && Array.isArray(data.retomada_tempos) && data.retomada_tempos) || [];
-  retomadaTempos = [0, 1, 2].map((i) => (t[i] ? Number(t[i]) : null));
+  retomadaTempos = retomadaCache.map((_, i) => (t[i] ? Number(t[i]) : null));
   renderizarRetomada();
 }
 
-document.getElementById("editar-retomada-btn").addEventListener("click", () => {
-  [1, 2, 3].forEach((n) => {
-    document.getElementById(`rt-msg-${n}`).value = retomadaCache[n - 1]?.mensagem || "";
-    const sel = document.getElementById(`rt-tempo-${n}`);
-    const v = retomadaTempos[n - 1] ? String(retomadaTempos[n - 1]) : "";
-    if (v && ![...sel.options].some((o) => o.value === v)) sel.add(new Option(textoTempo(Number(v)), v));
-    sel.value = v;
+const OPCOES_TEMPO = [
+  ["", "Desligada"], ["5", "5 minutos"], ["10", "10 minutos"], ["15", "15 minutos"], ["30", "30 minutos"],
+  ["60", "1 hora"], ["120", "2 horas"], ["240", "4 horas"], ["720", "12 horas"], ["1440", "1 dia"], ["2880", "2 dias"],
+];
+
+// blocos editáveis da janela (estado só da janela até salvar)
+let rtRascunho = [];
+
+function lerRascunhoDaTela() {
+  document.querySelectorAll("#rt-blocos .retomada-bloco").forEach((bloco, i) => {
+    rtRascunho[i] = {
+      tempo: bloco.querySelector(".rt-tempo").value,
+      mensagem: bloco.querySelector(".rt-msg").value,
+    };
   });
+}
+
+function desenharBlocosRetomada() {
+  const cont = document.getElementById("rt-blocos");
+  cont.innerHTML = rtRascunho
+    .map((b, i) => {
+      const opcoes = [...OPCOES_TEMPO];
+      if (b.tempo && !opcoes.some(([v]) => v === b.tempo)) opcoes.push([b.tempo, textoTempo(Number(b.tempo))]);
+      return `<div class="retomada-bloco">
+        <div class="retomada-bloco-topo">
+          <p class="card-title" style="margin:0;font-size:14px">${i + 1}ª mensagem <span class="text-secondary" style="font-weight:400">(${i + 1}ª parada)</span></p>
+          <button type="button" class="btn btn-sm rt-excluir" data-i="${i}">Excluir</button>
+        </div>
+        <div class="field">
+          <label>Enviar depois de quanto tempo sem resposta</label>
+          <select class="rt-tempo">${opcoes
+            .map(([v, t]) => `<option value="${v}"${v === b.tempo ? " selected" : ""}>${t}</option>`)
+            .join("")}</select>
+        </div>
+        <div class="field">
+          <label>Mensagem</label>
+          <textarea class="rt-msg" rows="3">${esc(b.mensagem)}</textarea>
+        </div>
+      </div>`;
+    })
+    .join("") || '<p class="text-secondary" style="font-size:13px">Nenhuma mensagem. Adicione uma abaixo.</p>';
+  cont.querySelectorAll(".rt-excluir").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      lerRascunhoDaTela();
+      rtRascunho.splice(Number(btn.dataset.i), 1);
+      desenharBlocosRetomada();
+    }),
+  );
+  const add = document.getElementById("rt-adicionar");
+  add.disabled = rtRascunho.length >= RETOMADA_MAX;
+  add.textContent = rtRascunho.length >= RETOMADA_MAX ? `Máximo de ${RETOMADA_MAX} mensagens` : "+ Adicionar mensagem";
+}
+
+document.getElementById("rt-adicionar").addEventListener("click", () => {
+  lerRascunhoDaTela();
+  if (rtRascunho.length >= RETOMADA_MAX) return;
+  rtRascunho.push({ tempo: "15", mensagem: "Oi {nome}! Vi que a gente não terminou seu agendamento 😊\nMe responde aqui que eu continuo." });
+  desenharBlocosRetomada();
+  const blocos = document.querySelectorAll("#rt-blocos .retomada-bloco");
+  blocos[blocos.length - 1]?.querySelector(".rt-msg").focus();
+});
+
+document.getElementById("editar-retomada-btn").addEventListener("click", () => {
+  rtRascunho = retomadaCache.map((m, i) => ({
+    tempo: retomadaTempos[i] ? String(retomadaTempos[i]) : "",
+    mensagem: m.mensagem || "",
+  }));
+  desenharBlocosRetomada();
   document.getElementById("rt-erro").style.display = "none";
   document.getElementById("modal-retomada").classList.remove("hidden");
 });
 
 document.getElementById("form-retomada").addEventListener("submit", async (e) => {
   e.preventDefault();
+  lerRascunhoDaTela();
   const erroEl = document.getElementById("rt-erro");
   const salvarBtn = document.getElementById("rt-salvar-btn");
   erroEl.style.display = "none";
 
-  const tempos = [1, 2, 3].map((n) => Number(document.getElementById(`rt-tempo-${n}`).value) || null);
-  const msgs = [1, 2, 3].map((n) => document.getElementById(`rt-msg-${n}`).value.trim());
-  const faltando = [0, 1, 2].find((i) => tempos[i] && !msgs[i]);
-  if (faltando !== undefined) {
-    erroEl.textContent = `Escreva a ${faltando + 1}ª mensagem ou deixe ela desligada.`;
-    erroEl.style.display = "block";
-    return;
-  }
-  if (retomadaCache.some((m) => !m)) {
-    erroEl.textContent = "Mensagens de retomada não encontradas no banco.";
+  const vazia = rtRascunho.findIndex((b) => !b.mensagem.trim());
+  if (vazia >= 0) {
+    erroEl.textContent = `A ${vazia + 1}ª mensagem está vazia. Escreva o texto ou exclua ela.`;
     erroEl.style.display = "block";
     return;
   }
 
   salvarBtn.disabled = true;
   salvarBtn.textContent = "Salvando...";
-  const barbeariaId = await obterBarbeariaId();
-  const resultados = await Promise.all([
-    ...retomadaCache.map((m, i) =>
-      msgs[i] ? supabaseClient.from("fluxo_mensagens").update({ mensagem: msgs[i] }).eq("id", m.id) : { error: null },
-    ),
-    supabaseClient.from("barbearias").update({ retomada_tempos: tempos }).eq("id", barbeariaId),
-  ]);
+  const { error } = await supabaseClient.rpc("salvar_retomada", {
+    p_tempos: rtRascunho.map((b) => (b.tempo ? Number(b.tempo) : null)),
+    p_mensagens: rtRascunho.map((b) => b.mensagem.trim()),
+  });
 
-  if (resultados.some((r) => r.error)) {
-    erroEl.textContent = "Erro ao salvar. Tente de novo.";
+  if (error) {
+    console.error(error);
+    erroEl.textContent = error.message || "Erro ao salvar. Tente de novo.";
     erroEl.style.display = "block";
   } else {
     document.getElementById("modal-retomada").classList.add("hidden");

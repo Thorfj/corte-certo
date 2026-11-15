@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/app/css/global.css">
-  <link rel="stylesheet" href="/app/css/mensagens.css">
+  <link rel="stylesheet" href="/app/css/mensagens.css?v=20261115">
   <link rel="stylesheet" href="/app/css/responsivo.css">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -136,11 +136,10 @@
         <div class="card" style="margin-top:16px">
           <p class="card-title" style="margin:0 0 4px">Retomar agendamento</p>
           <p class="text-secondary" style="margin:0 0 12px;font-size:13px">
-            Disparada quando o cliente começa a agendar pelo WhatsApp e para de responder no meio. Sai uma vez, depois do tempo que você escolher, só entre 8h e 21h. Use {nome} para o nome do cliente.
+            Disparadas quando o cliente começa a agendar pelo WhatsApp e para de responder no meio. Se ele continuar sem responder, sai a próxima, até a 3ª. Quando ele responde, a sequência recomeça do zero. Use {nome} para o nome do cliente.
           </p>
-          <p style="margin:0 0 10px;font-size:13px"><strong id="retomada-tempo-texto">Carregando...</strong></p>
-          <div class="msg-preview" id="retomada-preview" style="margin-bottom:16px">Carregando...</div>
-          <button class="btn" id="editar-retomada-btn">Editar mensagem e tempo</button>
+          <div id="retomada-lista">Carregando...</div>
+          <button class="btn" id="editar-retomada-btn" style="margin-top:12px">Editar mensagens e tempos</button>
         </div>
       </div>
     </main>
@@ -332,24 +331,75 @@
         <button class="modal-close" data-close="modal-retomada">&times;</button>
       </div>
       <form id="form-retomada">
-        <div class="field">
-          <label for="rt-minutos">Enviar quando o cliente ficar sem responder por</label>
-          <select id="rt-minutos">
-            <option value="">Não enviar (desligado)</option>
-            <option value="5">5 minutos</option>
-            <option value="10">10 minutos</option>
-            <option value="15">15 minutos</option>
-            <option value="30">30 minutos</option>
-            <option value="60">1 hora</option>
-            <option value="120">2 horas</option>
-            <option value="240">4 horas</option>
-            <option value="720">12 horas</option>
-          </select>
+        <p class="text-secondary" style="margin:0 0 12px;font-size:12.5px">{nome} vira o primeiro nome do cliente; se ele ainda não disse o nome, o {nome} some do texto. Uma mensagem desligada encerra a sequência ali.</p>
+        <div class="retomada-bloco">
+          <p class="card-title" style="margin:0 0 8px;font-size:14px">1ª mensagem</p>
+          <div class="field">
+            <label for="rt-tempo-1">Quanto tempo sem resposta do cliente</label>
+            <select id="rt-tempo-1">
+              <option value="">Desligada</option>
+              <option value="5">5 minutos</option>
+              <option value="10">10 minutos</option>
+              <option value="15">15 minutos</option>
+              <option value="30">30 minutos</option>
+              <option value="60">1 hora</option>
+              <option value="120">2 horas</option>
+              <option value="240">4 horas</option>
+              <option value="720">12 horas</option>
+              <option value="1440">1 dia</option>
+              <option value="2880">2 dias</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="rt-msg-1">Mensagem</label>
+            <textarea id="rt-msg-1" rows="3"></textarea>
+          </div>
         </div>
-        <div class="field">
-          <label for="rt-mensagem">Mensagem enviada ao cliente *</label>
-          <textarea id="rt-mensagem" rows="5"></textarea>
-          <p class="text-secondary" style="margin:6px 0 0;font-size:12px">{nome} vira o primeiro nome do cliente. Se ele ainda não disse o nome, o {nome} some do texto.</p>
+        <div class="retomada-bloco">
+          <p class="card-title" style="margin:0 0 8px;font-size:14px">2ª mensagem</p>
+          <div class="field">
+            <label for="rt-tempo-2">Quanto tempo depois da 1ª mensagem</label>
+            <select id="rt-tempo-2">
+              <option value="">Desligada</option>
+              <option value="5">5 minutos</option>
+              <option value="10">10 minutos</option>
+              <option value="15">15 minutos</option>
+              <option value="30">30 minutos</option>
+              <option value="60">1 hora</option>
+              <option value="120">2 horas</option>
+              <option value="240">4 horas</option>
+              <option value="720">12 horas</option>
+              <option value="1440">1 dia</option>
+              <option value="2880">2 dias</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="rt-msg-2">Mensagem</label>
+            <textarea id="rt-msg-2" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="retomada-bloco">
+          <p class="card-title" style="margin:0 0 8px;font-size:14px">3ª mensagem</p>
+          <div class="field">
+            <label for="rt-tempo-3">Quanto tempo depois da 2ª mensagem</label>
+            <select id="rt-tempo-3">
+              <option value="">Desligada</option>
+              <option value="5">5 minutos</option>
+              <option value="10">10 minutos</option>
+              <option value="15">15 minutos</option>
+              <option value="30">30 minutos</option>
+              <option value="60">1 hora</option>
+              <option value="120">2 horas</option>
+              <option value="240">4 horas</option>
+              <option value="720">12 horas</option>
+              <option value="1440">1 dia</option>
+              <option value="2880">2 dias</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="rt-msg-3">Mensagem</label>
+            <textarea id="rt-msg-3" rows="3"></textarea>
+          </div>
         </div>
         <p class="modal-error" id="rt-erro"></p>
         <div class="modal-footer">
@@ -359,7 +409,7 @@
       </form>
     </div>
   </div>
-  <script src="/app/js/mensagens.js?v=20261115"></script>
+  <script src="/app/js/mensagens.js?v=20261115b"></script>
 </body>
 
 </html>

@@ -451,7 +451,7 @@ function initSafra() {
           l.status === "novo_lead" && primeiros.length && l.origem !== "parceria"
             ? primeiros[novos++ % primeiros.length]
             : roteiroSugerido(l);
-        const opcoes = mensagensCache
+        const opcoes = roteirosParaEnviar()
           .map(
             (m) =>
               `<option value="${m.id}"${roteiro && m.id === roteiro.id ? " selected" : ""}>${esc(m.etapa)}</option>`,
@@ -727,6 +727,12 @@ async function carregarMensagens() {
   renderizarMensagens();
 }
 
+// o modelo do pitch automático aparece na aba Mensagens, mas não é enviado à mão
+const AUTOMACAO_MODELO_PITCH = "pitch_resposta";
+function roteirosParaEnviar() {
+  return mensagensCache.filter((m) => m.automacao !== AUTOMACAO_MODELO_PITCH);
+}
+
 function opcoesEtapa(selecionada) {
   return (
     '<option value="">Não muda</option>' +
@@ -762,9 +768,14 @@ function renderizarMensagens() {
       </div>
       <div class="field">
         <label>Mensagem</label>
-        <textarea name="texto" rows="4" required>${esc(m.texto)}</textarea>
+        <textarea name="texto" rows="${m.automacao === AUTOMACAO_MODELO_PITCH ? 9 : 4}" required>${esc(m.texto)}</textarea>
       </div>
-      <div class="field-row">
+      ${
+        m.automacao === AUTOMACAO_MODELO_PITCH
+          ? `<p class="hint msg-automatica">Enviada sozinha pelo n8n, 12 minutos depois que uma pessoa responde a saudação. A IA segue este modelo: troca [resposta ao cumprimento] por uma resposta ao que a pessoa disse e [tempo] pelo tempo que ela levou para responder. Se a resposta veio em menos de 15 minutos, a IA reescreve só o trecho do tempo.</p>`
+          : ""
+      }
+      <div class="field-row"${m.automacao === AUTOMACAO_MODELO_PITCH ? " hidden" : ""}>
         <div class="field">
           <label>Ao enviar, mover para</label>
           <select name="status_depois">${opcoesEtapa(m.status_depois)}</select>
@@ -998,7 +1009,7 @@ function initModal() {
 
     // roteiros
     roteiroSelect.innerHTML = '<option value="">Mensagem livre</option>';
-    mensagensCache.forEach((m) => roteiroSelect.add(new Option(m.etapa, m.id)));
+    roteirosParaEnviar().forEach((m) => roteiroSelect.add(new Option(m.etapa, m.id)));
     const sugerido = roteiroSugerido(lead);
     roteiroSelect.value = sugerido ? String(sugerido.id) : "";
     mensagemEl.value = sugerido ? preencherMensagem(sugerido.texto, lead) : "";
@@ -1521,7 +1532,7 @@ function cardFollowup(l) {
   const roteiro = roteiroFollowup(l);
   const opcoes =
     '<option value="">Escrever do zero</option>' +
-    mensagensCache
+    roteirosParaEnviar()
       .map(
         (m) =>
           `<option value="${m.id}"${roteiro && m.id === roteiro.id ? " selected" : ""}>${esc(m.etapa)}</option>`,

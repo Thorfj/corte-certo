@@ -907,3 +907,69 @@ main {
     grid-template-columns: 1fr;
   }
 }
+
+/* fluxo da conversa: cliente parou de responder no meio */
+.how-extra {
+  margin-top: 40px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 32px;
+  align-items: center;
+  background: #fff;
+  box-shadow: var(--shadow-card);
+  border-radius: var(--radius);
+  padding: 26px 28px;
+}
+.how-extra-tag {
+  display: inline-block;
+  background: var(--green-soft);
+  color: var(--green-dark);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 4px 10px;
+  margin-bottom: 10px;
+}
+.how-extra h4 {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 17px;
+  margin-bottom: 6px;
+}
+.how-extra p {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.how-extra .how-extra-msg {
+  position: relative;
+  background: #efeae2;
+  color: var(--ink);
+  border-radius: 16px;
+  padding: 14px 16px 22px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.how-extra-msg span {
+  position: absolute;
+  right: 12px;
+  bottom: 6px;
+  font-size: 11px;
+  color: #667781;
+}
+
+@media (max-width: 900px) {
+  .how-extra {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    margin-top: 28px;
+    padding: 22px 20px;
+  }
+}
+@media (max-width: 600px) {
+  .how-extra {
+    margin-top: 22px;
+  }
+}

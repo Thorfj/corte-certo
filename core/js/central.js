@@ -486,6 +486,23 @@ function initSafra() {
       });
     });
 
+    // um roteiro para todos (ex.: fluxo Saudação ou Apresentação)
+    const todosSel = document.getElementById("safraTodos");
+    todosSel.innerHTML =
+      '<option value="">Escolher por lead</option>' +
+      roteirosParaEnviar()
+        .map((m) => `<option value="${m.id}">${esc(m.etapa)}</option>`)
+        .join("");
+    todosSel.onchange = () => {
+      if (!todosSel.value) return;
+      const m = mensagensCache.find((x) => String(x.id) === todosSel.value);
+      lista.querySelectorAll(".safra-item").forEach((item) => {
+        const lead = leadsCache.find((l) => String(l.id) === item.dataset.id);
+        item.querySelector(".safra-roteiro").value = todosSel.value;
+        if (m && lead) item.querySelector(".safra-texto").value = preencherMensagem(m.texto, lead);
+      });
+    };
+
     erroEl.classList.remove("show");
     atualizarInfo();
     overlay.classList.remove("hidden");
@@ -727,10 +744,15 @@ async function carregarMensagens() {
   renderizarMensagens();
 }
 
-// o modelo do pitch automático aparece na aba Mensagens, mas não é enviado à mão
-const AUTOMACAO_MODELO_PITCH = "pitch_resposta";
+// mensagens que o n8n manda sozinho: aparecem na aba Mensagens (para ver e editar), mas não são enviadas à mão
+const MENSAGENS_AUTOMATICAS = {
+  pitch_resposta:
+    "Enviada sozinha pelo n8n, 12 minutos depois que uma pessoa responde a saudação. A IA segue este modelo: troca [resposta ao cumprimento] por uma resposta ao que a pessoa disse e [tempo] pelo tempo que ela levou para responder. Se a resposta veio em menos de 15 minutos, a IA reescreve só o trecho do tempo.",
+  apresentacao_2:
+    "Enviada sozinha pelo n8n, 60 segundos depois da mensagem 1 do fluxo Apresentação. Sai exatamente como está aqui; [barbearia] vira o nome da barbearia.",
+};
 function roteirosParaEnviar() {
-  return mensagensCache.filter((m) => m.automacao !== AUTOMACAO_MODELO_PITCH);
+  return mensagensCache.filter((m) => !MENSAGENS_AUTOMATICAS[m.automacao]);
 }
 
 function opcoesEtapa(selecionada) {
@@ -768,14 +790,14 @@ function renderizarMensagens() {
       </div>
       <div class="field">
         <label>Mensagem</label>
-        <textarea name="texto" rows="${m.automacao === AUTOMACAO_MODELO_PITCH ? 9 : 4}" required>${esc(m.texto)}</textarea>
+        <textarea name="texto" rows="${MENSAGENS_AUTOMATICAS[m.automacao] ? 9 : 4}" required>${esc(m.texto)}</textarea>
       </div>
       ${
-        m.automacao === AUTOMACAO_MODELO_PITCH
-          ? `<p class="hint msg-automatica">Enviada sozinha pelo n8n, 12 minutos depois que uma pessoa responde a saudação. A IA segue este modelo: troca [resposta ao cumprimento] por uma resposta ao que a pessoa disse e [tempo] pelo tempo que ela levou para responder. Se a resposta veio em menos de 15 minutos, a IA reescreve só o trecho do tempo.</p>`
+        MENSAGENS_AUTOMATICAS[m.automacao]
+          ? `<p class="hint msg-automatica">${esc(MENSAGENS_AUTOMATICAS[m.automacao])}</p>`
           : ""
       }
-      <div class="field-row"${m.automacao === AUTOMACAO_MODELO_PITCH ? " hidden" : ""}>
+      <div class="field-row"${MENSAGENS_AUTOMATICAS[m.automacao] ? " hidden" : ""}>
         <div class="field">
           <label>Ao enviar, mover para</label>
           <select name="status_depois">${opcoesEtapa(m.status_depois)}</select>

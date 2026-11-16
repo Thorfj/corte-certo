@@ -1302,6 +1302,9 @@ const MOTIVO_PERDA_RESPOSTA = {
 };
 let respostasCache = [];
 
+// respostas que ficaram fora da aba porque o pitch automático da Saudação vai responder
+let respostasNoPitch = 0;
+
 async function carregarRespostas() {
   const lista = document.getElementById("respostasLista");
   const { data, error } = await supabaseCentral
@@ -1316,7 +1319,20 @@ async function carregarRespostas() {
     document.getElementById("respostasInfo").textContent = "Erro ao carregar as respostas.";
     return;
   }
-  respostasCache = (data || []).sort(
+  // fluxo da Saudação: quem responde o cumprimento recebe o pitch automático, então a resposta não
+  // entra aqui enquanto o pitch não sai. Se o pitch for cancelado ou der erro, ela volta a aparecer.
+  // Fluxo encerrado por robô/IA de atendimento também fica de fora.
+  const { data: fluxos } = await supabaseCentral
+    .from("prospeccao_pitch")
+    .select("lead_id, fluxo, status")
+    .in("status", ["aguardando", "agendado", "enviando", "encerrado_ia"]);
+  const foraDaAba = new Set(
+    (fluxos || [])
+      .filter((f) => f.status === "encerrado_ia" || f.fluxo === "saudacao")
+      .map((f) => String(f.lead_id)),
+  );
+  respostasNoPitch = (data || []).filter((r) => r.lead_id && foraDaAba.has(String(r.lead_id))).length;
+  respostasCache = (data || []).filter((r) => !(r.lead_id && foraDaAba.has(String(r.lead_id)))).sort(
     (a, b) =>
       (ORDEM_PRIORIDADE[a.prioridade] ?? 3) - (ORDEM_PRIORIDADE[b.prioridade] ?? 3) ||
       new Date(b.recebida_em) - new Date(a.recebida_em),
@@ -1342,6 +1358,10 @@ function atualizarContadorRespostas() {
   document.getElementById("respostasInfo").textContent = respostasCache.length
     ? `${respostasCache.length} ${respostasCache.length === 1 ? "conversa esperando" : "conversas esperando"} resposta. A IA leu cada uma e sugeriu o que mandar: revise, ajuste se quiser e envie.`
     : "Nenhuma resposta esperando por você. Quando um lead responder no WhatsApp da prospecção, ela aparece aqui em até 2 minutos.";
+  if (respostasNoPitch)
+    document.getElementById("respostasInfo").textContent += ` ${respostasNoPitch} ${
+      respostasNoPitch === 1 ? "resposta do fluxo Saudação está" : "respostas do fluxo Saudação estão"
+    } com o pitch automático (sai 12 minutos depois da resposta) e não ${respostasNoPitch === 1 ? "aparece" : "aparecem"} aqui.`;
 }
 
 function renderizarRespostas(lista) {

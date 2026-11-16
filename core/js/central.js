@@ -169,8 +169,36 @@ async function checarAcesso() {
 // ---------- abas ----------
 function initTabs() {
   const tabBtns = document.querySelectorAll(".tab-btn");
+  const secaoBtns = document.querySelectorAll(".secao-btn");
+  // última aba aberta em cada menu, para voltar nela ao trocar de menu
+  const ultimaAba = {};
+
+  // mostra só as abas do menu escolhido
+  function mostrarSecao(secao) {
+    secaoBtns.forEach((b) => {
+      const ativo = b.dataset.secao === secao;
+      b.classList.toggle("active", ativo);
+      b.setAttribute("aria-pressed", String(ativo));
+    });
+    tabBtns.forEach((b) => b.classList.toggle("fora", b.dataset.secao !== secao));
+  }
+
+  secaoBtns.forEach((sb) => {
+    sb.addEventListener("click", () => {
+      const secao = sb.dataset.secao;
+      const atual = document.querySelector(".tab-btn.active");
+      if (atual && atual.dataset.secao === secao) return;
+      const alvo =
+        document.querySelector(`.tab-btn[data-tab="${ultimaAba[secao]}"]`) ||
+        document.querySelector(`.tab-btn[data-secao="${secao}"]`);
+      alvo.click();
+    });
+  });
+
   tabBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
+      mostrarSecao(btn.dataset.secao);
+      ultimaAba[btn.dataset.secao] = btn.dataset.tab;
       tabBtns.forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       document
@@ -1534,11 +1562,14 @@ function atualizarContadorFollowup() {
 
 // o número na aba Respostas soma as respostas esperando e os follow-ups vencidos
 function atualizarContadorAba() {
-  const el = document.getElementById("respostasQtd");
-  if (!el) return;
   const n = respostasCache.length + followupsDeHoje().length;
-  el.textContent = n;
-  el.classList.toggle("hidden", !n);
+  // o mesmo número aparece na aba Respostas e no menu Operacional (para ver de dentro dos Relatórios)
+  ["respostasQtd", "operacionalQtd"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = n;
+    el.classList.toggle("hidden", !n);
+  });
 }
 
 function initFollowup() {

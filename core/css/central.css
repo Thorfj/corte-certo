@@ -1516,3 +1516,9 @@ button {
 #tab-conversas #convKpis {
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
+
+/* prévia da safra: um roteiro para todos os leads */
+.safra-todos {
+  max-width: 420px;
+  margin-bottom: 14px;
+}

@@ -744,6 +744,12 @@ button {
 .msg-card-footer .hint {
   margin: 0;
 }
+.msg-card .field-row[hidden] {
+  display: none;
+}
+.msg-card .msg-automatica {
+  margin: -4px 0 12px;
+}
 #tab-mensagens code {
   background: rgba(28, 28, 26, 0.06);
   padding: 1px 5px;

@@ -1481,7 +1481,8 @@ button {
 }
 
 /* aba Conversas */
-#convPeriodo {
+#convPeriodo,
+#convSafra {
   font: inherit;
   font-size: 13.5px;
   padding: 7px 10px;
@@ -1489,6 +1490,14 @@ button {
   border-radius: var(--radius-md);
   background: var(--bg-card);
   color: inherit;
+  max-width: 100%;
+}
+#convPeriodo:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+#tab-conversas .fu-topo-acoes {
+  flex-wrap: wrap;
 }
 #tab-conversas .metrics-grid {
   margin-bottom: 18px;

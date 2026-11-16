@@ -1937,6 +1937,7 @@ let convDados = null;
 
 function initConversas() {
   document.getElementById("convPeriodo").addEventListener("change", renderizarConversas);
+  document.getElementById("convSafra").addEventListener("change", renderizarConversas);
   document.getElementById("convAtualizar").addEventListener("click", () => {
     convDados = null;
     carregarConversas();
@@ -1946,7 +1947,7 @@ function initConversas() {
 async function carregarConversas() {
   if (convDados) return renderizarConversas();
   document.getElementById("convInfo").textContent = "Carregando o relatório...";
-  const [ativ, resp] = await Promise.all([
+  const [ativ, resp, safras, pitch] = await Promise.all([
     supabaseCentral
       .from("lead_atividades")
       .select("lead_id, tipo, descricao, status_para, criado_em")
@@ -1959,13 +1960,15 @@ async function carregarConversas() {
       .not("classificada_em", "is", null)
       .order("recebida_em", { ascending: false })
       .limit(5000),
+    supabaseCentral.from("safras_prospeccao").select("id, criado_em, status").order("id", { ascending: false }).limit(300),
+    supabaseCentral.from("prospeccao_pitch").select("lead_id, fluxo, status"),
   ]);
   if (ativ.error || resp.error) {
     console.error(ativ.error || resp.error);
     document.getElementById("convInfo").textContent = "Erro ao carregar o relatório.";
     return;
   }
-  convDados = { ativ: ativ.data || [], resp: resp.data || [] };
+  convDados = { ativ: ativ.data || [], resp: resp.data || [], safras: safras.data || [], pitch: pitch.data || [] };
   renderizarConversas();
 }
 
@@ -1976,7 +1979,13 @@ function taxaHtml(resp, total) {
 
 function renderizarConversas() {
   if (!convDados) return;
-  const dias = Number(document.getElementById("convPeriodo").value);
+  const safraSel = document.getElementById("convSafra");
+  const safra = safraSel.value;
+  // com uma safra escolhida, o período não vale: conta tudo o que aconteceu com os leads dela
+  const periodoSel = document.getElementById("convPeriodo");
+  periodoSel.disabled = !!safra;
+  periodoSel.title = safra ? "Com uma safra escolhida, o relatório mostra tudo dela, sem limite de período." : "";
+  const dias = safra ? 0 : Number(periodoSel.value);
   const desde = dias ? new Date(Date.now() - dias * 864e5).toISOString() : "";
   const leadPorId = new Map(leadsCache.map((l) => [String(l.id), l]));
 
@@ -1987,8 +1996,30 @@ function renderizarConversas() {
     if (!/^(Primeiro contato|Saudação – 1|Apresentação – 1|Parceria escola – 1)/i.test(a.descricao || "")) return;
     // "Apresentação – 1. Cumprimento + 2ª mensagem" conta como o roteiro "Apresentação – 1. Cumprimento"
     const roteiro = (a.descricao || "").split(" · ")[0].replace(/ (\+ 2ª mensagem|\(a 2ª mensagem falhou\))$/, "");
-    primeiro.set(String(a.lead_id), { roteiro, em: a.criado_em });
+    const safraId = ((a.descricao || "").match(/safra n8n #(\d+)/) || [])[1] || "";
+    primeiro.set(String(a.lead_id), { roteiro, em: a.criado_em, safra: safraId });
   });
+
+  // opções do seletor: só as safras que tiveram primeiro contato
+  const porSafra = new Map();
+  primeiro.forEach((p) => {
+    if (!p.safra) return;
+    const x = porSafra.get(p.safra) || { qtd: 0, em: p.em };
+    x.qtd += 1;
+    if (p.em < x.em) x.em = p.em;
+    porSafra.set(p.safra, x);
+  });
+  const safraInfo = new Map(convDados.safras.map((x) => [String(x.id), x]));
+  safraSel.innerHTML =
+    '<option value="">Todas as safras</option>' +
+    [...porSafra.entries()]
+      .sort((a, b) => Number(b[0]) - Number(a[0]))
+      .map(([id, x]) => {
+        const quando = formatarDataHora((safraInfo.get(id) || {}).criado_em || x.em);
+        return `<option value="${esc(id)}"${id === safra ? " selected" : ""}>Safra #${esc(id)} · ${esc(quando)} · ${x.qtd} ${x.qtd === 1 ? "lead" : "leads"}</option>`;
+      })
+      .join("");
+  if (safra && !porSafra.has(safra)) safraSel.value = "";
 
   // quem respondeu (pessoa): etapa avançou para respondeu+, resposta humana lida pela IA, ou etapa atual
   const respondeu = new Set();
@@ -2002,23 +2033,30 @@ function renderizarConversas() {
     if (ETAPAS_RESPONDEU.includes(l.status)) respondeu.add(String(l.id));
   });
 
-  const contatados = [...primeiro.entries()].filter(([, p]) => !desde || p.em >= desde);
+  const contatados = [...primeiro.entries()].filter(([, p]) => (safra ? p.safra === safra : !desde || p.em >= desde));
+  const idsContatados = new Set(contatados.map(([id]) => id));
   const responderam = contatados.filter(([id]) => respondeu.has(id));
-  const respostasPeriodo = convDados.resp.filter((r) => !desde || r.recebida_em >= desde);
-  const robos = respostasPeriodo.filter((r) => r.humano === false).length;
+  const respostasPeriodo = convDados.resp.filter((r) =>
+    safra ? r.lead_id && idsContatados.has(String(r.lead_id)) : !desde || r.recebida_em >= desde,
+  );
+  // robôs de atendimento: uma por barbearia (não por mensagem)
+  const robos = new Set(respostasPeriodo.filter((r) => r.humano === false).map((r) => r.lead_id || r.telefone)).size;
+  const pitchesEnviados = convDados.pitch.filter((x) => x.status === "enviado" && idsContatados.has(String(x.lead_id))).length;
   const quentes = new Set(respostasPeriodo.filter((r) => r.humano && r.prioridade === "alta").map((r) => r.lead_id || r.telefone)).size;
   const avancaram = contatados.filter(([id]) => ["teste_gratis", "fechado_ganho"].includes(leadPorId.get(id)?.status)).length;
 
+  const onde = safra ? `na safra #${safra}` : "no período";
   document.getElementById("convInfo").textContent = contatados.length
-    ? `${contatados.length} ${contatados.length === 1 ? "primeiro contato" : "primeiros contatos"} no período, ${responderam.length} ${responderam.length === 1 ? "pessoa respondeu" : "pessoas responderam"}.`
-    : "Nenhum primeiro contato no período.";
+    ? `${contatados.length} ${contatados.length === 1 ? "primeiro contato" : "primeiros contatos"} ${onde}, ${responderam.length} ${responderam.length === 1 ? "pessoa respondeu" : "pessoas responderam"}.`
+    : `Nenhum primeiro contato ${onde}.`;
 
   const pct = contatados.length ? ((responderam.length / contatados.length) * 100).toFixed(1).replace(".", ",") : "0";
   document.getElementById("convKpis").innerHTML = `
     <div class="metric-card"><p class="metric-label">Primeiros contatos</p><p class="metric-value">${contatados.length}</p></div>
     <div class="metric-card"><p class="metric-label">Responderam (pessoa)</p><p class="metric-value">${responderam.length}</p></div>
     <div class="metric-card"><p class="metric-label">Taxa de resposta</p><p class="metric-value">${pct}%</p></div>
-    <div class="metric-card"><p class="metric-label">Respostas de robô</p><p class="metric-value">${robos}</p></div>
+    <div class="metric-card"><p class="metric-label">Robôs de atendimento</p><p class="metric-value">${robos}</p></div>
+    <div class="metric-card"><p class="metric-label">Pitches automáticos enviados</p><p class="metric-value">${pitchesEnviados}</p></div>
     <div class="metric-card"><p class="metric-label">Leads quentes</p><p class="metric-value">${quentes}</p></div>
     <div class="metric-card"><p class="metric-label">Teste grátis ou cliente</p><p class="metric-value">${avancaram}</p></div>`;
 

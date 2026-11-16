@@ -7,7 +7,7 @@
   <title>Central Interna — Barbozap</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/central.css?v=20261118">
+  <link rel="stylesheet" href="../css/central.css?v=20261120">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="icon" href="/favicon.ico" sizes="48x48">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -27,15 +27,21 @@
       <button class="btn btn-primary" id="novoLeadBtn">+ Novo Lead</button>
     </div>
 
+    <!-- menu: Operacional (o dia a dia) e Relatórios (os números) -->
+    <nav class="secoes" aria-label="Menu da Central">
+      <button type="button" class="secao-btn active" data-secao="operacional" aria-pressed="true">Operacional <span class="tab-qtd hidden" id="operacionalQtd"></span></button>
+      <button type="button" class="secao-btn" data-secao="relatorios" aria-pressed="false">Relatórios</button>
+    </nav>
+
     <div class="tabs">
-      <button class="tab-btn active" data-tab="leads">Leads</button>
-      <button class="tab-btn" data-tab="respostas">Respostas <span class="tab-qtd hidden" id="respostasQtd"></span></button>
-      <button class="tab-btn" data-tab="conversas">Conversas</button>
-      <button class="tab-btn" data-tab="funil">Funil</button>
-      <button class="tab-btn" data-tab="mensagens">Mensagens</button>
-      <button class="tab-btn" data-tab="whatsapp">WhatsApp</button>
-      <button class="tab-btn" data-tab="comercial">Comercial</button>
-      <button class="tab-btn" data-tab="relatorios">Relatórios de SaaS</button>
+      <button class="tab-btn active" data-secao="operacional" data-tab="leads">Leads</button>
+      <button class="tab-btn" data-secao="operacional" data-tab="respostas">Respostas <span class="tab-qtd hidden" id="respostasQtd"></span></button>
+      <button class="tab-btn" data-secao="operacional" data-tab="funil">Funil</button>
+      <button class="tab-btn" data-secao="operacional" data-tab="mensagens">Mensagens</button>
+      <button class="tab-btn" data-secao="operacional" data-tab="whatsapp">WhatsApp</button>
+      <button class="tab-btn fora" data-secao="relatorios" data-tab="conversas">Conversas</button>
+      <button class="tab-btn fora" data-secao="relatorios" data-tab="comercial">Comercial</button>
+      <button class="tab-btn fora" data-secao="relatorios" data-tab="relatorios">Relatórios de SaaS</button>
     </div>
 
     <!-- ===================== ABA: LEADS (LISTA) ===================== -->
@@ -518,7 +524,7 @@
     </div>
   </div>
 
-  <script src="../js/central.js?v=20261119"></script>
+  <script src="../js/central.js?v=20261120"></script>
 </body>
 
 </html>

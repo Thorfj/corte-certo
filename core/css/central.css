@@ -103,6 +103,40 @@ button {
   margin: 0;
 }
 
+/* ---------- menu (Operacional / Relatórios) ---------- */
+.secoes {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  margin-bottom: 16px;
+}
+.secao-btn {
+  background: none;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.secao-btn:hover {
+  color: var(--text-primary);
+}
+.secao-btn.active {
+  background: var(--brand-light);
+  color: var(--brand-dark);
+  font-weight: 600;
+}
+.secao-btn:focus-visible,
+.tab-btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
 /* ---------- tabs ---------- */
 .tabs {
   display: flex;
@@ -120,6 +154,9 @@ button {
   color: var(--text-secondary);
   cursor: pointer;
   border-bottom: 2px solid transparent;
+}
+.tab-btn.fora {
+  display: none;
 }
 .tab-btn.active {
   color: var(--brand-dark);

@@ -441,11 +441,12 @@ function initSafra() {
 
   document.getElementById("selMontar").addEventListener("click", () => {
     const leads = leadsCache.filter((l) => selecionados.has(String(l.id)));
-    const primeiros = mensagensCache.filter((m) => /primeiro contato/i.test(m.etapa));
+    const primeiros = roteirosAbertura();
     let novos = 0;
     lista.innerHTML = leads
       .map((l) => {
-        // primeiro contato: reveza A/B/C dentro da safra; contatado: follow-up do dia 3 ou 7;
+        // primeiro contato: reveza os fluxos (Saudação e Apresentação, meio a meio) dentro da safra;
+        // contatado: follow-up do dia 3 ou 7;
         // parcerias (escolas) recebem os roteiros de parceria
         const roteiro =
           l.status === "novo_lead" && primeiros.length && l.origem !== "parceria"
@@ -755,6 +756,13 @@ function roteirosParaEnviar() {
   return mensagensCache.filter((m) => !MENSAGENS_AUTOMATICAS[m.automacao]);
 }
 
+// primeira mensagem de cada fluxo de abertura (Saudação e Apresentação): a safra reveza meio a meio
+const AUTOMACOES_ABERTURA = ["pitch_tempo", "apresentacao"];
+function roteirosAbertura() {
+  const fluxos = roteirosParaEnviar().filter((m) => AUTOMACOES_ABERTURA.includes(m.automacao));
+  return fluxos.length ? fluxos : roteirosParaEnviar().filter((m) => /primeiro contato/i.test(m.etapa));
+}
+
 function opcoesEtapa(selecionada) {
   return (
     '<option value="">Não muda</option>' +
@@ -889,9 +897,9 @@ function roteiroSugerido(lead) {
     const etapa = { novo_lead: /convite/i, contato_feito: /follow-up/i, respondeu: /proposta/i }[lead.status];
     return etapa ? mensagensCache.find((m) => /^parceria/i.test(m.etapa) && etapa.test(m.etapa)) : null;
   }
-  const primeiros = mensagensCache.filter((m) => /primeiro contato/i.test(m.etapa));
+  const primeiros = roteirosAbertura();
   if (lead.status === "novo_lead" && primeiros.length) {
-    // reparte A/B/C entre os leads de forma estável (mesmo lead, mesma versão)
+    // reparte os fluxos de abertura entre os leads de forma estável (mesmo lead, mesma versão)
     const soma = [...String(lead.id)].reduce((acc, c) => acc + c.charCodeAt(0), 0);
     return primeiros[soma % primeiros.length];
   }
@@ -1925,8 +1933,10 @@ function renderizarConversas() {
   const primeiro = new Map();
   convDados.ativ.forEach((a) => {
     if (a.tipo !== "mensagem" || primeiro.has(String(a.lead_id))) return;
-    if (!/^(Primeiro contato|Parceria escola – 1)/i.test(a.descricao || "")) return;
-    primeiro.set(String(a.lead_id), { roteiro: (a.descricao || "").split(" · ")[0], em: a.criado_em });
+    if (!/^(Primeiro contato|Saudação – 1|Apresentação – 1|Parceria escola – 1)/i.test(a.descricao || "")) return;
+    // "Apresentação – 1. Cumprimento + 2ª mensagem" conta como o roteiro "Apresentação – 1. Cumprimento"
+    const roteiro = (a.descricao || "").split(" · ")[0].replace(/ (\+ 2ª mensagem|\(a 2ª mensagem falhou\))$/, "");
+    primeiro.set(String(a.lead_id), { roteiro, em: a.criado_em });
   });
 
   // quem respondeu (pessoa): etapa avançou para respondeu+, resposta humana lida pela IA, ou etapa atual

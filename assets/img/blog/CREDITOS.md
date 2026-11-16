@@ -19,3 +19,4 @@ Cada post tem duas versões: `<slug>-1280.jpg` (topo do post) e
 | veja-o-bot-funcionando | https://images.unsplash.com/photo-1621605815971-fbc98d665033 |
 | perguntas-dono-barbearia | https://images.unsplash.com/photo-1610475680335-dafab5475150 |
 | ordem-de-chegada-ou-horario-marcado | https://images.unsplash.com/photo-1567894340315-735d7c361db0 |
+| ferias-barbeiro-sem-perder-cliente | https://images.unsplash.com/photo-1503951914875-452162b0f3f1 |

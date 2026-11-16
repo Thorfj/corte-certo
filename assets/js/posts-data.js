@@ -12,6 +12,18 @@
 
 const BLOG_POSTS = [
   {
+    slug: "ferias-barbeiro-sem-perder-cliente",
+    image: "/assets/img/blog/ferias-barbeiro-sem-perder-cliente",
+    title: "Férias do barbeiro sem perder cliente",
+    excerpt:
+      "O barbeiro mais procurado vai tirar 15 dias. Se ninguém se organizar, os clientes dele descobrem outra cadeira. Veja como planejar a saída e a volta.",
+    category: "gestao",
+    categoryLabel: "Gestão",
+    date: "16 nov 2026",
+    readTime: "3 min",
+    featured: false,
+  },
+  {
     slug: "ordem-de-chegada-ou-horario-marcado",
     image: "/assets/img/blog/ordem-de-chegada-ou-horario-marcado",
     title: "Ordem de chegada ou horário marcado? Dá pra ter os dois",

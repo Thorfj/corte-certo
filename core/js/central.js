@@ -1263,9 +1263,12 @@ function initModal() {
       await carregarLeads();
     } catch (err) {
       console.error(err);
+      // a regra do banco diz qual lead já tem esse telefone (ou esse nome na mesma cidade)
       erroEl.textContent =
         err.code === "23505"
-          ? "Já existe um lead com esse telefone."
+          ? /^Lead duplicado/.test(err.message || "")
+            ? err.message
+            : "Já existe um lead com esse telefone."
           : "Erro ao salvar o lead.";
       erroEl.classList.add("show");
     } finally {

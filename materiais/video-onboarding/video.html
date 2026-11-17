@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: "InterV"; font-weight: 400; src: url("../cartao-de-visita/fontes/inter-400.ttf"); }
+  @font-face { font-family: "InterV"; font-weight: 500; src: url("../cartao-de-visita/fontes/inter-500.ttf"); }
+  @font-face { font-family: "InterV"; font-weight: 600; src: url("../cartao-de-visita/fontes/inter-600.ttf"); }
+  @font-face { font-family: "InterV"; font-weight: 700; src: url("../cartao-de-visita/fontes/inter-700.ttf"); }
+  @font-face { font-family: "InterV"; font-weight: 800; src: url("../cartao-de-visita/fontes/inter-800.ttf"); }
+  :root { --brand: #0f8a4f; --brand-dark: #0a6b3c; --brand-light: #e8f6ee; --ink: #0f1a17; --muted: #5d6b66; --cream: #f4f7f5; --brick: #9b3b30; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--cream); }
+  body { font-family: "InterV", sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+  .scene { position: absolute; inset: 0; opacity: 0; }
+  .bg-shape { position: absolute; border-radius: 50%; background: #e3efe8; }
+
+  .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 90px; }
+  .badge { width: 150px; height: 150px; border-radius: 42px; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 56px; box-shadow: 0 20px 50px rgba(15,138,79,.3); }
+  .brand-name { font-weight: 700; font-size: 46px; margin-top: 26px; color: var(--brand-dark); }
+  .headline { font-size: 88px; line-height: 1.04; margin-top: 64px; font-weight: 800; letter-spacing: -2px; }
+  .sub { font-size: 40px; line-height: 1.4; color: var(--muted); margin-top: 32px; }
+  .pill { display: inline-block; background: var(--brand); color: #fff; font-weight: 700; font-size: 40px; padding: 26px 46px; border-radius: 999px; margin-top: 56px; }
+  .pill.light { background: #fff; color: var(--brand-dark); border: 3px solid var(--brand); font-size: 34px; margin-top: 22px; }
+
+  /* legenda */
+  .caption { position: absolute; left: 80px; right: 80px; top: 86px; height: 300px; }
+  .cap { position: absolute; inset: 0; opacity: 0; }
+  .eyebrow { display: inline-block; font-weight: 700; font-size: 26px; letter-spacing: .14em; text-transform: uppercase; color: #fff; background: var(--brand); padding: 10px 20px; border-radius: 999px; }
+  .cap h2 { font-size: 58px; line-height: 1.1; margin-top: 22px; font-weight: 800; letter-spacing: -1px; }
+
+  /* celular */
+  .phone { position: absolute; left: 200px; top: 410px; width: 680px; height: 1425px; border-radius: 74px; background: #111; padding: 20px; box-shadow: 0 40px 90px rgba(0,0,0,.28); }
+  .screen { position: relative; width: 640px; height: 1385px; border-radius: 56px; overflow: hidden; background: #fff; }
+  .tela { position: absolute; inset: 0; opacity: 0; }
+  .tela img { width: 640px; display: block; }
+
+  /* toque e destaque */
+  .toque { position: absolute; border-radius: 999px; border: 7px solid #ff9f1c; box-shadow: 0 0 0 9999px rgba(0,0,0,0); opacity: 0; pointer-events: none; }
+  .dedo { position: absolute; width: 74px; height: 74px; border-radius: 50%; background: rgba(255,159,28,.55); border: 4px solid #fff; opacity: 0; transform: translate(-50%, -50%); }
+  .destaque { position: absolute; border: 6px solid #ff9f1c; border-radius: 18px; opacity: 0; }
+
+  /* tela do Google (simplificada) */
+  .consent { background: #fff; padding: 110px 54px 0; font-size: 30px; color: #202124; }
+  .consent .conta { display: flex; align-items: center; gap: 18px; font-size: 26px; color: #444; border: 2px solid #dadce0; border-radius: 999px; padding: 12px 22px; width: max-content; margin-bottom: 44px; }
+  .consent .conta i { width: 44px; height: 44px; border-radius: 50%; background: #7b5ea7; display: block; }
+  .consent h3 { font-size: 46px; font-weight: 500; line-height: 1.2; margin-bottom: 26px; }
+  .consent h3 b { color: var(--brand); font-weight: 700; }
+  .consent p.p1 { color: #5f6368; font-size: 28px; line-height: 1.45; margin-bottom: 34px; }
+  .opcao { display: flex; gap: 24px; align-items: flex-start; padding: 26px 0; border-top: 2px solid #eee; }
+  .caixa { width: 46px; height: 46px; border: 4px solid #5f6368; border-radius: 8px; flex-shrink: 0; position: relative; margin-top: 4px; }
+  .caixa.marcada { background: #1a73e8; border-color: #1a73e8; }
+  .caixa.marcada::after { content: ""; position: absolute; left: 12px; top: 2px; width: 14px; height: 26px; border: solid #fff; border-width: 0 6px 6px 0; transform: rotate(45deg); }
+  .opcao span { font-size: 29px; line-height: 1.4; }
+  .botoes { display: flex; justify-content: flex-end; gap: 22px; margin-top: 60px; }
+  .botoes span { font-size: 30px; font-weight: 600; padding: 20px 38px; border-radius: 999px; color: #1a73e8; }
+  .botoes span.azul { background: #1a73e8; color: #fff; }
+
+  /* WhatsApp */
+  .wa { background: #efeae2; display: flex; flex-direction: column; }
+  .wa-top { background: #008069; color: #fff; padding: 76px 30px 22px; display: flex; align-items: center; gap: 22px; flex-shrink: 0; }
+  .wa-avatar { width: 78px; height: 78px; border-radius: 50%; background: #fff; color: var(--brand-dark); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 30px; }
+  .wa-name { font-weight: 600; font-size: 34px; }
+  .wa-status { font-size: 24px; opacity: .85; margin-top: 4px; }
+  .chat { flex: 1; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 0 22px 24px; }
+  .item { overflow: hidden; flex-shrink: 0; }
+  .row { display: flex; padding-top: 14px; }
+  .row.out { justify-content: flex-end; }
+  .bubble { max-width: 84%; padding: 16px 20px 10px; border-radius: 22px; font-size: 29px; line-height: 1.36; white-space: pre-wrap; background: #fff; box-shadow: 0 1px 1px rgba(0,0,0,.08); }
+  .row.in .bubble { border-top-left-radius: 6px; }
+  .row.out .bubble { background: #d9fdd3; border-top-right-radius: 6px; }
+  .meta { display: block; text-align: right; font-size: 20px; color: #667781; margin-top: 4px; }
+  .typing { display: inline-flex; gap: 10px; padding: 22px 24px; }
+  .dot { width: 13px; height: 13px; border-radius: 50%; background: #8696a0; }
+</style>
+</head>
+<body>
+
+<section class="scene" id="intro">
+  <div class="bg-shape" style="width:900px;height:900px;left:-300px;top:-260px"></div>
+  <div class="bg-shape" style="width:700px;height:700px;right:-260px;bottom:-200px"></div>
+  <div class="center">
+    <div class="badge" id="introBadge">BZ</div>
+    <div class="brand-name">Barbozap</div>
+    <h1 class="headline" id="introHead">Barbearia Matriz, falta pouco!</h1>
+    <p class="sub" id="introSub">Seu Barbozap fica pronto em 4 passos rápidos.</p>
+  </div>
+</section>
+
+<section class="scene" id="principal">
+  <div class="bg-shape" style="width:800px;height:800px;right:-330px;top:-300px"></div>
+  <div class="caption" id="captions"></div>
+  <div class="phone" id="phone">
+    <div class="screen" id="screen">
+      <div class="tela" id="t01"><img src="telas/01-inicio.png"></div>
+      <div class="tela" id="t02"><img src="telas/02-servicos-vazio.png"></div>
+      <div class="tela" id="t03"><img src="telas/03-servicos-form.png"></div>
+      <div class="tela" id="t04"><img src="telas/04-servicos-lista.png"></div>
+      <div class="tela" id="t05"><img src="telas/05-google-sem-permissao.png"></div>
+      <div class="tela consent" id="tGoogle">
+        <div class="conta"><i></i>matrizbarbearia305@gmail.com</div>
+        <h3>O <b>Barbozap</b> quer acessar sua conta</h3>
+        <p class="p1">Selecione o que o Barbozap pode acessar:</p>
+        <div class="opcao"><div class="caixa marcada"></div><span>Ver seu endereço de e-mail</span></div>
+        <div class="opcao" id="opcaoAgenda"><div class="caixa" id="caixaAgenda"></div><span><b>Ver, editar, compartilhar e excluir permanentemente todas as agendas</b> que você pode acessar usando o Google Agenda</span></div>
+        <div class="botoes"><span>Cancelar</span><span class="azul" id="btContinuar">Continuar</span></div>
+      </div>
+      <div class="tela" id="t06"><img src="telas/06-google-conectado.png"></div>
+      <div class="tela" id="t07"><img src="telas/07-mensagens-bot.png"></div>
+      <div class="tela wa" id="tChat">
+        <div class="wa-top">
+          <div class="wa-avatar">BM</div>
+          <div><div class="wa-name">Barbearia Matriz</div><div class="wa-status" id="waStatus">online</div></div>
+        </div>
+        <div class="chat" id="chat"></div>
+      </div>
+      <div class="toque" id="toque"></div>
+      <div class="destaque" id="destaque"></div>
+      <div class="dedo" id="dedo"></div>
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="outro">
+  <div class="bg-shape" style="width:900px;height:900px;right:-300px;top:-260px"></div>
+  <div class="bg-shape" style="width:700px;height:700px;left:-260px;bottom:-200px"></div>
+  <div class="center">
+    <div class="badge">BZ</div>
+    <div class="brand-name">Barbozap</div>
+    <h1 class="headline">Pronto! Sua agenda no automático.</h1>
+    <p class="sub">O cliente marca sozinho pelo WhatsApp, 24 horas por dia.</p>
+    <div id="offer">
+      <span class="pill">Dúvidas? (41) 3795-2535</span><br>
+      <span class="pill light">É só chamar no WhatsApp</span>
+    </div>
+  </div>
+</section>
+
+<script>
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const prog = (t, a, d) => clamp((t - a) / d);
+const ease = (p) => 1 - Math.pow(1 - p, 3);
+const fade = (t, a, b, d = 0.4) => Math.min(ease(prog(t, a, d)), 1 - ease(prog(t, b - d, d)));
+const $ = (id) => document.getElementById(id);
+
+const S = 640 / 390;            // escala da captura (390 px) para a tela do celular
+const T = { intro: 4, fim: 64.5, total: 70 };
+
+// caixas dos elementos nas capturas (px da tela de 390)
+const C = {
+  fazerServicos: { x: 288.5, y: 327.5, width: 68.5, height: 34 },
+  novoServico: { x: 112, y: 77, width: 262, height: 34 },
+  nome: { x: 77, y: 286, width: 236, height: 39 },
+  preco: { x: 77, y: 361, width: 236, height: 39 },
+  duracao: { x: 77, y: 436, width: 236, height: 39 },
+  recorrencia: { x: 77, y: 511, width: 236, height: 39 },
+  salvar: { x: 240, y: 582, width: 73, height: 34 },
+  conectarGoogle: { x: 230.5, y: 158, width: 126.5, height: 50 },
+  statusGoogle: { x: 28, y: 166, width: 232, height: 50 },
+  toggle: { x: 330, y: 77.5, width: 44, height: 24 },
+};
+
+// telas: [id, começa, termina]
+const TELAS = [
+  ['t01', 4, 10.2], ['t02', 10.2, 13.2], ['t03', 13.2, 23.2], ['t04', 23.2, 29.2],
+  ['t05', 29.2, 33.2], ['tGoogle', 33.2, 40.2], ['t06', 40.2, 44.2], ['t07', 44.2, 50.2], ['tChat', 50.2, 66],
+];
+
+// toques: [quando, caixa]  (o dedo aparece 0,6 s antes e "aperta")
+const TOQUES = [
+  [9.4, C.fazerServicos], [12.4, C.novoServico], [22.4, C.salvar], [31.8, C.conectarGoogle],
+  [36.4, 'caixaAgenda'], [38.9, 'btContinuar'], [47.6, C.toggle],
+];
+// destaques (retângulo): [de, até, caixa]
+const DESTAQUES = [
+  [5.2, 8.6, { x: 25, y: 225, width: 340, height: 82 }],
+  [14.2, 16.0, C.nome], [16.0, 17.8, C.preco], [17.8, 19.6, C.duracao], [19.6, 21.6, C.recorrencia],
+  [41.0, 43.8, C.statusGoogle], [45.0, 47.2, { x: 222, y: 64, width: 160, height: 50 }],
+];
+
+const CAPS = [
+  { at: 4, to: 10.2, e: 'Onde você está', h: 'WhatsApp conectado e horário conferido ✅ Falta pouco!' },
+  { at: 10.2, to: 23.2, e: 'Passo 1 · Serviços', h: 'Toque em Novo Serviço e preencha nome, preço, duração e em quantos dias o cliente volta.' },
+  { at: 23.2, to: 29.2, e: 'Passo 1 · Serviços', h: 'Repita para cada serviço. Sem serviço, o robô não consegue agendar.' },
+  { at: 29.2, to: 33.2, e: 'Passo 2 · Google Agenda', h: 'Em Configurações, toque em Conectar de novo.' },
+  { at: 33.2, to: 40.2, e: 'Passo 2 · Google Agenda', h: 'Marque a caixinha das agendas e toque em Continuar. É ela que estava faltando!' },
+  { at: 40.2, to: 44.2, e: 'Passo 2 · Google Agenda', h: 'Pronto: Google Agenda conectado ✅' },
+  { at: 44.2, to: 50.2, e: 'Passo 3 · Robô ligado', h: 'Em Mensagens, confira se o Fluxo ativo está verde.' },
+  { at: 50.2, to: 64.5, e: 'Passo 4 · Teste', h: 'De outro celular, mande um "Oi" para o WhatsApp da barbearia.' },
+];
+
+const MSGS = [
+  { k: 'out', txt: 'Oi', at: 52.0, h: '15:02' },
+  { k: 'in', txt: 'Olá! 👋 Que bom ter você por aqui.\nEu sou o assistente de agendamentos e vou te ajudar a marcar seu horário.\n\nPara começar, qual é o seu nome?', at: 53.8, h: '15:02' },
+  { k: 'out', txt: 'Filipe', at: 56.2, h: '15:02' },
+  { k: 'in', txt: 'Prazer, Filipe! 😊\nQual serviço você quer agendar? ✂️\n\n1. Barba — R$ 35,00\n2. Corte — R$ 45,00\n3. Corte + Barba — R$ 70,00', at: 58.0, h: '15:02' },
+  { k: 'out', txt: '2', at: 60.4, h: '15:03' },
+  { k: 'in', txt: 'Para qual dia você quer marcar? 📅\n(ex: amanhã, sexta ou 25/11)', at: 62.0, h: '15:03' },
+];
+const TYPING = 0.9;
+
+CAPS.forEach((c) => {
+  const d = document.createElement('div');
+  d.className = 'cap';
+  d.innerHTML = `<span class="eyebrow">${c.e}</span><h2>${c.h}</h2>`;
+  $('captions').appendChild(d);
+  c.el = d;
+});
+
+const itens = [];
+MSGS.forEach((m) => {
+  if (m.k === 'in') {
+    const ty = document.createElement('div');
+    ty.className = 'item';
+    ty.innerHTML = `<div class="row in"><div class="bubble typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>`;
+    $('chat').appendChild(ty);
+    itens.push({ el: ty, typing: true, a: m.at - TYPING, b: m.at });
+  }
+  const it = document.createElement('div');
+  it.className = 'item';
+  it.innerHTML = `<div class="row ${m.k}"><div class="bubble">${m.txt}<span class="meta">${m.h}${m.k === 'out' ? ' ✓✓' : ''}</span></div></div>`;
+  $('chat').appendChild(it);
+  itens.push({ el: it, a: m.at });
+});
+let alturas = null;
+
+// caixa (captura ou elemento da tela simulada) -> posição na tela do celular
+function caixa(c) {
+  if (typeof c === 'string') {
+    const el = $(c), sc = $('screen').getBoundingClientRect(), r = el.getBoundingClientRect();
+    return { x: r.left - sc.left, y: r.top - sc.top, w: r.width, h: r.height };
+  }
+  return { x: c.x * S, y: c.y * S, w: c.width * S, h: c.height * S };
+}
+
+window.render = function (t) {
+  if (!alturas) {
+    itens.forEach((i) => (i.el.style.height = 'auto'));
+    alturas = new Map(itens.map((i) => [i, i.el.offsetHeight]));
+  }
+  $('intro').style.opacity = 1 - ease(prog(t, T.intro - 0.5, 0.5));
+  $('principal').style.opacity = fade(t, T.intro - 0.4, T.fim + 0.4, 0.5);
+  $('outro').style.opacity = ease(prog(t, T.fim, 0.6));
+
+  const pb = ease(prog(t, 0.1, 0.6));
+  $('introBadge').style.transform = `scale(${0.6 + 0.4 * pb})`;
+  $('introBadge').style.opacity = pb;
+  $('introHead').style.opacity = ease(prog(t, 0.5, 0.6));
+  $('introHead').style.transform = `translateY(${30 * (1 - ease(prog(t, 0.5, 0.6)))}px)`;
+  $('introSub').style.opacity = ease(prog(t, 1.0, 0.6));
+  $('phone').style.transform = `translateY(${120 * (1 - ease(prog(t, T.intro - 0.2, 0.7)))}px)`;
+
+  TELAS.forEach(([id, a, b]) => ($(id).style.opacity = fade(t, a, b, 0.3)));
+  CAPS.forEach((c) => {
+    c.el.style.opacity = fade(t, c.at, c.to, 0.35);
+    c.el.style.transform = `translateY(${16 * (1 - ease(prog(t, c.at, 0.35)))}px)`;
+  });
+
+  // dedo e anel de toque
+  let dedoOp = 0, anelOp = 0;
+  for (const [quando, alvo] of TOQUES) {
+    if (t < quando - 0.7 || t > quando + 0.7) continue;
+    const b = caixa(alvo), cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+    const chegada = ease(prog(t, quando - 0.7, 0.5));
+    dedoOp = Math.min(chegada, 1 - ease(prog(t, quando + 0.35, 0.35)));
+    const aperto = t >= quando && t < quando + 0.25 ? 0.82 : 1;
+    $('dedo').style.left = cx + 'px';
+    $('dedo').style.top = (cy + 60 * (1 - chegada)) + 'px';
+    $('dedo').style.transform = `translate(-50%, -50%) scale(${aperto})`;
+    const pa = prog(t, quando, 0.6);
+    anelOp = t >= quando ? 1 - pa : 0;
+    const r = Math.max(b.w, b.h) / 2 + 14 + 40 * pa;
+    Object.assign($('toque').style, { left: cx - r + 'px', top: cy - r + 'px', width: 2 * r + 'px', height: 2 * r + 'px' });
+  }
+  $('dedo').style.opacity = dedoOp;
+  $('toque').style.opacity = anelOp;
+
+  let dOp = 0;
+  for (const [a, b2, alvo] of DESTAQUES) {
+    if (t < a || t > b2) continue;
+    const b = caixa(alvo);
+    dOp = fade(t, a, b2, 0.25) * (0.75 + 0.25 * Math.sin(t * 6));
+    Object.assign($('destaque').style, { left: b.x - 10 + 'px', top: b.y - 10 + 'px', width: b.w + 20 + 'px', height: b.h + 20 + 'px' });
+  }
+  $('destaque').style.opacity = dOp;
+
+  // a caixinha do Google fica marcada depois do toque
+  $('caixaAgenda').classList.toggle('marcada', t >= 36.4);
+
+  // conversa no WhatsApp
+  let digitando = false;
+  itens.forEach((i) => {
+    let p;
+    if (i.typing) {
+      const on = t >= i.a && t < i.b;
+      p = on ? ease(prog(t, i.a, 0.2)) : 0;
+      if (on) digitando = true;
+      i.el.querySelectorAll('.dot').forEach((d, k) => (d.style.transform = `translateY(${-8 * Math.max(0, Math.sin(t * 7 - k * 0.9))}px)`));
+    } else {
+      p = ease(prog(t, i.a, 0.32));
+    }
+    i.el.style.height = alturas.get(i) * p + 'px';
+    i.el.style.opacity = p;
+  });
+  $('waStatus').textContent = digitando ? 'digitando...' : 'online';
+
+  const po = ease(prog(t, T.fim + 0.7, 0.6));
+  $('offer').style.opacity = po;
+  $('offer').style.transform = `translateY(${30 * (1 - po)}px)`;
+};
+window.DURACAO = T.total;
+</script>
+</body>
+</html>

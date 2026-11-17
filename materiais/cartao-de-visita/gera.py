@@ -40,8 +40,8 @@ CSS = open('fontes/faces.css').read() + '''
 * { box-sizing: border-box; margin: 0; padding: 0; }
 :root { --verde: #0f8a4f; --verde-esc: #0a5f37; --verde-claro: #e8f6ee; --tinta: #0f1a17; --cinza: #5d6b66; }
 body { font-family: "InterTTF", sans-serif; color: var(--tinta); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-.card { position: relative; width: 90mm; height: 50mm; overflow: hidden; }
-.sangria .card { width: 96mm; height: 56mm; }
+.card { position: relative; width: 90mm; height: 48mm; overflow: hidden; }
+.sangria .card { width: 96mm; height: 54mm; }
 .sangria .card .conteudo { position: absolute; inset: 3mm; }
 .card .conteudo { position: absolute; inset: 0; }
 
@@ -62,13 +62,13 @@ body { font-family: "InterTTF", sans-serif; color: var(--tinta); -webkit-print-c
 .verso { background: #fff; }
 .verso .conteudo { padding: 5.5mm 6mm; display: flex; gap: 5mm; align-items: center; }
 .verso .texto { flex: 1; min-width: 0; }
-.tag { display: inline-block; background: var(--verde-claro); color: var(--verde-esc); font-weight: 700; font-size: 2.3mm; letter-spacing: .25mm; text-transform: uppercase; padding: .9mm 2mm; border-radius: 10mm; }
-.oferta { font-weight: 700; font-size: 3.9mm; line-height: 1.2; margin-top: 2.2mm; letter-spacing: -.05mm; }
-.preco { font-size: 2.45mm; color: var(--verde-esc); font-weight: 600; margin-top: 1.4mm; }
-.contato { margin-top: 3mm; padding-top: 2.2mm; border-top: .25mm solid #e6ebe8; font-size: 2.35mm; line-height: 1.5; color: var(--cinza); }
+.tag { display: inline-block; background: var(--verde-claro); color: var(--verde-esc); font-weight: 700; font-size: 2.1mm; letter-spacing: .25mm; text-transform: uppercase; padding: .9mm 2mm; border-radius: 10mm; }
+.oferta { font-weight: 700; font-size: 3.6mm; line-height: 1.18; margin-top: 1.8mm; letter-spacing: -.05mm; }
+.preco { font-size: 2.35mm; color: var(--verde-esc); font-weight: 600; margin-top: 1.2mm; }
+.contato { margin-top: 2.2mm; padding-top: 1.8mm; border-top: .25mm solid #e6ebe8; font-size: 2.25mm; line-height: 1.42; color: var(--cinza); }
 .contato b { color: var(--tinta); }
-.qr { width: 27mm; text-align: center; flex-shrink: 0; }
-.qr-box { width: 27mm; height: 27mm; padding: 1.8mm; border: .35mm solid var(--verde); border-radius: 2.4mm; background: #fff; }
+.qr { width: 25mm; text-align: center; flex-shrink: 0; }
+.qr-box { width: 25mm; height: 25mm; padding: 1.6mm; border: .35mm solid var(--verde); border-radius: 2.4mm; background: #fff; }
 .qr-box svg { width: 100%; height: 100%; display: block; }
 .qr p { font-size: 2.1mm; line-height: 1.3; color: var(--cinza); margin-top: 1.4mm; font-weight: 500; }
 '''
@@ -78,7 +78,7 @@ def doc(body, page_css):
 
 # 1) arquivo para gráfica: 2 páginas de 96 x 56 mm (3 mm de sangria em volta)
 grafica = doc(f'<div class="sangria pg">{FRENTE}</div><div class="sangria pg">{VERSO}</div>',
-  '@page { size: 96mm 56mm; margin: 0; } .pg { page-break-after: always; }')
+  '@page { size: 96mm 54mm; margin: 0; } .pg { page-break-after: always; }')
 open('grafica.html','w').write(grafica)
 
 # 2) folha A4 para imprimir em casa: 10 cartões, frente e verso (verso espelhado para duplex na borda longa), com marcas de corte
@@ -87,24 +87,33 @@ def folha(card, espelhar):
     for linha in range(5):
         for col in range(2):
             c = 1 - col if espelhar else col
-            x = 15 + c * 90; y = 23.5 + linha * 50
+            x = 15 + c * 90; y = 28.5 + linha * 48
             cel.append(f'<div class="cel" style="left:{x}mm;top:{y}mm">{card}</div>')
     marcas = []
     for x in (15, 105, 195):
-        for y0, y1 in ((13.5, 21.5), (275.5, 283.5)):
+        for y0, y1 in ((18.5, 26.5), (270.5, 278.5)):
             marcas.append(f'<div class="mv" style="left:{x}mm;top:{y0}mm;height:{y1-y0}mm"></div>')
-    for y in [23.5 + i*50 for i in range(6)]:
+    for y in [28.5 + i*48 for i in range(6)]:
         for x0, x1 in ((5, 13), (197, 205)):
             marcas.append(f'<div class="mh" style="top:{y}mm;left:{x0}mm;width:{x1-x0}mm"></div>')
     return '<div class="a4">' + ''.join(cel) + ''.join(marcas) + '</div>'
 a4 = doc(folha(FRENTE, False) + folha(VERSO, True),
   '''@page { size: A4; margin: 0; }
   .a4 { position: relative; width: 210mm; height: 297mm; page-break-after: always; }
-  .cel { position: absolute; width: 90mm; height: 50mm; }
+  .cel { position: absolute; width: 90mm; height: 48mm; }
   .mv { position: absolute; width: 0; border-left: .2mm solid #999; }
   .mh { position: absolute; height: 0; border-top: .2mm solid #999; }''')
 open('a4.html','w').write(a4)
 
 # 3) prévia (frente e verso lado a lado, sem sangria)
-prev = doc(f'<div class="prev">{FRENTE}{VERSO}</div>', 'body{background:#eef1ef} .prev{display:flex;gap:8mm;padding:8mm} .card{box-shadow:0 2mm 6mm rgba(0,0,0,.15);border-radius:1.5mm}')
+prev = doc(f'<div class="prev">{FRENTE}{VERSO}</div>', 'body{background:#eef1ef} .prev{display:flex;gap:8mm;padding:8mm} .card{box-shadow:0 2mm 6mm rgba(0,0,0,.15);border-radius:5mm}')
 open('previa.html','w').write(prev)
+
+guia = '''<div class="guia"><div class="corte"></div><div class="segura"></div></div>'''
+conf = doc(f'<div class="conf"><div class="sangria pg">{FRENTE}{guia}</div><div class="sangria pg">{VERSO}{guia}</div></div>',
+  '''body{background:#fff} .conf{display:flex;flex-direction:column;gap:6mm;padding:6mm}
+  .pg{position:relative;width:96mm;height:54mm;outline:.2mm solid #e33}
+  .guia{position:absolute;inset:0;pointer-events:none}
+  .corte{position:absolute;left:3mm;top:3mm;width:90mm;height:48mm;border:.25mm solid #111;border-radius:5mm}
+  .segura{position:absolute;left:8mm;top:8mm;width:80mm;height:38mm;border:.25mm solid #0aa0e6}''')
+open('conferencia.html','w').write(conf)

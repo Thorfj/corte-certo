@@ -359,10 +359,11 @@ function renderizarLista() {
       <tr data-id="${esc(l.id)}">
         <td class="col-sel"><input type="checkbox" class="sel-lead" data-id="${esc(l.id)}"
           ${selecionados.has(String(l.id)) ? "checked" : ""} ${podeSafra ? "" : "disabled"}
-          title="${podeSafra ? "Incluir na safra" : "Só leads em Novo ou Contatado, com telefone, fora de outra safra"}"></td>
+          title="${podeSafra ? "Incluir na safra" : l.safra_agendada_id ? `Já está na safra agendada #${l.safra_agendada_id}` : "Só leads em Novo ou Contatado, com telefone, fora de outra safra"}"></td>
         <td><span class="lt-nome">${esc(l.nome_barbearia)}</span>
           ${l.endereco ? `<span class="lt-sub">${esc(l.endereco)}</span>` : ""}
-          ${l.lista ? `<span class="tag tag-lista">${esc(l.lista)}</span>` : ""}</td>
+          ${l.lista ? `<span class="tag tag-lista">${esc(l.lista)}</span>` : ""}
+          ${l.safra_agendada_id ? `<span class="tag tag-agendada" title="Reservado para a safra agendada; não entra em outra safra">Safra agendada #${esc(l.safra_agendada_id)}</span>` : ""}</td>
         <td>${esc(l.bairro || "")}
           ${l.cidade && l.cidade !== "Curitiba" ? `<span class="lt-sub">${esc(l.cidade)}</span>` : ""}</td>
         <td class="nowrap">${esc(formatarTelefone(l.telefone))}
@@ -393,7 +394,7 @@ function renderizarLista() {
 
 // ---------- seleção e safra ----------
 function podeEntrarNaSafra(lead) {
-  return ETAPAS_SAFRA.includes(lead.status) && lead.proximo_passo !== NA_FILA && !!lead.telefone;
+  return ETAPAS_SAFRA.includes(lead.status) && lead.proximo_passo !== NA_FILA && !!lead.telefone && !lead.safra_agendada_id;
 }
 
 function atualizarSelecao() {
@@ -532,6 +533,10 @@ function initSafra() {
       });
     };
 
+    document.querySelector('input[name="safraQuando"][value="agora"]').checked = true;
+    document.getElementById("safraAgendarPara").value = "";
+    document.querySelector('input[name="safraQuando"]').dispatchEvent(new Event("change"));
+
     erroEl.classList.remove("show");
     atualizarInfo();
     overlay.classList.remove("hidden");
@@ -552,12 +557,33 @@ function initSafra() {
       return;
     }
 
+    const agendar = document.querySelector('input[name="safraQuando"]:checked').value === "agendar";
+    const quandoEl = document.getElementById("safraAgendarPara");
+    let agendarPara = null;
+    if (agendar) {
+      const d = quandoEl.value ? new Date(quandoEl.value) : null;
+      if (!d || isNaN(d.getTime())) {
+        erroEl.textContent = "Escolha a data e o horário da safra.";
+        erroEl.classList.add("show");
+        return;
+      }
+      if (d.getTime() < Date.now() + 2 * 60 * 1000) {
+        erroEl.textContent = "Escolha um horário pelo menos 2 minutos no futuro (ou envie agora).";
+        erroEl.classList.add("show");
+        return;
+      }
+      agendarPara = d.toISOString();
+    }
+
     enviarBtn.disabled = true;
-    enviarBtn.textContent = "Enviando...";
+    enviarBtn.textContent = agendar ? "Agendando..." : "Enviando...";
     try {
-      const { estado } = await chamarWhatsapp("status");
-      if (estado !== "open") {
-        throw new Error("O WhatsApp da prospecção não está conectado. Conecte na aba WhatsApp e tente de novo.");
+      // safra agendada: a conexão é conferida pelo n8n na hora marcada
+      if (!agendar) {
+        const { estado } = await chamarWhatsapp("status");
+        if (estado !== "open") {
+          throw new Error("O WhatsApp da prospecção não está conectado. Conecte na aba WhatsApp e tente de novo.");
+        }
       }
       const {
         data: { session },
@@ -568,7 +594,7 @@ function initSafra() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session?.access_token || ""}`,
         },
-        body: JSON.stringify({ itens }),
+        body: JSON.stringify(agendarPara ? { itens, agendar_para: agendarPara } : { itens }),
       });
       const dados = await resp.json().catch(() => ({}));
       if (!resp.ok || dados.erro) {
@@ -580,9 +606,13 @@ function initSafra() {
       renderizarLista();
       const ignorados = (dados.ignorados || []).map((i) => i.nome || "lead");
       mostrarAvisoSafra(
-        `Safra #${dados.safra_id} criada com ${dados.total} ${dados.total === 1 ? "lead" : "leads"}. ` +
-          "Se outra safra estiver enviando, esta entra na fila e começa sozinha quando a outra terminar. " +
-          "Os leads vão sendo atualizados aqui conforme as mensagens saem, e no fim chega o e-mail com o resumo." +
+        (agendarPara
+          ? `Safra #${dados.safra_id} agendada para ${formatarDataHora(agendarPara)} com ${dados.total} ${dados.total === 1 ? "lead" : "leads"}. ` +
+            "Os leads ficam reservados e não entram em outra safra. No horário, o n8n confere o WhatsApp e começa sozinho; " +
+            "dá para cancelar na aba WhatsApp > Safras."
+          : `Safra #${dados.safra_id} criada com ${dados.total} ${dados.total === 1 ? "lead" : "leads"}. ` +
+            "Se outra safra estiver enviando, esta entra na fila e começa sozinha quando a outra terminar. " +
+            "Os leads vão sendo atualizados aqui conforme as mensagens saem, e no fim chega o e-mail com o resumo.") +
           (ignorados.length ? ` Ficaram de fora: ${ignorados.join(", ")}.` : ""),
       );
       // o n8n põe os leads "Na fila do n8n" logo depois de responder
@@ -594,13 +624,37 @@ function initSafra() {
       erroEl.classList.add("show");
     } finally {
       enviarBtn.disabled = false;
-      enviarBtn.textContent = "Enviar safra";
+      atualizarQuando();
     }
   });
+
+  // "Quando enviar": agora ou agendar (data e hora)
+  const quandoEl = document.getElementById("safraAgendarPara");
+  function atualizarQuando() {
+    const agendar = document.querySelector('input[name="safraQuando"]:checked').value === "agendar";
+    quandoEl.disabled = !agendar;
+    enviarBtn.textContent = agendar ? "Agendar safra" : "Enviar safra";
+    document.getElementById("safraQuandoHint").textContent = agendar
+      ? "No horário marcado o n8n começa sozinho (se outra safra estiver enviando, entra na fila depois dela). O Bom dia/Boa tarde/Boa noite é escolhido na hora de cada envio."
+      : "";
+  }
+  document.querySelectorAll('input[name="safraQuando"]').forEach((r) => r.addEventListener("change", () => {
+    if (r.value === "agendar" && r.checked && !quandoEl.value) {
+      // sugestão: amanhã às 14:00
+      const d = new Date(Date.now() + 864e5);
+      d.setHours(14, 0, 0, 0);
+      const p = (n) => String(n).padStart(2, "0");
+      quandoEl.value = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T14:00`;
+    }
+    atualizarQuando();
+  }));
+  atualizarQuando();
 }
 
 const SAFRA_STATUS = {
   previa: "Prévia",
+  agendada: "Agendada",
+  nao_enviada: "Não enviada",
   na_fila: "Na fila",
   enviando: "Enviando",
   concluida: "Concluída",
@@ -616,9 +670,9 @@ async function carregarSafras() {
   clearTimeout(safrasTimer);
   const { data, error } = await supabaseCentral
     .from("safras_prospeccao")
-    .select("id, criado_em, status, total, resumo")
+    .select("id, criado_em, status, total, resumo, agendada_para")
     .order("id", { ascending: false })
-    .limit(10);
+    .limit(20);
   if (error) {
     console.error(error);
     body.innerHTML = '<tr><td colspan="5" class="loading">Erro ao carregar as safras.</td></tr>';
@@ -649,6 +703,9 @@ async function carregarSafras() {
       ].filter(Boolean);
       let resultado = partes.join(" · ") || (s.status === "concluida" ? "—" : "");
       if (s.status === "na_fila") resultado = "Começa quando a safra da frente terminar";
+      if (s.status === "agendada")
+        resultado = `Começa em ${formatarDataHora(s.agendada_para)}`;
+      if (s.status === "nao_enviada") resultado = r.motivo || "Não foi enviada";
       if (s.status === "enviando") {
         const feitos = Math.min(progresso.get(Number(s.id)) || 0, s.total || 0);
         const pct = s.total ? Math.round((feitos / s.total) * 100) : 0;
@@ -665,10 +722,29 @@ async function carregarSafras() {
         <td class="nowrap">${esc(formatarDataHora(s.criado_em))}</td>
         <td><span class="safra-status" data-status="${esc(s.status)}">${esc(SAFRA_STATUS[s.status] || s.status)}</span></td>
         <td>${esc(s.total ?? "—")}</td>
-        <td>${resultado}</td>
+        <td>${resultado}${
+          s.status === "agendada"
+            ? ` <button type="button" class="btn btn-sm safra-cancelar" data-id="${esc(s.id)}">Cancelar</button>`
+            : ""
+        }</td>
       </tr>`;
     })
     .join("");
+
+  body.querySelectorAll(".safra-cancelar").forEach((b) =>
+    b.addEventListener("click", async () => {
+      if (!confirm(`Cancelar a safra #${b.dataset.id}? Os leads dela ficam livres para outra safra.`)) return;
+      b.disabled = true;
+      const { error: erroCancelar } = await supabaseCentral.rpc("cancelar_safra_agendada", { p_safra_id: Number(b.dataset.id) });
+      if (erroCancelar) {
+        alert(erroCancelar.message || "Não foi possível cancelar a safra.");
+        b.disabled = false;
+        return;
+      }
+      carregarSafras();
+      carregarLeads().catch(console.error);
+    }),
+  );
 
   // safra na fila começa sozinha quando a da frente termina: continua atualizando
   if ((enviando.length || data.some((s) => s.status === "na_fila")) && !document.hidden) {

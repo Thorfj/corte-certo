@@ -7,7 +7,7 @@
   <title>Central Interna — Barbozap</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/central.css?v=20261122">
+  <link rel="stylesheet" href="../css/central.css?v=20261124">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="icon" href="/favicon.ico" sizes="48x48">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -510,6 +510,13 @@
         <select id="safraTodos"></select>
       </div>
       <div id="safraLista"></div>
+      <div class="safra-quando">
+        <p class="safra-quando-titulo">Quando enviar</p>
+        <label class="safra-quando-op"><input type="radio" name="safraQuando" value="agora" checked> Agora</label>
+        <label class="safra-quando-op"><input type="radio" name="safraQuando" value="agendar"> Agendar para</label>
+        <input type="datetime-local" id="safraAgendarPara" aria-label="Data e hora da safra" disabled>
+        <p class="hint" id="safraQuandoHint"></p>
+      </div>
       <p class="modal-error" id="safraErro"></p>
       <div class="modal-footer">
         <button type="button" class="btn" data-close="modalSafra">Cancelar</button>
@@ -527,7 +534,7 @@
     </div>
   </div>
 
-  <script src="../js/central.js?v=20261123"></script>
+  <script src="../js/central.js?v=20261124"></script>
 </body>
 
 </html>

@@ -3,9 +3,9 @@ const { chromium } = require('playwright');
   const b = await chromium.launch();
   const p = await b.newPage();
   const base = 'file://' + __dirname + '/';
-  // arquivo da Printi: 2 páginas de 96 x 54 mm (9 x 4,8 cm + 3 mm de sangria)
-  await p.goto(base + 'grafica.html'); await p.evaluate(() => document.fonts.ready);
-  await p.pdf({ path: __dirname + '/cartao-barbozap-printi-9x4-8cm.pdf', width: '96mm', height: '54mm', printBackground: true, pageRanges: '1-2' });
+  // arquivo da Printi em 9 x 5 cm (medida pedida no envio)
+  await p.goto(base + 'printi9x5.html'); await p.evaluate(() => document.fonts.ready);
+  await p.pdf({ path: __dirname + '/cartao-barbozap-printi-9x5cm.pdf', width: '90mm', height: '50mm', printBackground: true, pageRanges: '1-2' });
   await p.goto(base + 'a4.html'); await p.evaluate(() => document.fonts.ready);
   await p.pdf({ path: __dirname + '/cartao-barbozap-a4.pdf', format: 'A4', printBackground: true });
   const v = await b.newPage({ viewport: { width: 900, height: 300 }, deviceScaleFactor: 2 });

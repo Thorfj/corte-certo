@@ -117,3 +117,11 @@ conf = doc(f'<div class="conf"><div class="sangria pg">{FRENTE}{guia}</div><div 
   .corte{position:absolute;left:3mm;top:3mm;width:90mm;height:48mm;border:.25mm solid #111;border-radius:5mm}
   .segura{position:absolute;left:8mm;top:8mm;width:80mm;height:38mm;border:.25mm solid #0aa0e6}''')
 open('conferencia.html','w').write(conf)
+
+# 5) arquivo da Printi em 9 x 5 cm: página de 90 x 50 mm, fundo até a borda,
+#    conteúdo centralizado na altura (área útil de 48 mm) e textos a 6 mm ou mais das bordas
+p9x5 = doc(f'<div class="p9x5 pg">{FRENTE}</div><div class="p9x5 pg">{VERSO}</div>',
+  '''@page { size: 90mm 50mm; margin: 0; } .pg { page-break-after: always; }
+  .p9x5 .card { width: 90mm; height: 50mm; }
+  .p9x5 .card .conteudo { position: absolute; top: 1mm; bottom: 1mm; left: 0; right: 0; }''')
+open('printi9x5.html','w').write(p9x5)

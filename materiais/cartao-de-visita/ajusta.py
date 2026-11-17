@@ -3,8 +3,10 @@ import sys
 from pypdf import PdfReader, PdfWriter
 from pypdf.generic import RectangleObject
 MM = 72 / 25.4
-W, H, SANGRIA = 96 * MM, 54 * MM, 3 * MM
+# uso: python3 ajusta.py arquivo.pdf [largura_mm altura_mm sangria_mm]  (padrão: 96 54 3)
 arq = sys.argv[1]
+lw, lh, ls = (float(x) for x in (sys.argv[2:5] if len(sys.argv) >= 5 else (96, 54, 3)))
+W, H, SANGRIA = lw * MM, lh * MM, ls * MM
 r = PdfReader(arq); w = PdfWriter()
 for pg in r.pages:
     mw, mh = float(pg.mediabox.width), float(pg.mediabox.height)

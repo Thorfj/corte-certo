@@ -328,7 +328,7 @@
       { feito: (servRes.count || 0) > 0, titulo: "Cadastrar os serviços", dica: "Nome, preço, duração e de quanto em quanto tempo o cliente volta.", link: "/app/servicos/" },
       { feito: (profRes.count || 0) > 1, opcional: true, titulo: "Cadastrar a equipe", dica: "Se mais alguém atende, cadastre em Usuários. Se é só você, pode pular.", link: "/app/configuracoes/?aba=usuarios" },
       { feito: b.google_calendar_status === "conectado", opcional: true, titulo: "Conectar o Google Agenda", dica: b.google_calendar_status === "sem_permissao" ? "Falta a permissão da agenda: conecte de novo e marque a caixinha da agenda na tela do Google." : "Os horários aparecem no Google Agenda de cada profissional.", link: "/app/configuracoes/#card-google" },
-      { feito: b.status_fluxo === "Sim", titulo: "Ligar o bot", dica: "Em Mensagens, ative o fluxo. Seus 14 dias grátis começam aqui.", link: "/app/mensagens/" },
+      { feito: b.status_fluxo === "Sim", titulo: "Ligar o bot", dica: "Em Mensagens, ative o fluxo (precisa ter pelo menos um serviço cadastrado). Seus 14 dias grátis começam aqui.", link: "/app/mensagens/" },
     ];
 
     const obrigatorios = passos.filter((p) => !p.opcional);

@@ -18,8 +18,9 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
   });
 });
 
-function confirmarAcao(mensagem, textoBotao = "Confirmar", estilo = "danger") {
+function confirmarAcao(mensagem, textoBotao = "Confirmar", estilo = "danger", titulo = "Tem certeza?") {
   return new Promise((resolve) => {
+    document.getElementById("confirm-titulo").textContent = titulo;
     document.getElementById("confirm-mensagem").textContent = mensagem;
     const okBtn = document.getElementById("confirm-ok-btn");
     const cancelBtn = document.getElementById("confirm-cancelar-btn");
@@ -744,6 +745,26 @@ document
   .getElementById("toggle-fluxo-btn")
   .addEventListener("click", async () => {
     const novoStatus = statusFluxoAtual === "Sim" ? "Não" : "Sim";
+
+    // o bot só liga com pelo menos um serviço: sem serviço ele não tem o que oferecer ao cliente
+    if (novoStatus === "Sim") {
+      const barbeariaId = await obterBarbeariaId();
+      const { count, error: erroServicos } = await supabaseClient
+        .from("servicos")
+        .select("id", { count: "exact", head: true })
+        .eq("barbearia_id", barbeariaId);
+      if (!erroServicos && !count) {
+        const irParaServicos = await confirmarAcao(
+          "Antes de ligar o bot, cadastre pelo menos um serviço (nome, preço e duração). Sem serviço, o bot não tem o que oferecer quando o cliente chamar no WhatsApp.",
+          "Cadastrar serviços",
+          "primary",
+          "Falta cadastrar um serviço",
+        );
+        if (irParaServicos) window.location.href = "/app/servicos/";
+        return;
+      }
+    }
+
     const mensagem =
       novoStatus === "Não"
         ? "Tem certeza que deseja desativar o fluxo? O sistema vai parar de responder automaticamente no WhatsApp."
@@ -768,7 +789,9 @@ document
     } catch (err) {
       console.error(err);
       alert(
-        "Erro ao atualizar o status do fluxo. Você precisa ter papel de admin.",
+        err && err.hint === "sem_servicos"
+          ? "Cadastre pelo menos um serviço em Serviços antes de ligar o bot."
+          : "Erro ao atualizar o status do fluxo. Você precisa ter papel de admin.",
       );
     }
   });

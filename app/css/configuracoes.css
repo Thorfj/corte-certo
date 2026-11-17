@@ -175,6 +175,26 @@
   background: var(--brand-light);
   color: var(--brand-dark);
 }
+.badge.alerta {
+  background: #fff4d6;
+  color: #8a6418;
+}
+.google-aviso {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fff8e6;
+  color: #6b4e12;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+:root[data-theme="dark"] .google-aviso {
+  background: rgba(255, 196, 77, 0.12);
+  color: #f3d38a;
+}
+.google-aviso.hidden {
+  display: none;
+}
 
 .confirm-modal {
   width: 380px;

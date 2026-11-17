@@ -149,14 +149,23 @@ function atualizarStatusGoogle(barbearia) {
   const badge = document.getElementById("google-status-badge");
   const conectarBtn = document.getElementById("google-conectar-btn");
   const conectado = barbearia.google_calendar_status === "conectado";
+  // autorizou o Google mas desmarcou a permissão da agenda: o token não serve para criar agendas
+  const semPermissao = barbearia.google_calendar_status === "sem_permissao";
 
   badge.textContent = conectado
     ? `Conectado ✅${barbearia.google_calendar_email ? " — " + barbearia.google_calendar_email : ""}`
-    : "Desconectado";
+    : semPermissao
+      ? "Falta a permissão da agenda ⚠️"
+      : "Desconectado";
   badge.classList.toggle("conectado", conectado);
+  badge.classList.toggle("alerta", semPermissao);
   conectarBtn.textContent = conectado
     ? "Reconectar com Google"
-    : "Conectar com Google";
+    : semPermissao
+      ? "Conectar de novo"
+      : "Conectar com Google";
+  const aviso = document.getElementById("google-aviso");
+  aviso.classList.toggle("hidden", !semPermissao);
   const retorno = encodeURIComponent(
     window.location.origin + window.location.pathname,
   );

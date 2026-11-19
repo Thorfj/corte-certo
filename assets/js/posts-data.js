@@ -12,6 +12,18 @@
 
 const BLOG_POSTS = [
   {
+    slug: "cliente-que-pendura",
+    image: "/assets/img/blog/cliente-que-pendura",
+    title: "Cliente que pendura: como cobrar sem perder a amizade",
+    excerpt:
+      "“Depois eu te passo o Pix.” Um corte aqui, outro ali, e no fim do mês tem dinheiro seu na rua. Veja como combinar, anotar e cobrar sem constrangimento.",
+    category: "gestao",
+    categoryLabel: "Gestão",
+    date: "19 nov 2026",
+    readTime: "3 min",
+    featured: false,
+  },
+  {
     slug: "ferias-barbeiro-sem-perder-cliente",
     image: "/assets/img/blog/ferias-barbeiro-sem-perder-cliente",
     title: "Férias do barbeiro sem perder cliente",

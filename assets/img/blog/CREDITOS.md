@@ -21,3 +21,4 @@ Cada post tem duas versões: `<slug>-1280.jpg` (topo do post) e
 | ordem-de-chegada-ou-horario-marcado | https://images.unsplash.com/photo-1567894340315-735d7c361db0 |
 | ferias-barbeiro-sem-perder-cliente | https://images.unsplash.com/photo-1503951914875-452162b0f3f1 |
 | cliente-que-pendura | https://images.unsplash.com/photo-1605497788044-5a32c7078486 |
+| indicacao-cliente-traz-amigo | https://images.unsplash.com/photo-1593702295094-aea22597af65 |

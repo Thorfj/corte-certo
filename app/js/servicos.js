@@ -112,7 +112,9 @@ async function excluirServico(id) {
   const { error } = await supabaseClient.from("servicos").delete().eq("id", id);
 
   if (error) {
-    if (error.code === "23503") {
+    if (error.hint === "ultimo_servico") {
+      alert(error.message);
+    } else if (error.code === "23503") {
       alert(
         "Não é possível excluir: este serviço já foi usado em atendimentos anteriores.",
       );

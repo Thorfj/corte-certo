@@ -196,6 +196,20 @@
     });
   }
 
+  // ---------------- Black Friday 2026 ----------------
+  // Conta criada até 30/11 que ligar o bot até 15/12 ganha 30 dias de teste (em vez de 14).
+  let promoBFPromise = null;
+  function promoBlackFriday() {
+    if (!promoBFPromise) {
+      promoBFPromise = supabaseClient
+        .rpc("promo_black_friday")
+        .then(({ data, error }) => (error || !data || !data.length ? null : data[0]))
+        .catch(() => null);
+    }
+    return promoBFPromise;
+  }
+  window.promoBlackFriday = promoBlackFriday;
+
   // ---------------- Teste grátis: sincroniza e bloqueia se preciso ----------------
   async function checarStatusTeste() {
     try {
@@ -214,6 +228,15 @@
         mostrarBannerCarencia(status.dias_restantes);
       } else if (status.fase === "teste_ativo") {
         mostrarBannerTeste(status.dias_restantes);
+      } else if (status.fase === "configurando") {
+        const promo = await promoBlackFriday();
+        if (promo && promo.elegivel) {
+          criarBanner(
+            "<strong>Black Friday:</strong> ligue o bot até 15/12 e ganhe <strong>30 dias de teste grátis</strong> (em vez de 14). Os 30 dias começam a contar quando o bot for ligado.",
+            "promo",
+            { href: "/app/mensagens/", texto: "Ligar o bot" },
+          );
+        }
       }
     } catch (err) {
       console.error("Erro ao checar status do teste:", err);
@@ -233,10 +256,10 @@
     document.body.appendChild(overlay);
   }
 
-  function criarBanner(texto, tipo) {
+  function criarBanner(texto, tipo, link = { href: "/app/pagamentos/?pagar=1", texto: "Assinar agora" }) {
     const banner = document.createElement("div");
     banner.className = `trial-banner trial-banner-${tipo}`;
-    banner.innerHTML = `<span>${texto}</span> <a href="/app/pagamentos/?pagar=1">Assinar agora</a>`;
+    banner.innerHTML = `<span>${texto}</span> <a href="${link.href}">${link.texto}</a>`;
     const mainContent = document.querySelector(".main-content");
     if (mainContent) mainContent.prepend(banner);
   }
@@ -302,7 +325,7 @@
     const chaveOculto = `barbozap:primeirosPassosOcultos:${barbeariaId}`;
     if (lerLocal(chaveOculto) === "1") return;
 
-    const [barbRes, servRes, profRes, whatsapp] = await Promise.all([
+    const [barbRes, servRes, profRes, whatsapp, promo] = await Promise.all([
       supabaseClient
         .from("barbearias")
         .select("status_fluxo, horario_funcionamento, google_calendar_status")
@@ -315,8 +338,10 @@
         .eq("barbearia_id", barbeariaId)
         .is("removido_em", null),
       whatsappConectado(),
+      promoBlackFriday(),
     ]);
     const b = barbRes.data || {};
+    const diasTeste = promo && promo.elegivel ? 30 : 14;
 
     const horarioFeito =
       lerLocal(`barbozap:horarioConferido:${barbeariaId}`) === "1" ||
@@ -328,7 +353,7 @@
       { feito: (servRes.count || 0) > 0, titulo: "Cadastrar os serviços", dica: "Nome, preço, duração e de quanto em quanto tempo o cliente volta.", link: "/app/servicos/" },
       { feito: (profRes.count || 0) > 1, opcional: true, titulo: "Cadastrar a equipe", dica: "Se mais alguém atende, cadastre em Usuários. Se é só você, pode pular.", link: "/app/configuracoes/?aba=usuarios" },
       { feito: b.google_calendar_status === "conectado", opcional: true, titulo: "Conectar o Google Agenda", dica: b.google_calendar_status === "sem_permissao" ? "Falta a permissão da agenda: conecte de novo e marque a caixinha da agenda na tela do Google." : "Os horários aparecem no Google Agenda de cada profissional.", link: "/app/configuracoes/#card-google" },
-      { feito: b.status_fluxo === "Sim", titulo: "Ligar o bot", dica: "Em Mensagens, ative o fluxo (precisa ter pelo menos um serviço cadastrado). Seus 14 dias grátis começam aqui.", link: "/app/mensagens/" },
+      { feito: b.status_fluxo === "Sim", titulo: "Ligar o bot", dica: `Em Mensagens, ative o fluxo (precisa ter pelo menos um serviço cadastrado). Seus ${diasTeste} dias grátis começam aqui${diasTeste === 30 ? " (Black Friday: ligue até 15/12)" : ""}.`, link: "/app/mensagens/" },
     ];
 
     const obrigatorios = passos.filter((p) => !p.opcional);

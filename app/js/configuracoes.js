@@ -1277,6 +1277,10 @@ async function concluirConfiguracaoTeste() {
     await carregarStatusTeste();
   } catch (err) {
     console.error(err);
+    if (err && err.hint === "sem_servicos") {
+      alert("Cadastre pelo menos um serviço antes de iniciar o teste: sem serviço o bot não consegue agendar. Vá em Serviços e cadastre o primeiro.");
+      return;
+    }
     alert("Erro ao iniciar o teste. Tente novamente.");
   }
 }

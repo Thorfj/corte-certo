@@ -448,3 +448,44 @@ footer {
     animation-duration: 0.01ms !important;
   }
 }
+
+/* ------------------------------------------------------------
+   Black Friday 2026 (ativado pelo global.js até 30/11)
+   ------------------------------------------------------------ */
+.bf-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: #0b0b0b;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+  text-decoration: none;
+}
+.bf-bar strong { color: #ffd84d; }
+.bf-tag {
+  background: #ffd84d;
+  color: #0b0b0b;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+}
+.bf-seta { color: #ffd84d; font-weight: 700; }
+.bf-bar:hover .bf-texto { text-decoration: underline; }
+
+.black-friday .eyebrow[data-bf] {
+  background: #0b0b0b;
+  color: #ffd84d;
+}
+.black-friday .eyebrow[data-bf]::before { background: #ffd84d; }
+@media (max-width: 640px) {
+  .bf-bar { gap: 6px 8px; padding: 8px 12px; font-size: 13px; }
+  .bf-seta { display: none; }
+}

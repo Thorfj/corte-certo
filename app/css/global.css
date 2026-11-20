@@ -489,6 +489,14 @@ button {
   background: #fde3e0;
   color: #b3261e;
 }
+.trial-banner-promo {
+  background: #111;
+  color: #fff;
+}
+.trial-banner-promo strong,
+.trial-banner-promo a {
+  color: #ffd84d;
+}
 
 /* ------------------------------------------------------------
    Sidebar recolhível

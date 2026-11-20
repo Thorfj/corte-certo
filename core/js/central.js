@@ -855,6 +855,8 @@ const MENSAGENS_AUTOMATICAS = {
     "Enviada sozinha pelo n8n, 12 minutos depois que uma pessoa responde a saudação. A IA segue este modelo: troca [resposta ao cumprimento] por uma resposta ao que a pessoa disse e [tempo] pelo tempo que ela levou para responder. Se a resposta veio em menos de 15 minutos, a IA reescreve só o trecho do tempo.",
   apresentacao_2:
     "Enviada sozinha pelo n8n, 60 segundos depois da mensagem 1 do fluxo Apresentação. Sai exatamente como está aqui; [barbearia] vira o nome da barbearia.",
+  black_friday_conta:
+    "Não é para leads: é o follow-up para barbearias que já criaram conta. Mande pelo botão \"Black Friday\" da aba Onboarding, que abre o WhatsApp da barbearia com este texto ([barbearia] vira o nome da barbearia).",
 };
 function roteirosParaEnviar() {
   return mensagensCache.filter((m) => !MENSAGENS_AUTOMATICAS[m.automacao]);
@@ -2693,20 +2695,29 @@ async function carregarRelatorios() {
 }
 
 // mesmos passos do checklist "Primeiros passos" do app (app/js/crm-global.js)
-const TRIAL_DIAS = 14;
+// Black Friday 2026: conta criada até 30/11 com o bot ligado até 15/12 tem 30 dias (igual à função dias_teste_gratis do banco)
+function diasTeste(criadoEm, inicio) {
+  return new Date(criadoEm) < new Date("2026-12-01T00:00:00-03:00") && new Date(inicio) < new Date("2026-12-16T00:00:00-03:00")
+    ? 30
+    : 14;
+}
+function promoBlackFridayConta(b) {
+  return !b.cliente && !b.trial_iniciado_em && new Date(b.criado_em) < new Date("2026-12-01T00:00:00-03:00") && Date.now() < new Date("2026-12-16T00:00:00-03:00");
+}
 
 function passoOnboarding(b) {
   if (/cancel/i.test(b.status_assinatura || "")) return { texto: "Cancelou", tipo: "cancelada" };
   if (b.cliente) return { texto: "Assinante", tipo: "concluida" };
   if (b.bot_ligado || b.trial_iniciado_em) {
     const inicio = new Date(b.trial_iniciado_em || b.criado_em);
-    const restam = TRIAL_DIAS - Math.floor((Date.now() - inicio) / 86400000);
+    const restam = diasTeste(b.criado_em, inicio) - Math.floor((Date.now() - inicio) / 86400000);
     return restam > 0
       ? { texto: `Teste grátis · ${restam} ${restam === 1 ? "dia" : "dias"}`, tipo: "enviando" }
       : { texto: "Teste acabou, não assinou", tipo: "atrasado" };
   }
-  if (!b.servicos) return { texto: "Cadastrar os serviços", tipo: "" };
-  return { texto: "Ligar o bot", tipo: "" };
+  const bf = promoBlackFridayConta(b) ? " (Black Friday: até 15/12)" : "";
+  if (!b.servicos) return { texto: "Cadastrar os serviços" + bf, tipo: "" };
+  return { texto: "Ligar o bot" + bf, tipo: "" };
 }
 
 async function carregarOnboarding() {
@@ -2744,11 +2755,32 @@ async function carregarOnboarding() {
               `<span class="onb-passo${feito ? " feito" : ""}${opcional ? " opcional" : ""}">${feito ? "✓" : "○"} ${esc(nome)}</span>`,
           )
           .join("")}</div></td>
-        <td class="nowrap">${fone ? `<a href="https://wa.me/${esc(fone)}" target="_blank" rel="noopener">${esc(formatarTelefone(fone))}</a>` : "—"}</td>
+        <td class="nowrap">${fone ? `<a href="https://wa.me/${esc(fone)}" target="_blank" rel="noopener">${esc(formatarTelefone(fone))}</a>` : "—"}${
+          fone && !b.cliente && Date.now() < new Date("2026-12-16T00:00:00-03:00")
+            ? `<button type="button" class="btn-bf" data-bf-fone="${esc(fone)}" data-bf-nome="${esc(b.empresa || "")}">Black Friday</button>`
+            : ""
+        }</td>
       </tr>`;
     })
     .join("");
 }
+
+// botão "Black Friday" do Onboarding: abre o WhatsApp da barbearia com o follow-up da aba Mensagens
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".btn-bf");
+  if (!btn) return;
+  let msg = mensagensCache.find((m) => m.automacao === "black_friday_conta");
+  if (!msg) {
+    const { data } = await supabaseCentral.from("mensagens_prospeccao").select("texto, automacao").eq("automacao", "black_friday_conta").maybeSingle();
+    msg = data;
+  }
+  if (!msg) {
+    alert("Não encontrei a mensagem da Black Friday na aba Mensagens.");
+    return;
+  }
+  const texto = msg.texto.replace(/\[barbearia\]/gi, btn.dataset.bfNome || "sua barbearia");
+  window.open(`https://wa.me/${btn.dataset.bfFone}?text=${encodeURIComponent(texto)}`, "_blank", "noopener");
+});
 
 function renderizarChartBarras(dados) {
   const wrap = document.getElementById("chartNovasBarbearias");

@@ -1213,6 +1213,7 @@ document
   });
 
 // ---------------- Status do teste grátis ----------------
+let diasTesteGratis = 14;
 async function carregarStatusTeste() {
   const card = document.getElementById("trial-status-card");
   try {
@@ -1228,9 +1229,11 @@ async function carregarStatusTeste() {
     }
 
     if (status.fase === "configurando") {
+      const promo = window.promoBlackFriday ? await window.promoBlackFriday() : null;
+      diasTesteGratis = promo && promo.elegivel ? 30 : 14;
       card.classList.add("trial-banner-info");
       card.innerHTML = `
-        <span>Configure suas informações, profissionais e serviços à vontade. Quando terminar, inicie seus 14 dias de teste grátis.</span>
+        <span>Configure suas informações, profissionais e serviços à vontade. Quando terminar, inicie seus ${diasTesteGratis} dias de teste grátis${diasTesteGratis === 30 ? " (Black Friday: inicie até 15/12)" : ""}.</span>
         <button type="button" class="btn btn-primary" id="concluir-config-btn">Concluir configuração e iniciar teste</button>
       `;
       document
@@ -1262,7 +1265,7 @@ async function carregarStatusTeste() {
 
 async function concluirConfiguracaoTeste() {
   const confirmado = await confirmarAcao(
-    "A partir de agora você tem 14 dias de teste grátis. Essa ação não pode ser desfeita. Deseja continuar?",
+    `A partir de agora você tem ${diasTesteGratis} dias de teste grátis. Essa ação não pode ser desfeita. Deseja continuar?`,
     "Iniciar teste grátis",
     "primary",
   );

@@ -12,6 +12,18 @@
 
 const BLOG_POSTS = [
   {
+    slug: "indicacao-cliente-traz-amigo",
+    image: "/assets/img/blog/indicacao-cliente-traz-amigo",
+    title: "Indicação: como fazer o cliente satisfeito trazer o amigo",
+    excerpt:
+      "O cliente que chega indicado já vem confiando e costuma ficar. Veja pra quem pedir, a hora certa e como facilitar pro amigo marcar.",
+    category: "atendimento",
+    categoryLabel: "Atendimento",
+    date: "20 nov 2026",
+    readTime: "3 min",
+    featured: false,
+  },
+  {
     slug: "cliente-que-pendura",
     image: "/assets/img/blog/cliente-que-pendura",
     title: "Cliente que pendura: como cobrar sem perder a amizade",

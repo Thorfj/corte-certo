@@ -12,6 +12,18 @@
 
 const BLOG_POSTS = [
   {
+    slug: "falar-com-humano",
+    image: "/assets/img/blog/falar-com-humano",
+    title: "“Falar com humano”: quando o bot deve passar a conversa pra você",
+    excerpt:
+      "O bot resolve o agendamento, mas reclamação, pedido especial e cliente confuso pedem gente. Veja quando passar a conversa e como fazer bem.",
+    category: "atendimento",
+    categoryLabel: "Atendimento",
+    date: "23 nov 2026",
+    readTime: "3 min",
+    featured: false,
+  },
+  {
     slug: "indicacao-cliente-traz-amigo",
     image: "/assets/img/blog/indicacao-cliente-traz-amigo",
     title: "Indicação: como fazer o cliente satisfeito trazer o amigo",

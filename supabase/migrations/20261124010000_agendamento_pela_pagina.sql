@@ -154,7 +154,7 @@ returns jsonb
 language plpgsql
 volatile
 security definer
-set search_path to 'public'
+set search_path to 'public', 'extensions'
 as $$
 declare
   c record;
@@ -223,6 +223,15 @@ begin
   from servicos s
   where s.barbearia_id = c.barbearia_id and s.id = any(p_servicos);
 
+  -- confirmação no WhatsApp do bot (n8n "Confirmação do agendamento pela página");
+  -- o pg_net só dispara depois do commit, e o n8n só envia com o bot ligado
+  perform net.http_post(
+    url := 'https://n8n.srv2088418.hstgr.cloud/webhook/agendamento-pagina',
+    body := jsonb_build_object('atendimento_id', v_atend),
+    headers := '{"Content-Type": "application/json"}'::jsonb,
+    timeout_milliseconds := 5000
+  );
+
   update clientes
   set status = 'agendado',
       data_ult_agend = p_data,
@@ -240,3 +249,6 @@ begin
 end;
 $$;
 grant execute on function public.pagina_agendar(text, bigint[], date, text, bigint, text, text, text) to anon, authenticated;
+
+-- quando a confirmação do agendamento pela página foi enviada no WhatsApp (n8n)
+alter table public.atendimentos add column if not exists confirmacao_enviada_em timestamptz;

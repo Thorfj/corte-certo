@@ -326,7 +326,7 @@ async function confirmarAgendamento(e) {
       <strong>${escapar(dataPorExtenso(data.data))} às ${escapar(data.horario)}</strong>
       com ${escapar(data.profissional)}<br>
       ${escapar(escolhidos.map((s) => s.nome).join(" + "))} · ${moeda(data.total)}
-      ${agenda.pagina.agendamento_online ? "<br><small>Você recebe um lembrete no WhatsApp antes do horário.</small>" : ""}`;
+      ${agenda.pagina.agendamento_online ? "<br><small>Você vai receber a confirmação no WhatsApp agora e um lembrete antes do horário.</small>" : ""}`;
     mostrar("lp-agenda-passos", false);
     mostrar("lp-sucesso", true);
     document.getElementById("lp-agenda").scrollIntoView({ behavior: "smooth", block: "start" });

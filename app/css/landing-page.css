@@ -150,3 +150,149 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ---------- Cores da página ---------- */
+.lpc-cores {
+  margin: 8px 0 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.lpc-cores-titulo {
+  font-weight: 600;
+  font-size: 14px;
+  margin: 0 0 4px;
+}
+.lpc-cor-campo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  margin-top: 14px;
+}
+.lpc-cor-rotulo {
+  font-size: 14px;
+  font-weight: 500;
+  width: 72px;
+}
+.lpc-cor-opcoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.lpc-cor-opcao {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+}
+.lpc-cor-opcao[aria-checked="true"] {
+  box-shadow: 0 0 0 2px var(--bg-card, #fff), 0 0 0 4px var(--brand);
+}
+.lpc-cor-propria {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.lpc-cor-propria input[type="color"] {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+}
+.lpc-cores-padrao {
+  margin-top: 10px;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 13px;
+  color: var(--brand);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* prévia: usa as mesmas variáveis que a página pública (lp-cores.js) */
+.lpc-previa {
+  margin-top: 16px;
+  padding: 20px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--cream);
+  color: var(--ink);
+  text-align: center;
+  font-family: "Inter", sans-serif;
+}
+.lpc-previa-avatar {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  background: var(--green);
+  color: var(--lp-sobre-destaque);
+  border: 2px solid var(--lp-borda-botao);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+.lpc-previa-nome {
+  font-weight: 600;
+  font-size: 18px;
+  margin: 0 0 4px;
+}
+.lpc-previa-desc {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 14px;
+}
+.lpc-previa-cartao {
+  background: var(--lp-superficie);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 4px 14px;
+  text-align: left;
+}
+.lpc-previa-servico {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+}
+.lpc-previa-servico + .lpc-previa-servico {
+  border-top: 1px solid var(--line);
+}
+.lpc-previa-servico p {
+  margin: 0;
+}
+.lpc-previa-servico-nome {
+  font-weight: 600;
+  font-size: 14px;
+}
+.lpc-previa-servico-dur {
+  font-size: 12px;
+  color: var(--muted);
+}
+.lpc-previa-preco {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--lp-destaque-texto);
+}
+.lpc-previa-botao {
+  display: block;
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 999px;
+  background: var(--green);
+  color: var(--lp-sobre-destaque);
+  border: 2px solid var(--lp-borda-botao);
+  font-weight: 600;
+  font-size: 14px;
+}

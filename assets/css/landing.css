@@ -32,7 +32,8 @@
   margin: 0 auto 16px;
   border-radius: 50%;
   background: var(--green);
-  color: #fff;
+  color: var(--lp-sobre-destaque, #fff);
+  border: 2px solid var(--lp-borda-botao, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -68,7 +69,8 @@
   padding: 6px 12px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--line);
-  background: #fff;
+  background: var(--lp-superficie, #fff);
+  color: var(--ink);
   font-size: 13px;
   font-weight: 500;
 }
@@ -89,7 +91,7 @@ a.lp-chip:hover {
 
 /* ---------- seções ---------- */
 .lp-secao {
-  background: #fff;
+  background: var(--lp-superficie, #fff);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 20px;
@@ -132,7 +134,7 @@ a.lp-chip:hover {
 .lp-servico-preco {
   font-weight: 600;
   font-size: 15.5px;
-  color: var(--green);
+  color: var(--lp-destaque-texto, var(--green));
   white-space: nowrap;
 }
 .lp-servico-vazio {
@@ -163,7 +165,7 @@ a.lp-chip:hover {
 .lp-link {
   font-weight: 600;
   font-size: 14px;
-  color: var(--green);
+  color: var(--lp-destaque-texto, var(--green));
 }
 
 .lp-rodape {
@@ -173,7 +175,7 @@ a.lp-chip:hover {
   padding-top: 20px;
 }
 .lp-rodape a {
-  color: var(--green);
+  color: var(--lp-destaque-texto, var(--green));
   font-weight: 600;
 }
 
@@ -202,7 +204,7 @@ a.lp-chip:hover {
   right: 0;
   bottom: 0;
   padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
-  background: linear-gradient(to top, var(--cream) 70%, rgba(246, 241, 231, 0));
+  background: linear-gradient(to top, var(--cream) 70%, var(--lp-fundo-transparente, rgba(255, 255, 255, 0)));
   display: flex;
   justify-content: center;
 }
@@ -212,7 +214,13 @@ a.lp-chip:hover {
   text-align: center;
   font-size: 16px;
   padding: 16px 26px;
-  box-shadow: 0 8px 24px rgba(23, 73, 60, 0.25);
+  background: var(--green);
+  color: var(--lp-sobre-destaque, #fff);
+  border: 2px solid var(--lp-borda-botao, transparent);
+  box-shadow: var(--lp-sombra-botao, 0 8px 24px rgba(23, 73, 60, 0.25));
+}
+.lp-cta-btn:hover {
+  box-shadow: var(--lp-sombra-botao, 0 8px 24px rgba(23, 73, 60, 0.25));
 }
 
 @media (min-width: 700px) {

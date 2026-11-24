@@ -56,7 +56,16 @@ function linkAgendar(pagina) {
   return `https://wa.me/${numero}?text=${texto}`;
 }
 
+// Cores escolhidas pelo dono no CRM (fundo + destaque); o resto é calculado em lp-cores.js
+function aplicarCores(p) {
+  if (!window.LPCores) return;
+  const tema = window.LPCores.aplicar(document.documentElement, p.cor_fundo, p.cor_destaque);
+  document.querySelector('meta[name="theme-color"]').content = tema.fundo;
+  document.documentElement.style.colorScheme = tema.escuro ? "dark" : "light";
+}
+
 function renderizar(p) {
+  aplicarCores(p);
   document.title = `${p.empresa} — Agende seu horário`;
   document.querySelector('meta[name="description"]').content =
     p.descricao || `Veja os serviços e agende seu horário na ${p.empresa}.`;

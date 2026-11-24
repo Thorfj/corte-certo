@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Agende seu horário — Barbozap</title>
   <meta name="description" content="Veja os serviços e agende seu horário.">
-  <meta name="theme-color" content="#17493c">
+  <meta name="theme-color" content="#ffffff">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -32,9 +32,60 @@
         <div class="lp-chips" id="lp-chips"></div>
       </div>
 
-      <section class="lp-secao">
+      <section class="lp-secao" id="lp-secao-servicos">
         <h2 class="lp-secao-titulo">Serviços</h2>
+        <p class="lp-secao-dica hidden" id="lp-servicos-dica">Toque para escolher um ou mais serviços.</p>
         <ul class="lp-servicos" id="lp-servicos"></ul>
+      </section>
+
+      <!-- Agendamento online: dia → horário → profissional → dados -->
+      <section class="lp-secao lp-agenda hidden" id="lp-agenda">
+        <h2 class="lp-secao-titulo">Agendar horário</h2>
+
+        <div id="lp-agenda-passos">
+          <p class="lp-agenda-aviso" id="lp-agenda-sem-servico">Escolha pelo menos um serviço acima para ver os horários livres.</p>
+
+          <div class="lp-passo hidden" id="lp-passo-dia">
+            <p class="lp-passo-titulo">Dia</p>
+            <div class="lp-dias" id="lp-dias" role="radiogroup" aria-label="Dia"></div>
+          </div>
+
+          <div class="lp-passo hidden" id="lp-passo-hora">
+            <p class="lp-passo-titulo">Horário</p>
+            <div id="lp-horas"></div>
+          </div>
+
+          <div class="lp-passo hidden" id="lp-passo-prof">
+            <p class="lp-passo-titulo">Com quem?</p>
+            <div class="lp-opcoes" id="lp-profs" role="radiogroup" aria-label="Profissional"></div>
+          </div>
+
+          <form class="lp-passo hidden" id="lp-passo-dados" novalidate>
+            <p class="lp-passo-titulo">Seus dados</p>
+            <label class="lp-campo">
+              <span>Nome</span>
+              <input type="text" id="lp-nome-cliente" autocomplete="name" maxlength="60" required>
+            </label>
+            <label class="lp-campo">
+              <span>WhatsApp (com DDD)</span>
+              <input type="tel" id="lp-tel-cliente" autocomplete="tel" inputmode="numeric" placeholder="(41) 99999-0000" maxlength="16" required>
+            </label>
+            <label class="lp-campo">
+              <span>E-mail <small>(opcional)</small></span>
+              <input type="email" id="lp-email-cliente" autocomplete="email" maxlength="120">
+            </label>
+            <div class="lp-resumo" id="lp-resumo"></div>
+            <p class="lp-erro hidden" id="lp-agenda-erro" role="alert"></p>
+            <button type="submit" class="lp-confirmar" id="lp-confirmar">Confirmar agendamento</button>
+          </form>
+        </div>
+
+        <div class="lp-sucesso hidden" id="lp-sucesso" role="status">
+          <p class="lp-sucesso-icone">✅</p>
+          <p class="lp-sucesso-titulo">Horário agendado!</p>
+          <p class="lp-sucesso-texto" id="lp-sucesso-texto"></p>
+          <button type="button" class="lp-link-botao" id="lp-agendar-outro">Agendar outro horário</button>
+        </div>
       </section>
 
       <section class="lp-secao">
@@ -60,12 +111,17 @@
     </div>
   </main>
 
-  <!-- Botão fixo de agendar (no celular fica sempre à mão) -->
+  <!-- Barra fixa (no celular fica sempre à mão): agendar aqui + falar no WhatsApp -->
   <div class="lp-cta hidden" id="lp-cta">
-    <a class="btn-primary lp-cta-btn" id="lp-agendar" target="_blank" rel="noopener">Agendar horário</a>
+    <a class="btn-primary lp-cta-btn" id="lp-agendar" href="#lp-agenda">Agendar horário</a>
+    <a class="lp-cta-whats hidden" id="lp-whats" target="_blank" rel="noopener" aria-label="Falar no WhatsApp">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91A9.85 9.85 0 0 0 12.04 2Zm0 18.15h-.01a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.23 8.24-8.23a8.2 8.2 0 0 1 8.23 8.24c0 4.54-3.7 8.23-8.23 8.23Zm4.52-6.16c-.25-.12-1.47-.72-1.7-.8-.23-.09-.39-.13-.56.12-.16.25-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.38-1.72-.15-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.41-.42-.56-.42h-.48c-.17 0-.43.06-.66.31-.23.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.24 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.1-.23-.16-.48-.29Z"/></svg>
+      <span>WhatsApp</span>
+    </a>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/assets/js/lp-cores.js"></script>
   <script src="/assets/js/landing.js"></script>
 </body>
 

@@ -29,7 +29,10 @@ Eles foram migrados dos JSONs do Google Drive, corrigidos para rodar no n8n Clou
 | Safra pela Central | Webhook `POST /webhook/safra-prospeccao` (Central Interna > Leads > Montar safra) | `m6QVZjtYD6pKADJT` |
 | Safra de prospecção (formulário, **despublicado**) | Formulário `/form/safra-prospeccao` | `w7S7TVhqwdZs4xrU` |
 | WhatsApp da prospecção | Webhook `POST /webhook/whatsapp-prospeccao` (Central Interna > WhatsApp) | `PeWxnjnK1sr15em3` |
+| Confirmação do agendamento pela página | Webhook `POST /webhook/agendamento-pagina` (Supabase `pagina_agendar`) | `j0v1c8M3g5vn19Ot` |
 | Assistente do dono (IA) | Webhook `POST /webhook/assistente-dono` (mensagens recebidas no 41 3795-2535) | `ygqxrNnqlgyXsi4S` |
+
+- **Agendamento pela landing page** (`/b/<link>`): o Supabase (`pagina_horarios` / `pagina_agendar`) cria o atendimento direto, com as mesmas regras de horário da etapa 00501, e chama `/webhook/agendamento-pagina`. Esse fluxo manda a confirmação no WhatsApp do bot só para atendimento criado há menos de 10 min, ainda sem `atendimentos.confirmacao_enviada_em`, e com `status_fluxo = 'Sim'`.
 
 Fluxo do bot: `00101 nome → 00201 serviços → 00301 profissional → 00401 dia → 00501 horário → atendimento criado`.
 Ao concluir, a sessão fica com `etapa_atual = 'concluido'` e a próxima mensagem do cliente recomeça em 00201.

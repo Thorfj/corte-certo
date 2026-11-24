@@ -102,10 +102,8 @@ document.getElementById("lpc-descricao").addEventListener("input", (e) => {
 function mostrarAvisoBot() {
   const aviso = document.getElementById("lpc-aviso-bot");
   let texto = "";
-  if (!barbearia.whatsapp_barbearia) {
-    texto = 'O botão "Agendar horário" só aparece na página depois que o WhatsApp da barbearia for conectado em Configurações.';
-  } else if (barbearia.status_fluxo !== "Sim") {
-    texto = 'O bot está desligado: o botão "Agendar horário" leva o cliente ao WhatsApp da barbearia, mas ninguém responde automaticamente até você ligar o bot em Mensagens.';
+  if (barbearia.status_fluxo !== "Sim") {
+    texto = 'O agendamento pela página já funciona. Com o bot desligado, porém, os clientes não recebem lembretes no WhatsApp e o botão "WhatsApp" leva a uma conversa sem resposta automática. Ligue o bot em Mensagens.';
   }
   aviso.textContent = texto;
   aviso.style.display = texto ? "block" : "none";
@@ -177,12 +175,81 @@ document.getElementById("lpc-baixar-qr-btn").addEventListener("click", () => {
   a.click();
 });
 
+// ---------------- Cores da página ----------------
+// O dono escolhe o fundo e o destaque; lp-cores.js calcula texto, cartões e o
+// texto do botão para manter o contraste. A prévia usa o mesmo cálculo da página.
+const CORES_FUNDO = [
+  ["#ffffff", "Branco"],
+  ["#f6f1e7", "Creme"],
+  ["#eef1f4", "Cinza claro"],
+  ["#1f2326", "Grafite"],
+  ["#0d0d0d", "Preto"],
+  ["#0f1b2d", "Azul-marinho"],
+];
+const CORES_DESTAQUE = [
+  ["#0f8a4f", "Verde"],
+  ["#c9a227", "Dourado"],
+  ["#b3261e", "Vermelho"],
+  ["#1d4ed8", "Azul"],
+  ["#e0701a", "Laranja"],
+  ["#111111", "Preto"],
+];
+const cores = { fundo: LPCores.PADRAO.fundo, destaque: LPCores.PADRAO.destaque };
+
+function montarOpcoesCor(containerId, lista, chave) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = lista
+    .map(
+      ([cor, nome]) =>
+        `<button type="button" class="lpc-cor-opcao" role="radio" data-cor="${cor}" title="${nome}" aria-label="${nome}" style="background:${cor}"></button>`,
+    )
+    .join("");
+  container.querySelectorAll(".lpc-cor-opcao").forEach((btn) => {
+    btn.addEventListener("click", () => escolherCor(chave, btn.dataset.cor));
+  });
+}
+
+function escolherCor(chave, cor) {
+  if (!LPCores.valido(cor)) return;
+  cores[chave] = cor.toLowerCase();
+  atualizarCores();
+}
+
+function atualizarCores() {
+  [
+    ["lpc-fundo-opcoes", "lpc-cor-fundo", "fundo"],
+    ["lpc-destaque-opcoes", "lpc-cor-destaque", "destaque"],
+  ].forEach(([opcoesId, inputId, chave]) => {
+    document.querySelectorAll(`#${opcoesId} .lpc-cor-opcao`).forEach((btn) => {
+      btn.setAttribute("aria-checked", String(btn.dataset.cor === cores[chave]));
+    });
+    document.getElementById(inputId).value = cores[chave];
+  });
+  const tema = LPCores.aplicar(document.getElementById("lpc-previa"), cores.fundo, cores.destaque);
+  const aviso = document.getElementById("lpc-aviso-cores");
+  aviso.textContent = tema.parecidas
+    ? "O destaque está muito parecido com o fundo. O botão ganha uma borda para aparecer, mas uma cor mais diferente fica melhor."
+    : "";
+  aviso.style.display = tema.parecidas ? "block" : "none";
+}
+
+montarOpcoesCor("lpc-fundo-opcoes", CORES_FUNDO, "fundo");
+montarOpcoesCor("lpc-destaque-opcoes", CORES_DESTAQUE, "destaque");
+document.getElementById("lpc-cor-fundo").addEventListener("input", (e) => escolherCor("fundo", e.target.value));
+document.getElementById("lpc-cor-destaque").addEventListener("input", (e) => escolherCor("destaque", e.target.value));
+document.getElementById("lpc-cores-padrao").addEventListener("click", () => {
+  cores.fundo = LPCores.PADRAO.fundo;
+  cores.destaque = LPCores.PADRAO.destaque;
+  atualizarCores();
+});
+atualizarCores();
+
 // ---------------- Carregar / salvar ----------------
 async function carregar() {
   const barbeariaId = await obterBarbeariaId();
   const { data, error } = await supabaseClient
     .from("barbearias")
-    .select("id, empresa, slug, landing_publicada, landing_descricao, endereco, instagram, whatsapp_barbearia, status_fluxo")
+    .select("id, empresa, slug, landing_publicada, landing_descricao, endereco, instagram, whatsapp_barbearia, status_fluxo, landing_cor_fundo, landing_cor_destaque")
     .eq("id", barbeariaId)
     .single();
   if (error) throw error;
@@ -197,9 +264,22 @@ async function carregar() {
   // primeira vez: já deixa marcado pra publicar
   document.getElementById("lpc-publicada").checked = data.slug ? !!data.landing_publicada : true;
 
+  cores.fundo = LPCores.valido(data.landing_cor_fundo) ? data.landing_cor_fundo.toLowerCase() : LPCores.PADRAO.fundo;
+  cores.destaque = LPCores.valido(data.landing_cor_destaque) ? data.landing_cor_destaque.toLowerCase() : LPCores.PADRAO.destaque;
+  document.getElementById("lpc-previa-nome").textContent = data.empresa || "Sua barbearia";
+  document.getElementById("lpc-previa-avatar").textContent = iniciaisPrevia(data.empresa);
+  atualizarCores();
+
   mostrarAvisoBot();
   mostrarDivulgar();
   checarSlug();
+}
+
+function iniciaisPrevia(nome) {
+  const palavras = String(nome || "").trim().split(/\s+/).filter(Boolean);
+  const uteis = palavras.filter((w) => !/^(barbearia|barber|shop|do|da|de|dos|das)$/i.test(w));
+  const base = uteis.length ? uteis : palavras;
+  return base.slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "B";
 }
 
 document.getElementById("lpc-form").addEventListener("submit", async (e) => {
@@ -223,6 +303,9 @@ document.getElementById("lpc-form").addEventListener("submit", async (e) => {
     endereco: document.getElementById("lpc-endereco").value.trim() || null,
     instagram: limparInstagram(document.getElementById("lpc-instagram").value) || null,
     landing_publicada: document.getElementById("lpc-publicada").checked,
+    // cores padrão ficam nulas: se o padrão do Barbozap mudar, a página acompanha
+    landing_cor_fundo: cores.fundo === LPCores.PADRAO.fundo ? null : cores.fundo,
+    landing_cor_destaque: cores.destaque === LPCores.PADRAO.destaque ? null : cores.destaque,
   };
 
   btn.disabled = true;

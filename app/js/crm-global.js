@@ -348,7 +348,7 @@
       (b.horario_funcionamento && JSON.stringify(b.horario_funcionamento) !== HORARIO_PADRAO_JSON);
 
     const passos = [
-      { feito: whatsapp, titulo: "Conectar o WhatsApp da barbearia", dica: "Leia o QR Code com o celular do número da barbearia.", link: "/app/configuracoes/#card-whatsapp" },
+      { feito: whatsapp, titulo: "Conectar o WhatsApp da barbearia", dica: "Leia o QR Code ou, no celular, use o código de pareamento.", link: "/app/configuracoes/#card-whatsapp" },
       { feito: horarioFeito, titulo: "Conferir o horário de funcionamento", dica: "O bot só oferece horários dentro dele.", link: "/app/configuracoes/#card-horario" },
       { feito: (servRes.count || 0) > 0, titulo: "Cadastrar os serviços", dica: "Nome, preço, duração e de quanto em quanto tempo o cliente volta.", link: "/app/servicos/" },
       { feito: (profRes.count || 0) > 1, opcional: true, titulo: "Cadastrar a equipe", dica: "Se mais alguém atende, cadastre em Usuários. Se é só você, pode pular.", link: "/app/configuracoes/?aba=usuarios" },

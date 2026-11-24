@@ -196,14 +196,23 @@ async function configurarAparenciaEGoogle(barbearia) {
 // Evolution API usando o whatsapp_barbearia como nome da instância. A chave da
 // Evolution nunca passa pelo navegador.
 const WHATSAPP_CONEXAO_URL = "https://n8n.srv2088418.hstgr.cloud/webhook/whatsapp-conexao";
-const WHATSAPP_POLL_MS = 4000; // confere se o QR já foi lido
+const WHATSAPP_POLL_MS = 4000; // confere se o WhatsApp já conectou
 const WHATSAPP_QR_RENOVA_MS = 35000; // o QR da Evolution expira em ~40s
-const WHATSAPP_QR_LIMITE_MS = 180000; // depois de 3 min sem ler, para e pede para tentar de novo
+const WHATSAPP_QR_LIMITE_MS = 180000; // depois de 3 min sem conectar, para e pede para tentar de novo
 let whatsappPoll = null;
 let whatsappRenova = null;
 let whatsappLimite = null;
 
-async function chamarConexaoWhatsapp(acao) {
+// Dois jeitos de conectar:
+//  - "qr": lê o QR Code com outro aparelho (padrão no computador);
+//  - "codigo": código de pareamento de 8 letras, digitado no próprio WhatsApp em
+//    "Conectar com número de telefone" (padrão no celular, que não consegue ler a própria tela).
+const WHATSAPP_EH_CELULAR =
+  /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+  window.matchMedia("(pointer: coarse) and (max-width: 900px)").matches;
+let whatsappModo = WHATSAPP_EH_CELULAR ? "codigo" : "qr";
+
+async function chamarConexaoWhatsapp(acao, extra = {}) {
   const {
     data: { session },
   } = await supabaseClient.auth.getSession();
@@ -213,7 +222,7 @@ async function chamarConexaoWhatsapp(acao) {
       "Content-Type": "application/json",
       Authorization: `Bearer ${session.access_token}`,
     },
-    body: JSON.stringify({ acao }),
+    body: JSON.stringify({ acao, ...extra }),
   });
   const dados = await resp.json().catch(() => ({}));
   if (!resp.ok || dados.erro) {
@@ -233,19 +242,30 @@ function mostrarEstadoWhatsapp(estado) {
   const badge = document.getElementById("whatsapp-status-badge");
   const conectarBtn = document.getElementById("whatsapp-conectar-btn");
   const desconectarBtn = document.getElementById("whatsapp-desconectar-btn");
+  const trocarBtn = document.getElementById("whatsapp-trocar-modo-btn");
   const conectado = estado === "open";
   const aguardando = estado === "connecting" && whatsappPoll;
 
   badge.textContent = conectado
     ? "Conectado ✅"
     : aguardando
-      ? "Aguardando leitura do QR Code…"
+      ? whatsappModo === "codigo"
+        ? "Aguardando o código no WhatsApp…"
+        : "Aguardando leitura do QR Code…"
       : "Desconectado";
   badge.classList.toggle("conectado", conectado);
   badge.classList.toggle("aguardando", Boolean(aguardando));
   conectarBtn.classList.toggle("hidden", conectado || Boolean(aguardando));
   desconectarBtn.classList.toggle("hidden", !conectado);
-  if (conectado || !aguardando) document.getElementById("whatsapp-qr").classList.add("hidden");
+  trocarBtn.classList.toggle("hidden", !aguardando);
+  trocarBtn.textContent =
+    whatsappModo === "codigo"
+      ? "Prefere ler um QR Code com outro aparelho?"
+      : "Está no celular? Conectar com código em vez do QR Code";
+  if (conectado || !aguardando) {
+    document.getElementById("whatsapp-qr").classList.add("hidden");
+    document.getElementById("whatsapp-codigo").classList.add("hidden");
+  }
 }
 
 function mostrarErroWhatsapp(msg) {
@@ -257,7 +277,8 @@ function mostrarErroWhatsapp(msg) {
 async function iniciarCardWhatsapp(barbearia) {
   const card = document.getElementById("card-whatsapp");
   card.classList.remove("hidden");
-  document.getElementById("whatsapp-numero").textContent = formatarTelefone(barbearia.whatsapp_barbearia);
+  const numero = formatarTelefone(barbearia.whatsapp_barbearia);
+  document.querySelectorAll(".whatsapp-numero").forEach((el) => (el.textContent = numero));
   try {
     const { estado } = await chamarConexaoWhatsapp("status");
     mostrarEstadoWhatsapp(estado);
@@ -275,45 +296,85 @@ function formatarTelefone(numero) {
   return numero || "cadastrado";
 }
 
-async function pedirQrWhatsapp() {
-  const dados = await chamarConexaoWhatsapp("conectar");
+function formatarCodigoPareamento(codigo) {
+  const c = String(codigo || "").replace(/[^0-9A-Za-z]/g, "").toUpperCase();
+  return c.length === 8 ? `${c.slice(0, 4)}-${c.slice(4)}` : c;
+}
+
+async function pedirConexaoWhatsapp() {
+  const dados = await chamarConexaoWhatsapp("conectar", { modo: whatsappModo });
   if (dados.estado === "open") {
     pararEsperaWhatsapp();
     mostrarEstadoWhatsapp("open");
     return;
   }
+  const qrEl = document.getElementById("whatsapp-qr");
+  const codigoEl = document.getElementById("whatsapp-codigo");
+  if (whatsappModo === "codigo") {
+    if (!dados.codigo) {
+      // Sem código (versão da Evolution sem suporte ou número não aceito): cai para o QR Code.
+      whatsappModo = "qr";
+      codigoEl.classList.add("hidden");
+      mostrarErroWhatsapp("Não foi possível gerar o código agora. Use o QR Code abaixo ou tente o código de novo em instantes.");
+      iniciarRenovacaoQr();
+      mostrarEstadoWhatsapp("connecting");
+      if (!dados.qr) return pedirConexaoWhatsapp();
+    } else {
+      document.getElementById("whatsapp-codigo-valor").textContent = formatarCodigoPareamento(dados.codigo);
+      qrEl.classList.add("hidden");
+      codigoEl.classList.remove("hidden");
+      return;
+    }
+  }
   if (dados.qr) {
     document.getElementById("whatsapp-qr-img").src = dados.qr;
-    document.getElementById("whatsapp-qr").classList.remove("hidden");
+    codigoEl.classList.add("hidden");
+    qrEl.classList.remove("hidden");
   }
 }
 
-document.getElementById("whatsapp-conectar-btn").addEventListener("click", async () => {
-  const btn = document.getElementById("whatsapp-conectar-btn");
+// O QR expira rápido e é renovado sozinho. O código não: renová-lo enquanto a
+// pessoa digita invalidaria o que ela está vendo, então ele só muda pelo botão.
+function iniciarRenovacaoQr() {
+  clearInterval(whatsappRenova);
+  whatsappRenova = whatsappModo === "qr"
+    ? setInterval(() => pedirConexaoWhatsapp().catch(console.error), WHATSAPP_QR_RENOVA_MS)
+    : null;
+}
+
+async function iniciarConexaoWhatsapp() {
   mostrarErroWhatsapp("");
+  pararEsperaWhatsapp();
+  // marca como "aguardando" antes do primeiro QR/código, para o botão sumir
+  whatsappPoll = setInterval(async () => {
+    try {
+      const { estado } = await chamarConexaoWhatsapp("status");
+      if (estado === "open") {
+        pararEsperaWhatsapp();
+        mostrarEstadoWhatsapp("open");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, WHATSAPP_POLL_MS);
+  iniciarRenovacaoQr();
+  whatsappLimite = setTimeout(() => {
+    pararEsperaWhatsapp();
+    mostrarEstadoWhatsapp("close");
+    mostrarErroWhatsapp(
+      whatsappModo === "codigo"
+        ? "O código expirou. Toque em Conectar WhatsApp para gerar outro."
+        : "O QR Code expirou. Clique em Conectar WhatsApp para gerar outro.",
+    );
+  }, WHATSAPP_QR_LIMITE_MS);
+  mostrarEstadoWhatsapp("connecting");
+  await pedirConexaoWhatsapp();
+}
+
+async function conectarWhatsappComBotao(btn) {
   btn.disabled = true;
   try {
-    pararEsperaWhatsapp();
-    // marca como "aguardando" antes do primeiro QR, para o botão sumir
-    whatsappPoll = setInterval(async () => {
-      try {
-        const { estado } = await chamarConexaoWhatsapp("status");
-        if (estado === "open") {
-          pararEsperaWhatsapp();
-          mostrarEstadoWhatsapp("open");
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }, WHATSAPP_POLL_MS);
-    whatsappRenova = setInterval(() => pedirQrWhatsapp().catch(console.error), WHATSAPP_QR_RENOVA_MS);
-    whatsappLimite = setTimeout(() => {
-      pararEsperaWhatsapp();
-      mostrarEstadoWhatsapp("close");
-      mostrarErroWhatsapp("O QR Code expirou. Clique em Conectar WhatsApp para gerar outro.");
-    }, WHATSAPP_QR_LIMITE_MS);
-    mostrarEstadoWhatsapp("connecting");
-    await pedirQrWhatsapp();
+    await iniciarConexaoWhatsapp();
   } catch (err) {
     console.error(err);
     pararEsperaWhatsapp();
@@ -322,6 +383,39 @@ document.getElementById("whatsapp-conectar-btn").addEventListener("click", async
   } finally {
     btn.disabled = false;
   }
+}
+
+document.getElementById("whatsapp-conectar-btn").addEventListener("click", (e) =>
+  conectarWhatsappComBotao(e.currentTarget),
+);
+
+document.getElementById("whatsapp-novo-codigo-btn").addEventListener("click", (e) => {
+  whatsappModo = "codigo";
+  conectarWhatsappComBotao(e.currentTarget);
+});
+
+document.getElementById("whatsapp-trocar-modo-btn").addEventListener("click", (e) => {
+  whatsappModo = whatsappModo === "codigo" ? "qr" : "codigo";
+  conectarWhatsappComBotao(e.currentTarget);
+});
+
+document.getElementById("whatsapp-copiar-btn").addEventListener("click", async (e) => {
+  const btn = e.currentTarget;
+  const codigo = document.getElementById("whatsapp-codigo-valor").textContent.replace(/-/g, "");
+  try {
+    await navigator.clipboard.writeText(codigo);
+  } catch {
+    // navegador sem clipboard: seleciona o texto para a pessoa copiar na mão
+    const range = document.createRange();
+    range.selectNodeContents(document.getElementById("whatsapp-codigo-valor"));
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    return;
+  }
+  const original = btn.innerHTML;
+  btn.textContent = "Copiado ✅";
+  setTimeout(() => (btn.innerHTML = original), 2000);
 });
 
 document.getElementById("whatsapp-desconectar-btn").addEventListener("click", async () => {

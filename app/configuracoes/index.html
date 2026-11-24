@@ -124,11 +124,27 @@
           <div class="whatsapp-qr hidden" id="whatsapp-qr">
             <img id="whatsapp-qr-img" alt="QR Code para conectar o WhatsApp">
             <ol class="whatsapp-passos">
-              <li>Abra o WhatsApp no celular do número <strong id="whatsapp-numero"></strong>.</li>
+              <li>Abra o WhatsApp no celular do número <strong class="whatsapp-numero"></strong>.</li>
               <li>Toque em <strong>Mais opções</strong> (⋮) ou <strong>Configurações</strong> e depois em <strong>Aparelhos conectados</strong>.</li>
               <li>Toque em <strong>Conectar um aparelho</strong> e aponte a câmera para este QR Code.</li>
             </ol>
           </div>
+          <div class="whatsapp-codigo hidden" id="whatsapp-codigo">
+            <div class="whatsapp-codigo-box">
+              <span class="whatsapp-codigo-valor" id="whatsapp-codigo-valor" aria-live="polite">····-····</span>
+              <button type="button" class="btn" id="whatsapp-copiar-btn">
+                <i data-lucide="copy" style="width:16px;height:16px"></i> Copiar
+              </button>
+            </div>
+            <ol class="whatsapp-passos">
+              <li>Copie o código acima.</li>
+              <li>Abra o WhatsApp do número <strong class="whatsapp-numero"></strong> e vá em <strong>Configurações</strong> (ou ⋮) &gt; <strong>Aparelhos conectados</strong> &gt; <strong>Conectar um aparelho</strong>.</li>
+              <li>Na tela da câmera, toque em <strong>Conectar com número de telefone</strong> e digite o código.</li>
+              <li>Volte para esta tela: ela muda para <strong>Conectado</strong> sozinha.</li>
+            </ol>
+            <button type="button" class="btn-link" id="whatsapp-novo-codigo-btn">O WhatsApp disse que o código é inválido? Gerar outro</button>
+          </div>
+          <button type="button" class="btn-link hidden" id="whatsapp-trocar-modo-btn"></button>
           <p class="modal-error" id="whatsapp-erro"></p>
         </div>
 

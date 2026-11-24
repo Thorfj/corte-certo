@@ -166,7 +166,7 @@
       ],
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// O nome da instância na Evolution é sempre o WhatsApp da barbearia (vem do banco, nunca do navegador)\nconst p = $input.first().json;\nconst pedido = ($('Webhook - Conexão WhatsApp').first().json.body || {}).acao;\nconst acao = ['status', 'conectar', 'desconectar'].includes(pedido) ? pedido : 'status';\nreturn [{ json: { acao, barbearia_id: p.barbearia_id, instancia: p.barbearias.whatsapp_barbearia } }];"
+        "jsCode": "// O nome da instância na Evolution é sempre o WhatsApp da barbearia (vem do banco, nunca do navegador)\nconst p = $input.first().json;\nconst body = $('Webhook - Conexão WhatsApp').first().json.body || {};\nconst pedido = body.acao;\nconst acao = ['status', 'conectar', 'desconectar'].includes(pedido) ? pedido : 'status';\n// modo 'codigo' = código de pareamento (\"Conectar com número de telefone\"), para conectar pelo próprio celular\nconst modo = body.modo === 'codigo' ? 'codigo' : 'qr';\nconst instancia = p.barbearias.whatsapp_barbearia;\nreturn [{ json: { acao, modo, barbearia_id: p.barbearia_id, instancia, numero: String(instancia).replace(/\\D/g, '') } }];"
       }
     },
     {
@@ -312,7 +312,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ instanceName: $json.instancia, qrcode: true, integration: \"WHATSAPP-BAILEYS\", groupsIgnore: true, webhook: { url: \"https://cortecerto.app.n8n.cloud/webhook/whatsapp-mensagem\", byEvents: false, base64: false, events: [\"MESSAGES_UPSERT\"] } }) }}",
+        "jsonBody": "={{ JSON.stringify({ instanceName: $json.instancia, qrcode: true, ...($json.modo === \"codigo\" ? { number: $json.numero } : {}), integration: \"WHATSAPP-BAILEYS\", groupsIgnore: true, webhook: { url: \"https://cortecerto.app.n8n.cloud/webhook/whatsapp-mensagem\", byEvents: false, base64: false, events: [\"MESSAGES_UPSERT\"] } }) }}",
         "options": {
           "response": {
             "response": {
@@ -340,7 +340,7 @@
       ],
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ estado: \"connecting\", qr: ($json.body && $json.body.qrcode && $json.body.qrcode.base64) || null, erro: $json.statusCode >= 400 ? \"Não foi possível criar a conexão. Tente de novo em instantes.\" : null }) }}",
+        "responseBody": "={{ JSON.stringify({ estado: \"connecting\", qr: ($json.body && $json.body.qrcode && $json.body.qrcode.base64) || null, codigo: ($json.body && $json.body.qrcode && $json.body.qrcode.pairingCode) || null, erro: $json.statusCode >= 400 ? \"Não foi possível criar a conexão. Tente de novo em instantes.\" : null }) }}",
         "options": {}
       }
     },
@@ -388,7 +388,7 @@
       ],
       "parameters": {
         "method": "GET",
-        "url": "=https://api.barbozap.com.br/instance/connect/{{ encodeURIComponent($(\"Decide o que fazer\").first().json.instancia) }}",
+        "url": "=https://api.barbozap.com.br/instance/connect/{{ encodeURIComponent($(\"Decide o que fazer\").first().json.instancia) }}{{ $(\"Decide o que fazer\").first().json.modo === \"codigo\" ? \"?number=\" + $(\"Decide o que fazer\").first().json.numero : \"\" }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {
@@ -418,7 +418,7 @@
       ],
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ estado: \"connecting\", qr: ($json.body && $json.body.base64) || null, erro: $json.statusCode >= 400 ? \"Não foi possível gerar o QR Code. Tente de novo em instantes.\" : null }) }}",
+        "responseBody": "={{ JSON.stringify({ estado: \"connecting\", qr: ($json.body && $json.body.base64) || null, codigo: ($json.body && $json.body.pairingCode) || null, erro: $json.statusCode >= 400 ? \"Não foi possível gerar o QR Code. Tente de novo em instantes.\" : null }) }}",
         "options": {}
       }
     },
@@ -526,7 +526,7 @@
         384
       ],
       "parameters": {
-        "content": "## Conexão WhatsApp (CRM > Configurações)\nO CRM chama `POST /webhook/whatsapp-conexao` com o token do usuário logado e `{ acao: status | conectar | desconectar }`.\n\nSó o **admin** da barbearia passa. A instância da Evolution é sempre o `whatsapp_barbearia` (vem do banco), já criada com o webhook do Roteador.",
+        "content": "## Conexão WhatsApp (CRM > Configurações)\nO CRM chama `POST /webhook/whatsapp-conexao` com o token do usuário logado e `{ acao: status | conectar | desconectar, modo?: qr | codigo }`.\n\nCom `modo: codigo` a Evolution recebe `number` e devolve também o `pairingCode` (código de 8 letras para \"Conectar com número de telefone\" no WhatsApp), que o CRM mostra no celular.\n\nSó o **admin** da barbearia passa. A instância da Evolution é sempre o `whatsapp_barbearia` (vem do banco), já criada com o webhook do Roteador.",
         "color": 4,
         "width": 384,
         "height": 224

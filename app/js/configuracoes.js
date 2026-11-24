@@ -280,8 +280,7 @@ function mostrarErroWhatsapp(msg) {
 async function iniciarCardWhatsapp(barbearia) {
   const card = document.getElementById("card-whatsapp");
   card.classList.remove("hidden");
-  const numero = formatarTelefone(barbearia.whatsapp_barbearia);
-  document.querySelectorAll(".whatsapp-numero").forEach((el) => (el.textContent = numero));
+  mostrarNumerosWhatsapp();
   try {
     const { estado } = await chamarConexaoWhatsapp("status");
     mostrarEstadoWhatsapp(estado);
@@ -297,6 +296,18 @@ function formatarTelefone(numero) {
   if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
   if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
   return numero || "cadastrado";
+}
+
+// Mostra lado a lado o número do bot e o do dono, e avisa quando são o mesmo.
+function mostrarNumerosWhatsapp() {
+  const bot = barbeariaCache && barbeariaCache.whatsapp_barbearia;
+  const dono = barbeariaCache && barbeariaCache.whatsapp;
+  document.querySelectorAll(".whatsapp-numero").forEach((el) => (el.textContent = formatarTelefone(bot)));
+  document
+    .querySelectorAll(".whatsapp-numero-dono")
+    .forEach((el) => (el.textContent = dono ? formatarTelefone(dono) : "não preenchido"));
+  const mesmo = Boolean(bot && dono && normalizarNumeroBot(bot) === normalizarNumeroBot(dono));
+  document.getElementById("whatsapp-mesmo-numero").classList.toggle("hidden", !mesmo);
 }
 
 function formatarCodigoPareamento(codigo) {
@@ -438,9 +449,12 @@ document.getElementById("whatsapp-trocar-form").addEventListener("submit", async
     document.getElementById("whatsapp-trocar-form").classList.add("hidden");
     return;
   }
+  const dono = barbeariaCache && barbeariaCache.whatsapp;
   const confirmado = await confirmarAcao(
-    `Trocar o número do bot para ${formatarTelefone(numero)}? Depois você conecta o WhatsApp desse número aqui mesmo.`,
-    "Trocar número",
+    `O bot vai atender seus clientes pelo ${formatarTelefone(numero)}.` +
+      (dono ? ` Seu WhatsApp (dono) continua ${formatarTelefone(dono)}, recebendo o Assistente.` : "") +
+      " Depois é só conectar o WhatsApp do número novo aqui mesmo.",
+    "Trocar número do bot",
   );
   if (!confirmado) return;
 
@@ -460,8 +474,7 @@ document.getElementById("whatsapp-trocar-form").addEventListener("submit", async
       throw new Error("Não foi possível trocar o número. Você precisa ser admin da barbearia.");
     }
     if (barbeariaCache) barbeariaCache.whatsapp_barbearia = numero;
-    const formatado = formatarTelefone(numero);
-    document.querySelectorAll(".whatsapp-numero").forEach((el) => (el.textContent = formatado));
+    mostrarNumerosWhatsapp();
     document.getElementById("whatsapp-trocar-form").classList.add("hidden");
     pararEsperaWhatsapp();
     mostrarEstadoWhatsapp("close");
@@ -630,6 +643,10 @@ document.getElementById("form-geral").addEventListener("submit", async (e) => {
 
     if (error) throw error;
     mostrarDonoDoAssistente(document.getElementById("g-whatsapp").value.trim());
+    if (barbeariaCache) {
+      barbeariaCache.whatsapp = normalizarNumeroBot(document.getElementById("g-whatsapp").value) || null;
+      if (!document.getElementById("card-whatsapp").classList.contains("hidden")) mostrarNumerosWhatsapp();
+    }
 
     sucessoEl.style.display = "block";
     setTimeout(() => {

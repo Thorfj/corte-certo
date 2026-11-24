@@ -115,16 +115,23 @@
           <p class="card-section-title">WhatsApp do bot</p>
           <p class="text-secondary card-section-desc">É por esse número que o Barbozap conversa com seus clientes. Conecte uma vez, como no WhatsApp Web, e o celular pode continuar sendo usado normalmente.</p>
           <div class="whatsapp-bot-numero" id="whatsapp-bot-numero">
-            <div class="whatsapp-bot-numero-linha">
-              <span class="text-secondary">Número do bot:</span>
-              <strong class="whatsapp-numero"></strong>
-              <button type="button" class="btn-link hidden" id="whatsapp-trocar-numero-btn">Trocar número</button>
-            </div>
+            <ul class="whatsapp-numeros">
+              <li>
+                <span class="whatsapp-numeros-rotulo">🤖 Bot (atende seus clientes)</span>
+                <strong class="whatsapp-numero"></strong>
+              </li>
+              <li>
+                <span class="whatsapp-numeros-rotulo">👤 Seu WhatsApp (dono, recebe o Assistente)</span>
+                <strong class="whatsapp-numero-dono"></strong>
+              </li>
+            </ul>
+            <p class="whatsapp-mesmo-numero hidden" id="whatsapp-mesmo-numero">Hoje o bot usa o mesmo número que o seu WhatsApp. Se quiser um número só para o bot, troque abaixo: o seu continua recebendo o Assistente.</p>
+            <button type="button" class="btn-link hidden" id="whatsapp-trocar-numero-btn">Usar outro número para o bot</button>
             <form class="whatsapp-trocar-form hidden" id="whatsapp-trocar-form">
               <div class="field">
-                <label for="whatsapp-novo-numero">Novo número do bot</label>
+                <label for="whatsapp-novo-numero">Número novo do bot (o que vai atender os clientes)</label>
                 <input type="tel" id="whatsapp-novo-numero" placeholder="(41) 99999-0000" inputmode="numeric" required>
-                <p class="field-hint">Pode ser o mesmo do seu WhatsApp (dono) ou outro, como um WhatsApp Business só da barbearia. Depois de trocar, conecte o WhatsApp do número novo.</p>
+                <p class="field-hint">Só o número do bot muda. O seu WhatsApp (dono) continua <strong class="whatsapp-numero-dono"></strong> e segue recebendo o Assistente. Depois de salvar, toque em Conectar WhatsApp com o celular do número novo.</p>
               </div>
               <div class="whatsapp-trocar-acoes">
                 <button type="submit" class="btn btn-primary" id="whatsapp-salvar-numero-btn">Salvar número</button>

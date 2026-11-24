@@ -399,15 +399,30 @@
 .whatsapp-bot-numero {
   margin-bottom: 14px;
 }
-.whatsapp-bot-numero-linha {
+.whatsapp-numeros {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
-  align-items: baseline;
+  flex-direction: column;
   gap: 8px;
-  flex-wrap: wrap;
   font-size: 14px;
 }
-.whatsapp-bot-numero-linha .btn-link {
-  margin-top: 0;
+.whatsapp-numeros li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.whatsapp-numeros-rotulo {
+  color: var(--text-secondary);
+}
+.whatsapp-mesmo-numero {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+.whatsapp-mesmo-numero.hidden {
+  display: none;
 }
 .whatsapp-trocar-form {
   margin-top: 12px;

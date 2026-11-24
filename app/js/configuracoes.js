@@ -258,6 +258,9 @@ function mostrarEstadoWhatsapp(estado) {
   conectarBtn.classList.toggle("hidden", conectado || Boolean(aguardando));
   desconectarBtn.classList.toggle("hidden", !conectado);
   trocarBtn.classList.toggle("hidden", !aguardando);
+  // O número do bot só pode ser trocado com o WhatsApp desconectado (o nome da instância é o número)
+  document.getElementById("whatsapp-trocar-numero-btn").classList.toggle("hidden", conectado || Boolean(aguardando));
+  if (conectado || aguardando) document.getElementById("whatsapp-trocar-form").classList.add("hidden");
   trocarBtn.textContent =
     whatsappModo === "codigo"
       ? "Prefere ler um QR Code com outro aparelho?"
@@ -397,6 +400,78 @@ document.getElementById("whatsapp-novo-codigo-btn").addEventListener("click", (e
 document.getElementById("whatsapp-trocar-modo-btn").addEventListener("click", (e) => {
   whatsappModo = whatsappModo === "codigo" ? "qr" : "codigo";
   conectarWhatsappComBotao(e.currentTarget);
+});
+
+// ---------------- ABA GERAL — Trocar o número do bot ----------------
+// O número do bot (barbearias.whatsapp_barbearia) é diferente do WhatsApp do dono
+// (barbearias.whatsapp, usado pelo Assistente). Os dois podem ser iguais, mas o dono escolhe.
+function normalizarNumeroBot(valor) {
+  const d = String(valor || "").replace(/\D/g, "");
+  if (d.length === 10 || d.length === 11) return "55" + d;
+  if ((d.length === 12 || d.length === 13) && d.startsWith("55")) return d;
+  return null;
+}
+
+document.getElementById("whatsapp-trocar-numero-btn").addEventListener("click", () => {
+  const form = document.getElementById("whatsapp-trocar-form");
+  form.classList.remove("hidden");
+  const input = document.getElementById("whatsapp-novo-numero");
+  input.value = "";
+  input.focus();
+  mostrarErroWhatsapp("");
+});
+
+document.getElementById("whatsapp-cancelar-numero-btn").addEventListener("click", () => {
+  document.getElementById("whatsapp-trocar-form").classList.add("hidden");
+  mostrarErroWhatsapp("");
+});
+
+document.getElementById("whatsapp-trocar-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  mostrarErroWhatsapp("");
+  const numero = normalizarNumeroBot(document.getElementById("whatsapp-novo-numero").value);
+  if (!numero) {
+    mostrarErroWhatsapp("Informe o número com DDD, por exemplo (41) 99999-0000.");
+    return;
+  }
+  if (barbeariaCache && numero === barbeariaCache.whatsapp_barbearia) {
+    document.getElementById("whatsapp-trocar-form").classList.add("hidden");
+    return;
+  }
+  const confirmado = await confirmarAcao(
+    `Trocar o número do bot para ${formatarTelefone(numero)}? Depois você conecta o WhatsApp desse número aqui mesmo.`,
+    "Trocar número",
+  );
+  if (!confirmado) return;
+
+  const btn = document.getElementById("whatsapp-salvar-numero-btn");
+  btn.disabled = true;
+  btn.textContent = "Salvando...";
+  try {
+    // Remove a conexão pendente do número antigo na Evolution (se houver) antes de trocar.
+    await chamarConexaoWhatsapp("desconectar").catch((err) => console.error(err));
+    const barbeariaId = await obterBarbeariaId();
+    const { error } = await supabaseClient
+      .from("barbearias")
+      .update({ whatsapp_barbearia: numero })
+      .eq("id", barbeariaId);
+    if (error) {
+      if (error.code === "23505") throw new Error("Esse número já é o bot de outra conta. Use outro número ou fale com o suporte.");
+      throw new Error("Não foi possível trocar o número. Você precisa ser admin da barbearia.");
+    }
+    if (barbeariaCache) barbeariaCache.whatsapp_barbearia = numero;
+    const formatado = formatarTelefone(numero);
+    document.querySelectorAll(".whatsapp-numero").forEach((el) => (el.textContent = formatado));
+    document.getElementById("whatsapp-trocar-form").classList.add("hidden");
+    pararEsperaWhatsapp();
+    mostrarEstadoWhatsapp("close");
+  } catch (err) {
+    console.error(err);
+    mostrarErroWhatsapp(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Salvar número";
+  }
 });
 
 document.getElementById("whatsapp-copiar-btn").addEventListener("click", async (e) => {

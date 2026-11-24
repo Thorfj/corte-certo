@@ -396,6 +396,31 @@
   font-size: 14px;
   color: var(--text-secondary);
 }
+.whatsapp-bot-numero {
+  margin-bottom: 14px;
+}
+.whatsapp-bot-numero-linha {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 14px;
+}
+.whatsapp-bot-numero-linha .btn-link {
+  margin-top: 0;
+}
+.whatsapp-trocar-form {
+  margin-top: 12px;
+  max-width: 420px;
+}
+.whatsapp-trocar-form.hidden {
+  display: none;
+}
+.whatsapp-trocar-acoes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 .whatsapp-codigo {
   margin-top: 16px;
   display: flex;

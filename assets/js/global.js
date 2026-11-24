@@ -17,7 +17,7 @@ window.BASE = "";
         <a href="${BASE}/#como-funciona">Como funciona</a>
         <a href="${BASE}/#planos">Planos</a>
         <a href="${BASE}/blog/">Blog</a>
-
+        <a href="${BASE}/app/" class="nav-menu-login">Entrar na minha conta</a>
       </nav>
       <div class="nav-actions">
         <a href="${BASE}/app/" class="nav-login">Entrar</a>

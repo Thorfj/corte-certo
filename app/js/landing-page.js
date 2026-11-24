@@ -102,10 +102,8 @@ document.getElementById("lpc-descricao").addEventListener("input", (e) => {
 function mostrarAvisoBot() {
   const aviso = document.getElementById("lpc-aviso-bot");
   let texto = "";
-  if (!barbearia.whatsapp_barbearia) {
-    texto = 'O botão "Agendar horário" só aparece na página depois que o WhatsApp da barbearia for conectado em Configurações.';
-  } else if (barbearia.status_fluxo !== "Sim") {
-    texto = 'O bot está desligado: o botão "Agendar horário" leva o cliente ao WhatsApp da barbearia, mas ninguém responde automaticamente até você ligar o bot em Mensagens.';
+  if (barbearia.status_fluxo !== "Sim") {
+    texto = 'O agendamento pela página já funciona. Com o bot desligado, porém, os clientes não recebem lembretes no WhatsApp e o botão "WhatsApp" leva a uma conversa sem resposta automática. Ligue o bot em Mensagens.';
   }
   aviso.textContent = texto;
   aviso.style.display = texto ? "block" : "none";

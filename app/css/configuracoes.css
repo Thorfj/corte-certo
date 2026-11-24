@@ -396,6 +396,46 @@
   font-size: 14px;
   color: var(--text-secondary);
 }
+.whatsapp-bot-numero {
+  margin-bottom: 14px;
+}
+.whatsapp-numeros {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+}
+.whatsapp-numeros li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.whatsapp-numeros-rotulo {
+  color: var(--text-secondary);
+}
+.whatsapp-mesmo-numero {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+.whatsapp-mesmo-numero.hidden {
+  display: none;
+}
+.whatsapp-trocar-form {
+  margin-top: 12px;
+  max-width: 420px;
+}
+.whatsapp-trocar-form.hidden {
+  display: none;
+}
+.whatsapp-trocar-acoes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 .whatsapp-codigo {
   margin-top: 16px;
   display: flex;

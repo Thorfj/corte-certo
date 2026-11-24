@@ -406,9 +406,18 @@ footer {
     border-bottom: none;
   }
 }
+/* "Entrar" dentro do menu ☰: só no celular, onde o botão do topo some */
+.nav-links .nav-menu-login {
+  display: none;
+}
 @media (max-width: 640px) {
   .nav-login {
     display: none;
+  }
+  .nav-links .nav-menu-login {
+    display: block;
+    font-weight: 600;
+    color: var(--green);
   }
 }
 @media (max-width: 520px) {

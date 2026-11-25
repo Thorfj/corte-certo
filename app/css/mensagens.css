@@ -254,3 +254,40 @@
   padding: 5px 10px;
   font-size: 12.5px;
 }
+
+/* ---------- Follow-up por serviço ---------- */
+.fu-servico-card {
+  margin-bottom: 16px;
+}
+.fu-servico-linha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  align-items: flex-end;
+}
+.fu-servico-linha .field {
+  margin: 0;
+  min-width: 220px;
+}
+.fu-servico-linha select {
+  min-width: 220px;
+}
+.fu-recorrencia-campo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 14px;
+}
+.fu-recorrencia-campo input {
+  width: 80px;
+}
+.fu-ajuda {
+  margin: 14px 0 0;
+  font-size: 13px;
+}
+.fu-ok {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--brand-dark, #0a6b3c);
+}

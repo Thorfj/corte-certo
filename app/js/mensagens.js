@@ -100,11 +100,13 @@ function descreverEtapa(etapa, variaveisCaptadas) {
 
 function renderizarFluxoVisual(lista) {
   const container = document.getElementById("flow-visual-fluxo");
+  // "Retomar agendamento N" tem o próprio cartão (mais abaixo), fora do fluxo principal
   const listaVisual = lista.filter(
     (m) =>
       m.etapa !== "Atendimento humano" &&
       m.etapa !== "Remarcar após falta" &&
-      m.etapa !== "Não entendi a resposta",
+      m.etapa !== "Não entendi a resposta" &&
+      !/^Retomar agendamento/.test(m.etapa),
   );
   container.innerHTML = listaVisual
     .map((m, i) => {

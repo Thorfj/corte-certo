@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/app/css/global.css">
-  <link rel="stylesheet" href="/app/css/mensagens.css?v=20261125">
+  <link rel="stylesheet" href="/app/css/mensagens.css?v=20261125b">
   <link rel="stylesheet" href="/app/css/responsivo.css">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -65,28 +65,34 @@
 
       <!-- ABA FOLLOW-UP (por serviço) -->
       <div class="tab-panel" id="tab-followup">
-        <div class="card fu-servico-card">
-          <div class="fu-servico-linha">
-            <div class="field">
-              <label for="fu-servico">1. Serviço</label>
-              <select id="fu-servico"></select>
-            </div>
-            <form class="field fu-recorrencia" id="fu-recorrencia-form">
-              <label for="fu-recorrencia">2. Recorrência</label>
-              <div class="fu-recorrencia-campo">
-                <span>O cliente volta a cada</span>
-                <input type="number" id="fu-recorrencia" min="1" max="365" step="1" required>
-                <span>dias</span>
-                <button type="submit" class="btn" id="fu-recorrencia-btn">Salvar</button>
+        <div class="card fu-config">
+          <div class="fu-passos">
+            <div class="fu-passo">
+              <div class="fu-passo-cab">
+                <span class="fu-num">1</span>
+                <label for="fu-servico">Serviço</label>
               </div>
+              <select id="fu-servico" class="fu-select"></select>
+              <p class="fu-dica">Cada serviço tem as próprias mensagens de follow-up.</p>
+            </div>
+
+            <form class="fu-passo" id="fu-recorrencia-form">
+              <div class="fu-passo-cab">
+                <span class="fu-num">2</span>
+                <label for="fu-recorrencia">Recorrência</label>
+              </div>
+              <div class="fu-rec-linha">
+                <div class="fu-dias">
+                  <input type="number" id="fu-recorrencia" min="1" max="365" step="1" inputmode="numeric" required>
+                  <span>dias</span>
+                </div>
+                <button type="submit" class="btn btn-primary" id="fu-recorrencia-btn">Salvar</button>
+              </div>
+              <p class="fu-dica">De quanto em quanto tempo o cliente costuma voltar para esse serviço.</p>
+              <p class="fu-ok hidden" id="fu-recorrencia-ok">✓ Recorrência salva</p>
+              <p class="modal-error" id="fu-recorrencia-erro"></p>
             </form>
           </div>
-          <p class="text-secondary fu-ajuda">
-            3. Configure abaixo as mensagens que o bot envia para quem fez esse serviço e não voltou.
-            Quem fez mais de um serviço segue o follow-up do serviço com a menor recorrência.
-          </p>
-          <p class="fu-ok hidden" id="fu-recorrencia-ok">Recorrência salva.</p>
-          <p class="modal-error" id="fu-recorrencia-erro"></p>
         </div>
 
         <div id="fu-sem-servico" class="card empty hidden" style="margin-top:16px">
@@ -94,6 +100,13 @@
         </div>
 
         <div id="fu-ciclos">
+          <div class="fu-secao">
+            <span class="fu-num">3</span>
+            <div>
+              <p class="fu-secao-titulo">Mensagens do follow-up</p>
+              <p class="fu-dica">Enviadas para quem fez esse serviço e não voltou. Quem fez mais de um serviço segue o de menor recorrência.</p>
+            </div>
+          </div>
           <div class="flow-visual" id="flow-visual-followup"></div>
           <div class="page-header">
             <p class="text-secondary" id="ciclos-contador" style="margin:0">Carregando...</p>

@@ -427,8 +427,31 @@ document
     salvarBtn.textContent = "Salvar";
   });
 
-// ---------------- ABA FOLLOW-UP ----------------
+// ---------------- ABA FOLLOW-UP (por serviço) ----------------
+// 1. escolhe o serviço → 2. recorrência (servicos.recorrencia) → 3. ciclos e mensagens
+// (prazos_followup + fluxo_followup com servico_id). Cada ciclo é enviado
+// "prazo × recorrência" dias depois do último atendimento. O Agendador (n8n) usa os
+// ciclos do serviço de menor recorrência do último atendimento do cliente.
+const FU_SERVICO_KEY = "barbozap:followup-servico";
 let followupCache = [];
+let servicosFollowup = [];
+let servicoFollowupId = null;
+
+function servicoFollowupAtual() {
+  return servicosFollowup.find((s) => String(s.id) === String(servicoFollowupId)) || null;
+}
+
+function diasDoCiclo(prazo) {
+  const servico = servicoFollowupAtual();
+  if (prazo === null || prazo === undefined || !servico) return null;
+  return Math.round(Number(prazo) * Number(servico.recorrencia || 0));
+}
+
+function textoQuando(prazo) {
+  const dias = diasDoCiclo(prazo);
+  if (dias === null) return "—";
+  return `${dias} dia${dias === 1 ? "" : "s"} depois`;
+}
 
 function renderizarFollowupVisual(lista) {
   const container = document.getElementById("flow-visual-followup");
@@ -436,7 +459,7 @@ function renderizarFollowupVisual(lista) {
     .map((item, i) => {
       const step = `
       <div class="flow-step">
-        ${item.prazo_flu !== null ? item.prazo_flu + "x" : "—"}
+        ${textoQuando(item.prazo_flu)}
         <span class="flow-step-sub">${item.etapa}</span>
       </div>
     `;
@@ -447,24 +470,121 @@ function renderizarFollowupVisual(lista) {
     .join("");
 }
 
+async function carregarServicosFollowup() {
+  const barbeariaId = await obterBarbeariaId();
+  const { data, error } = await supabaseClient
+    .from("servicos")
+    .select("id, nome, recorrencia")
+    .eq("barbearia_id", barbeariaId)
+    .order("nome", { ascending: true });
+  if (error) throw error;
+  servicosFollowup = data || [];
+
+  const select = document.getElementById("fu-servico");
+  const vazio = servicosFollowup.length === 0;
+  document.getElementById("fu-sem-servico").classList.toggle("hidden", !vazio);
+  document.getElementById("fu-ciclos").classList.toggle("hidden", vazio);
+  document.getElementById("fu-recorrencia-form").classList.toggle("hidden", vazio);
+  select.disabled = vazio;
+  if (vazio) {
+    select.innerHTML = "<option>Nenhum serviço cadastrado</option>";
+    return;
+  }
+
+  let lembrado = null;
+  try {
+    lembrado = localStorage.getItem(FU_SERVICO_KEY);
+  } catch {}
+  if (!servicosFollowup.some((s) => String(s.id) === String(servicoFollowupId))) {
+    servicoFollowupId = servicosFollowup.some((s) => String(s.id) === lembrado) ? lembrado : servicosFollowup[0].id;
+  }
+  select.innerHTML = servicosFollowup
+    .map((s) => `<option value="${s.id}">${escaparHtml(s.nome)}</option>`)
+    .join("");
+  select.value = String(servicoFollowupId);
+  mostrarRecorrencia();
+}
+
+function escaparHtml(t) {
+  return String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+
+function mostrarRecorrencia() {
+  const servico = servicoFollowupAtual();
+  document.getElementById("fu-recorrencia").value = servico ? servico.recorrencia || "" : "";
+  document.getElementById("fu-recorrencia-ok").classList.add("hidden");
+  document.getElementById("fu-recorrencia-erro").style.display = "none";
+}
+
+document.getElementById("fu-servico").addEventListener("change", async (e) => {
+  servicoFollowupId = e.target.value;
+  try {
+    localStorage.setItem(FU_SERVICO_KEY, String(servicoFollowupId));
+  } catch {}
+  mostrarRecorrencia();
+  await carregarCiclosFollowup();
+});
+
+document.getElementById("fu-recorrencia-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const servico = servicoFollowupAtual();
+  const okEl = document.getElementById("fu-recorrencia-ok");
+  const erroEl = document.getElementById("fu-recorrencia-erro");
+  const btn = document.getElementById("fu-recorrencia-btn");
+  const dias = parseInt(document.getElementById("fu-recorrencia").value, 10);
+  okEl.classList.add("hidden");
+  erroEl.style.display = "none";
+  if (!servico) return;
+  if (!dias || dias < 1 || dias > 365) {
+    erroEl.textContent = "Informe a recorrência em dias (de 1 a 365).";
+    erroEl.style.display = "block";
+    return;
+  }
+  btn.disabled = true;
+  const { error } = await supabaseClient.from("servicos").update({ recorrencia: dias }).eq("id", servico.id);
+  btn.disabled = false;
+  if (error) {
+    console.error(error);
+    erroEl.textContent = "Erro ao salvar. Você precisa ter papel de admin.";
+    erroEl.style.display = "block";
+    return;
+  }
+  servico.recorrencia = dias;
+  okEl.classList.remove("hidden");
+  setTimeout(() => okEl.classList.add("hidden"), 2500);
+  renderizarCiclosFollowup();
+});
+
 async function carregarFollowup() {
+  const body = document.getElementById("tabela-followup-body");
+  try {
+    await carregarServicosFollowup();
+  } catch (err) {
+    console.error(err);
+    body.innerHTML = '<tr><td colspan="3" class="empty">Erro ao carregar os serviços.</td></tr>';
+    return;
+  }
+  if (servicosFollowup.length) await carregarCiclosFollowup();
+}
+
+async function carregarCiclosFollowup() {
   const barbeariaId = await obterBarbeariaId();
   const [prazosResp, fluxoResp] = await Promise.all([
     supabaseClient
       .from("prazos_followup")
       .select("id, id_msg, prazo_flu")
       .eq("barbearia_id", barbeariaId)
+      .eq("servico_id", servicoFollowupId)
       .order("id_msg", { ascending: true }),
     supabaseClient
       .from("fluxo_followup")
       .select("id, id_msg, etapa, mensagem, tempo")
       .eq("barbearia_id", barbeariaId)
-      .neq("id_msg", "101")
+      .eq("servico_id", servicoFollowupId)
       .order("id_msg", { ascending: true }),
   ]);
 
   const body = document.getElementById("tabela-followup-body");
-
   if (prazosResp.error || fluxoResp.error) {
     body.innerHTML =
       '<tr><td colspan="3" class="empty">Erro ao carregar ciclos de follow-up.</td></tr>';
@@ -472,9 +592,7 @@ async function carregarFollowup() {
   }
 
   const prazos = prazosResp.data || [];
-  const fluxos = fluxoResp.data || [];
-
-  followupCache = fluxos.map((f) => {
+  followupCache = (fluxoResp.data || []).map((f) => {
     const prazo = prazos.find((p) => p.id_msg === f.id_msg);
     return {
       id_msg: f.id_msg,
@@ -485,27 +603,32 @@ async function carregarFollowup() {
       prazo_flu: prazo ? prazo.prazo_flu : null,
     };
   });
+  renderizarCiclosFollowup();
+}
+
+function renderizarCiclosFollowup() {
+  const body = document.getElementById("tabela-followup-body");
+  const servico = servicoFollowupAtual();
+  const nome = servico ? servico.nome : "este serviço";
 
   if (followupCache.length === 0) {
-    body.innerHTML =
-      '<tr><td colspan="3" class="empty">Nenhum ciclo de follow-up cadastrado.</td></tr>';
+    body.innerHTML = `<tr><td colspan="3" class="empty">Nenhum ciclo para ${escaparHtml(nome)}. Clique em "+ Adicionar ciclo" para criar a primeira mensagem.</td></tr>`;
     document.getElementById("flow-visual-followup").innerHTML = "";
-    document.getElementById("ciclos-contador").textContent =
-      "0 ciclo(s) configurado(s)";
+    document.getElementById("ciclos-contador").textContent = "0 ciclo(s) configurado(s)";
     return;
   }
 
   renderizarFollowupVisual(followupCache);
   document.getElementById("ciclos-contador").textContent =
-    `${followupCache.length} ciclo(s) configurado(s)`;
+    `${followupCache.length} ciclo(s) configurado(s) para ${nome}`;
 
   body.innerHTML = followupCache
     .map(
       (item) => `
     <tr class="clickable" data-editar="${item.id_msg}">
-      <td>${item.prazo_flu !== null ? item.prazo_flu + "x" : "—"}</td>
-      <td>${item.etapa}</td>
-      <td class="msg-preview">${item.mensagem || "<em>Sem mensagem configurada</em>"}</td>
+      <td>${textoQuando(item.prazo_flu)}<br><small class="text-secondary">${item.prazo_flu !== null ? item.prazo_flu + "× a recorrência" : ""}</small></td>
+      <td>${escaparHtml(item.etapa)}</td>
+      <td class="msg-preview">${item.mensagem ? escaparHtml(item.mensagem) : "<em>Sem mensagem configurada</em>"}</td>
     </tr>
   `,
     )
@@ -519,7 +642,18 @@ async function carregarFollowup() {
   });
 }
 
+function atualizarDiasDoPrazo() {
+  const prazo = parseFloat(document.getElementById("fu-prazo").value);
+  const dias = Number.isFinite(prazo) ? diasDoCiclo(prazo) : null;
+  document.getElementById("fu-prazo-dias").textContent =
+    dias === null ? "" : `= ${dias} dia${dias === 1 ? "" : "s"} depois do último atendimento`;
+}
+document.getElementById("fu-prazo").addEventListener("input", atualizarDiasDoPrazo);
+
 function abrirModalFollowup(item) {
+  const servico = servicoFollowupAtual();
+  document.getElementById("fu-modal-titulo").textContent =
+    `Ciclo ${Number(item.id_msg)} — ${servico ? servico.nome : ""}`;
   document.getElementById("fu-prazo-id").value = item.prazo_id || "";
   document.getElementById("fu-fluxo-id").value = item.fluxo_id;
   document.getElementById("fu-id-msg").value = item.id_msg;
@@ -527,6 +661,7 @@ function abrirModalFollowup(item) {
   document.getElementById("fu-etapa").value = item.etapa || "";
   document.getElementById("fu-mensagem").value = item.mensagem || "";
   document.getElementById("fu-erro").style.display = "none";
+  atualizarDiasDoPrazo();
   document.getElementById("modal-followup").classList.remove("hidden");
 }
 
@@ -563,7 +698,7 @@ document
       }
 
       document.getElementById("modal-followup").classList.add("hidden");
-      await carregarFollowup();
+      await carregarCiclosFollowup();
     } catch (err) {
       console.error(err);
       erroEl.textContent = "Erro ao salvar ciclo de follow-up.";
@@ -576,16 +711,28 @@ document
 
 document.getElementById("add-ciclo-btn").addEventListener("click", async () => {
   const btn = document.getElementById("add-ciclo-btn");
+  if (!servicoFollowupId) return;
   btn.disabled = true;
   try {
     const barbeariaId = await obterBarbeariaId();
-    const novoFlu = followupCache.length + 1;
-    const { error } = await supabaseClient
-      .from("barbearias")
-      .update({ flu: novoFlu })
-      .eq("id", barbeariaId);
-    if (error) throw error;
-    await carregarFollowup();
+    const numero = followupCache.reduce((m, f) => Math.max(m, Number(f.id_msg) || 0), 0) + 1;
+    const idMsg = String(numero).padStart(3, "0");
+    const { error: erroPrazo } = await supabaseClient
+      .from("prazos_followup")
+      .insert({ barbearia_id: barbeariaId, servico_id: Number(servicoFollowupId), id_msg: idMsg, prazo_flu: numero });
+    if (erroPrazo) throw erroPrazo;
+    const { error: erroFluxo } = await supabaseClient.from("fluxo_followup").insert({
+      barbearia_id: barbeariaId,
+      servico_id: Number(servicoFollowupId),
+      id_msg: idMsg,
+      tempo: "{prazo_flu}x{recorrencia}",
+      etapa: `Ciclo ${numero}`,
+      mensagem: "",
+    });
+    if (erroFluxo) throw erroFluxo;
+    await carregarCiclosFollowup();
+    const novo = followupCache.find((f) => f.id_msg === idMsg);
+    if (novo) abrirModalFollowup(novo);
   } catch (err) {
     console.error(err);
     alert("Erro ao adicionar ciclo. Verifique se você tem papel de admin.");
@@ -599,7 +746,7 @@ document
   .addEventListener("click", async () => {
     if (followupCache.length === 0) return;
     const confirmado = await confirmarAcao(
-      "Remover o último ciclo de follow-up? A mensagem configurada nele será apagada.",
+      "Remover o último ciclo de follow-up deste serviço? A mensagem configurada nele será apagada.",
       "Remover",
     );
     if (!confirmado) return;
@@ -608,26 +755,19 @@ document
     btn.disabled = true;
     try {
       const ultimo = followupCache[followupCache.length - 1];
-      const barbeariaId = await obterBarbeariaId();
-
-      await supabaseClient
+      const { error: erroFluxo } = await supabaseClient
         .from("fluxo_followup")
         .delete()
         .eq("id", ultimo.fluxo_id);
+      if (erroFluxo) throw erroFluxo;
       if (ultimo.prazo_id) {
-        await supabaseClient
+        const { error: erroPrazo } = await supabaseClient
           .from("prazos_followup")
           .delete()
           .eq("id", ultimo.prazo_id);
+        if (erroPrazo) throw erroPrazo;
       }
-
-      const novoFlu = Math.max(0, followupCache.length - 1);
-      await supabaseClient
-        .from("barbearias")
-        .update({ flu: novoFlu })
-        .eq("id", barbeariaId);
-
-      await carregarFollowup();
+      await carregarCiclosFollowup();
     } catch (err) {
       console.error(err);
       alert("Erro ao remover ciclo.");

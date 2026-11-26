@@ -12,6 +12,18 @@
 
 const BLOG_POSTS = [
   {
+    slug: "tempo-de-voltar-cada-servico",
+    image: "/assets/img/blog/tempo-de-voltar-cada-servico",
+    title: "Cada serviço tem seu tempo: quando chamar o cliente de volta",
+    excerpt:
+      "Degradê, corte social e barba não voltam no mesmo ritmo. Veja como descobrir o tempo de cada serviço e mandar a mensagem certa na hora certa.",
+    category: "atendimento",
+    categoryLabel: "Atendimento",
+    date: "26 nov 2026",
+    readTime: "3 min",
+    featured: false,
+  },
+  {
     slug: "falar-com-humano",
     image: "/assets/img/blog/falar-com-humano",
     title: "“Falar com humano”: quando o bot deve passar a conversa pra você",

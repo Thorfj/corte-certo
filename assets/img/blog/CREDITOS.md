@@ -23,3 +23,4 @@ Cada post tem duas versões: `<slug>-1280.jpg` (topo do post) e
 | cliente-que-pendura | https://images.unsplash.com/photo-1605497788044-5a32c7078486 |
 | indicacao-cliente-traz-amigo | https://images.unsplash.com/photo-1593702295094-aea22597af65 |
 | falar-com-humano | https://images.unsplash.com/photo-1593702288056-7927b442d0fa |
+| tempo-de-voltar-cada-servico | https://images.unsplash.com/photo-1635273051937-a0ddef9573b6 |
